@@ -1,0 +1,14 @@
+/.vs
+/learning_d3d12/x64
+*.exe
+*.ilk
+*.pdb
+*.log
+*.pch
+*.idb
+*.tlog
+*.lastbuildstate
+*.suo
+*.db
+*.iobj
+*.ipdb
