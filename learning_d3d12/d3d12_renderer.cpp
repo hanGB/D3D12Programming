@@ -149,6 +149,8 @@ void D3D12Renderer::FrameAdvance()
 	dxgiPresentParameters.pScrollOffset = NULL;
 	m_dxgiSwapchain->Present1(1, 0, &dxgiPresentParameters);
 	m_swapChainBufferIndex = m_dxgiSwapchain->GetCurrentBackBufferIndex();
+
+	m_dxgiSwapchain->Present(0, 0);
 }
 
 void D3D12Renderer::SetClientSize(int width, int height)

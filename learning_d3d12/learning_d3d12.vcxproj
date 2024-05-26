@@ -136,6 +136,8 @@
     <ClCompile Include="game_framework_thread.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="per_log.cpp" />
+    <ClCompile Include="per_timer.cpp" />
+    <ClCompile Include="simple_timer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
@@ -153,6 +155,8 @@
     <ClInclude Include="null_logger.h" />
     <ClInclude Include="per_log.h" />
     <ClInclude Include="per_logger.h" />
+    <ClInclude Include="per_timer.h" />
+    <ClInclude Include="simple_timer.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

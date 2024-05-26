@@ -25,6 +25,9 @@
     <Filter Include="renderer\d3d12_init">
       <UniqueIdentifier>{dd67f6e3-3a4f-425d-ab18-68c3c9fa549e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="timer">
+      <UniqueIdentifier>{6d4f509b-574a-4abe-8d30-12288fba3d80}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -47,6 +50,12 @@
     </ClCompile>
     <ClCompile Include="game_framework_thread.cpp">
       <Filter>game_framework</Filter>
+    </ClCompile>
+    <ClCompile Include="per_timer.cpp">
+      <Filter>timer</Filter>
+    </ClCompile>
+    <ClCompile Include="simple_timer.cpp">
+      <Filter>timer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -88,6 +97,12 @@
     </ClInclude>
     <ClInclude Include="cs_provider.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="per_timer.h">
+      <Filter>timer</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_timer.h">
+      <Filter>timer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

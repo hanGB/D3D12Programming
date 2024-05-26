@@ -3,11 +3,12 @@
 
 GameFramework::GameFramework()
 {
-
+	wcscpy_s(m_textFrameRate, L"D3DProject (");
 }
 
 GameFramework::~GameFramework()
 {
+	
 }
 
 bool GameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
@@ -16,8 +17,7 @@ bool GameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	m_hWnd = hMainWnd;
 
 	// 렌더러 생성
-	m_renderer = new D3D12Renderer();
-	m_renderer->CreateInterface(hMainWnd);
+	m_renderer.CreateInterface(hMainWnd);
 
 	// 게임 객체 생성
 	BuildObjects();
@@ -33,7 +33,7 @@ bool GameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 void GameFramework::OnDestroy()
 {
 	// GPU가 모든 명령 리스트 실행 완료할 때까지 대기
-	m_renderer->WaitForGpuComplete();
+	m_renderer.WaitForGpuComplete();
 
 	// 스레드 종료
 	EndWorkerThreads();	
@@ -42,8 +42,7 @@ void GameFramework::OnDestroy()
 	ReleaseObjects();
 
 	// 렌더러 삭제
-	m_renderer->ReleaseInterface();
-	delete m_renderer;
+	m_renderer.ReleaseInterface();
 
 	PERLog::Logger().Info("게임 프레임워크 삭제 완료");
 }
@@ -56,13 +55,20 @@ void GameFramework::ReleaseObjects()
 {
 }
 
-void GameFramework::Update(float deltaTime)
+void GameFramework::Update(int deltaTime)
 {
 }
 
 void GameFramework::Render()
 {
-	m_renderer->FrameAdvance();
+	// 타이머 시간 갱신 및 프레임 레이트 계산
+	m_timer.Tick();
+
+	m_renderer.FrameAdvance();
+
+	// 윈도우에 프레임 레이트 출력
+	m_timer.GetFrameRate(m_textFrameRate + 12, 37);
+	::SetWindowText(m_hWnd, m_textFrameRate);
 }
 
 void GameFramework::CreateWorkerThreads()
@@ -121,7 +127,7 @@ LRESULT GameFramework::OnProcessingWindowMessage(HWND hWnd, UINT nMessageId, WPA
 	switch (nMessageId)
 	{
 	case WM_SIZE: {
-		m_renderer->SetClientSize(LOWORD(lParam), HIWORD(lParam));
+		m_renderer.SetClientSize(LOWORD(lParam), HIWORD(lParam));
 		break;
 	}
 	case WM_LBUTTONDOWN:
@@ -138,29 +144,4 @@ LRESULT GameFramework::OnProcessingWindowMessage(HWND hWnd, UINT nMessageId, WPA
 	}
 
 	return 0;
-}
-
-
-int GameFramework::CalculateDeltaTime(std::chrono::system_clock::time_point* lastTime, std::chrono::system_clock::time_point* currentTime)
-{
-	// 현재 시간 측정
-	*currentTime = std::chrono::system_clock::now();
-	auto deltaTime = *currentTime - *lastTime;
-
-	// 경과된 시간(마이크로초 단위)
-	int dTime = (int)std::chrono::duration_cast<std::chrono::microseconds>(deltaTime).count();
-
-	// 현재 시간을 마지막 시간으로 저장
-	*lastTime = *currentTime;
-
-	return dTime;
-}
-
-void GameFramework::SleepForRestDevice(int dTime)
-{
-	// 너무 빠를 경우 휴식
-	int restTime = PER_MINIMUM_FRAME_TIME - dTime;
-	if (restTime > 0) {
-		Sleep(int(restTime / 1'000.0));
-	}
 }

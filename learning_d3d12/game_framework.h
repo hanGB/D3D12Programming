@@ -1,5 +1,6 @@
 #pragma once
 #include "d3d12_renderer.h"
+#include "per_timer.h"
 
 class GameFramework {
 public: 
@@ -15,7 +16,7 @@ public:
 	void ReleaseObjects();
 
 	// 업데이트, 렌더링
-	void Update(float deltaTime);
+	void Update(int deltaTime);
 	void Render();
 
 	// 멀티 스레드
@@ -34,11 +35,6 @@ private:
 	void GameTheadFunc();
 	void LogTheadFunc();
 
-	// 시간 처리
-	int CalculateDeltaTime(std::chrono::system_clock::time_point* lastTime, std::chrono::system_clock::time_point* currentTime);
-	void SleepForRestDevice(int dTime);
-
-
 	static const int c_NUM_WORKER_THREAD = 2;
 
 	HINSTANCE m_hInstance;
@@ -49,5 +45,9 @@ private:
 	DWORD m_threadID;
 	bool m_isGameEnd;
 
-	D3D12Renderer* m_renderer;
+	// 클래스
+	D3D12Renderer m_renderer;
+	PERTimer m_timer;
+
+	wchar_t m_textFrameRate[50];
 };

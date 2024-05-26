@@ -1,5 +1,7 @@
 #pragma once
 
+class PERTimer;
+
 class D3D12Renderer
 {
 public:

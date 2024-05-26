@@ -15,12 +15,14 @@
 #include <DirectXColors.h>
 #include <DirectXCollision.h>
 #include <dxgidebug.h>
+#include <mmsystem.h>
 
 // std
 #include <iostream>
 #include <fstream>
 #include <chrono>
 #include <string>
+#include <functional>
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -31,6 +33,7 @@ using namespace Microsoft::WRL;
 #pragma comment(lib, "dxgi.lib")
 
 #pragma comment(lib, "dxguid.lib")
+#pragma comment(lib, "winmm.lib") 
 
 // 설정
 // 윈도우 기본 위치
