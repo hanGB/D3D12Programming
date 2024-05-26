@@ -47,6 +47,11 @@ void GameFramework::OnDestroy()
 	PERLog::Logger().Info("게임 프레임워크 삭제 완료");
 }
 
+void GameFramework::ChangeScreenMode()
+{
+	m_renderer.ChangeSwapChainState();
+}
+
 void GameFramework::BuildObjects()
 {
 }
@@ -116,6 +121,9 @@ void GameFramework::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageId, WPAR
 			::PostQuitMessage(0);
 			break;
 		}
+	case VK_F9:
+		ChangeScreenMode();
+		break;
 	}
 	default:
 		break;

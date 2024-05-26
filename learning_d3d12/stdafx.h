@@ -1,9 +1,9 @@
 #pragma once
 
 #define PER_DEBUG
-#define WIN32_MEAN_AND_LEAN
 
 // Direct3D 12
+#define WIN32_MEAN_AND_LEAN
 #include <Windows.h>
 #include <wrl.h>
 #include <shellapi.h>

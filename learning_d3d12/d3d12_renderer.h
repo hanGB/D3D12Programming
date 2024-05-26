@@ -12,6 +12,8 @@ public:
 	void CreateInterface(HWND hMainWnd);
 	void ReleaseInterface();
 
+	void ChangeSwapChainState();
+
 	void FrameAdvance();
 
 	void SetClientSize(int width, int height);

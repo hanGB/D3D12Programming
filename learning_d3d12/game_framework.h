@@ -11,6 +11,8 @@ public:
 	bool OnCreate(HINSTANCE hInstance, HWND hMainWnd);
 	void OnDestroy();
 
+	void ChangeScreenMode();
+
 	// 오브젝트 생성 삭제
 	void BuildObjects();
 	void ReleaseObjects();

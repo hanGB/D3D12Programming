@@ -82,6 +82,34 @@ void D3D12Renderer::ReleaseInterface()
 	PERLog::Logger().Info("Direct3D 12 인테페이스 삭제 완료");
 }
 
+void D3D12Renderer::ChangeSwapChainState()
+{
+	WaitForGpuComplete();
+
+	BOOL isFullScreenState = FALSE;
+	m_dxgiSwapchain->GetFullscreenState(&isFullScreenState, NULL);
+	m_dxgiSwapchain->SetFullscreenState(!isFullScreenState, NULL);
+
+	DXGI_MODE_DESC dxgiTargetParameters = d3d12_init::SetAndGetDxgiModeDesc(m_clientWidth, m_clientHeight);
+	m_dxgiSwapchain->ResizeTarget(&dxgiTargetParameters);
+
+	// 기존 렌더 타켓 뷰 삭제
+	for (int i = 0; i < c_NUM_SWAP_CAHIN_BUFFERS; ++i)
+	{
+		if (m_d3dRenderTargetBuffers[i])m_d3dRenderTargetBuffers[i]->Release();
+	}
+
+	DXGI_SWAP_CHAIN_DESC dxgiSwapchainDesc;
+	m_dxgiSwapchain->GetDesc(&dxgiSwapchainDesc);
+	m_dxgiSwapchain->ResizeBuffers(c_NUM_SWAP_CAHIN_BUFFERS, m_clientWidth, m_clientHeight, 
+		dxgiSwapchainDesc.BufferDesc.Format, dxgiSwapchainDesc.Flags);
+
+	m_swapChainBufferIndex = m_dxgiSwapchain->GetCurrentBackBufferIndex();
+
+	// 리사이즈된 렌더 타켓 뷰 재생성
+	CreateRenderTargetViews();
+}
+
 void D3D12Renderer::FrameAdvance()
 {
 	// 커맨드 할당자, 커맨드 리스트 리셋
@@ -149,8 +177,6 @@ void D3D12Renderer::FrameAdvance()
 	dxgiPresentParameters.pScrollOffset = NULL;
 	m_dxgiSwapchain->Present1(1, 0, &dxgiPresentParameters);
 	m_swapChainBufferIndex = m_dxgiSwapchain->GetCurrentBackBufferIndex();
-
-	m_dxgiSwapchain->Present(0, 0);
 }
 
 void D3D12Renderer::SetClientSize(int width, int height)
@@ -206,13 +232,12 @@ void D3D12Renderer::CreateSwapchain(HWND hMainWnd)
 	d3d12_init::GetCleintSize(hMainWnd, m_clientWidth, m_clientHeight);
 
 	// 스왑 체인 정보 설정 밎 받기
-	DXGI_SWAP_CHAIN_DESC1 dxgiSwapChainDesc = d3d12_init::SetAndGetDxgiSwapChainDesc(m_clientWidth, m_clientHeight,
+	DXGI_SWAP_CHAIN_DESC dxgiSwapChainDesc = d3d12_init::SetAndGetDxgiSwapChainDesc(hMainWnd, m_clientWidth, m_clientHeight,
 		m_isMsaa4xEnable, m_msaa4xQualityLevels, c_NUM_SWAP_CAHIN_BUFFERS);
-	DXGI_SWAP_CHAIN_FULLSCREEN_DESC dxgiSwapChainFullScrenDesc = d3d12_init::SetAndGetDxgiSwapChainFullScrenDesc();
 
 	// 스왑 체인 생성
 	m_dxgiSwapchain = d3d12_init::CreateSwapchain(hMainWnd, m_dxgiFactory, m_d3dCommandQueue,
-		dxgiSwapChainDesc, dxgiSwapChainFullScrenDesc, m_swapChainBufferIndex);
+		dxgiSwapChainDesc, m_swapChainBufferIndex);
 }
 
 void D3D12Renderer::CreateRtvAndDsvDescriptorHeaps()
