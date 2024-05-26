@@ -6,6 +6,7 @@ public:
 	virtual ~PERLogger() {}
 
 	virtual void Update() = 0;
+	virtual void PrintAll() = 0;
 
 	virtual void Info(const char* text) = 0;
 	virtual void Warnning(const char* text) = 0;

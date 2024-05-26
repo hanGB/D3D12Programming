@@ -7,6 +7,7 @@ public:
 	virtual ~ConsoleLogger();
 
 	virtual void Update();
+	virtual void PrintAll();
 
 	virtual void Info(const char* text);
 	virtual void Warnning(const char* text);

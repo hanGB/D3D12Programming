@@ -1,18 +1,13 @@
 #include "stdafx.h"
 #include "console_logger.h"
-#include "window_proc_with_thread.h"
+#include "game_framework.h"
 
-
-// window_proc_with_thread.h 안 전역변수
-extern HINSTANCE g_hInst;
-extern HWND g_hWnd;
-extern HANDLE g_hWorkerThreads[PER_NUM_WORKER_THREAD];
-extern bool g_isGameEnd;
+HINSTANCE g_hInst;
+HWND g_hWnd;
+GameFramework g_gameFramework;
 
 LPCTSTR lpszClass = L"Window Class";
 LPCTSTR lpszWindowName = L"D3D12";
-
-#define PER_DEBUG
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -20,6 +15,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
 {
 	MSG Message;
 	WNDCLASSEX WndClass;
+	HACCEL hAccelTable;
 	g_hInst = hInstance;
 
 	// 윈도우 클래스 구조체 값 설정
@@ -50,11 +46,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
 	ShowWindow(g_hWnd, nCmdShow);
 	UpdateWindow(g_hWnd);
 
+	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(lpszWindowName));
+
 	// 이벤트 루프 처리
-	while (GetMessage(&Message, 0, 0, 0)) {
-		TranslateMessage(&Message);
-		DispatchMessage(&Message);
+	while (true) {
+		if (::PeekMessage(&Message, NULL, 0, 0, PM_REMOVE))
+		{
+			if (Message.message == WM_QUIT) break;
+			if (!::TranslateAccelerator(Message.hwnd, hAccelTable, &Message))
+			{
+				::TranslateMessage(&Message);
+				::DispatchMessage(&Message);
+			}
+		}
+		else
+		{
+			g_gameFramework.Render();
+		}
 	}
+
 	return (int)Message.wParam;
 }
 
@@ -70,27 +80,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 #else
 		PERLog::SetLogger(nullptr);
 #endif 
-
-		g_isGameEnd = false;
-		// 스레드 생성
-		CreateWorkerThreads(threadID);
+		g_gameFramework.OnCreate(g_hInst, hWnd);
 		break;
 
+	case WM_SIZE:
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+	case WM_MOUSEMOVE:
 	case WM_KEYDOWN:
-		break;
-
 	case WM_KEYUP:
+		g_gameFramework.OnProcessingWindowMessage(hWnd, uMsg, wParam, lParam);
 		break;
 
 	case WM_DESTROY:
-		g_isGameEnd = true;
-		// 게임 루프 스레드가 종료될 때 까지 무한 대기
-		WaitForMultipleObjects(PER_NUM_WORKER_THREAD, g_hWorkerThreads, true, INFINITE);
+		g_gameFramework.OnDestroy();
 
 #ifdef PER_DEBUG
-		//system("pause");
+		PERLog::Logger().PrintAll();
+		system("pause");
 #endif 
-
 		PostQuitMessage(0);
 		break;
 	}

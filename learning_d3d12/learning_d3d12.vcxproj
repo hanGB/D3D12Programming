@@ -131,21 +131,29 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="console_logger.cpp" />
+    <ClCompile Include="d3d12_renderer.cpp" />
+    <ClCompile Include="game_framework.cpp" />
+    <ClCompile Include="game_framework_thread.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="per_log.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="window_proc_with_thread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="console_logger.h" />
     <ClInclude Include="cs_provider.h" />
+    <ClInclude Include="d3d12_command.h" />
+    <ClInclude Include="d3d12_descriptor.h" />
+    <ClInclude Include="d3d12_device.h" />
+    <ClInclude Include="d3d12_renderer.h" />
+    <ClInclude Include="d3d12_swapchain.h" />
+    <ClInclude Include="d3d12_view.h" />
+    <ClInclude Include="game_framework.h" />
     <ClInclude Include="null_logger.h" />
     <ClInclude Include="per_log.h" />
     <ClInclude Include="per_logger.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="window_proc_with_thread.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

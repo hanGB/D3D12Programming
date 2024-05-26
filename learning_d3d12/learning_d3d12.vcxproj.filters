@@ -16,8 +16,14 @@
     <Filter Include="log">
       <UniqueIdentifier>{02a4df39-b93b-4269-9a74-33cec4ffd69a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="thread">
-      <UniqueIdentifier>{b178389b-2908-4616-b47a-1efdca6149dd}</UniqueIdentifier>
+    <Filter Include="game_framework">
+      <UniqueIdentifier>{fc6889fd-e0e1-4076-9d4e-bf3609c8f665}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="renderer">
+      <UniqueIdentifier>{ef2d7b8f-7593-4bb5-a11e-1c8a4643f864}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="renderer\d3d12_init">
+      <UniqueIdentifier>{dd67f6e3-3a4f-425d-ab18-68c3c9fa549e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -33,8 +39,14 @@
     <ClCompile Include="per_log.cpp">
       <Filter>log</Filter>
     </ClCompile>
-    <ClCompile Include="window_proc_with_thread.cpp">
-      <Filter>thread</Filter>
+    <ClCompile Include="game_framework.cpp">
+      <Filter>game_framework</Filter>
+    </ClCompile>
+    <ClCompile Include="d3d12_renderer.cpp">
+      <Filter>renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="game_framework_thread.cpp">
+      <Filter>game_framework</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -53,11 +65,29 @@
     <ClInclude Include="null_logger.h">
       <Filter>log</Filter>
     </ClInclude>
-    <ClInclude Include="window_proc_with_thread.h">
-      <Filter>thread</Filter>
+    <ClInclude Include="d3d12_renderer.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="game_framework.h">
+      <Filter>game_framework</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_swapchain.h">
+      <Filter>renderer\d3d12_init</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_device.h">
+      <Filter>renderer\d3d12_init</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_command.h">
+      <Filter>renderer\d3d12_init</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_descriptor.h">
+      <Filter>renderer\d3d12_init</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_view.h">
+      <Filter>renderer\d3d12_init</Filter>
     </ClInclude>
     <ClInclude Include="cs_provider.h">
-      <Filter>thread</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

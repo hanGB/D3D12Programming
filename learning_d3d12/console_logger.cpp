@@ -40,6 +40,25 @@ void ConsoleLogger::Update()
 	m_csProvider.Unlock();
 }
 
+void ConsoleLogger::PrintAll()
+{
+	m_csProvider.Lock();
+
+	while (true) 
+	{
+		if (m_head == m_tail) {
+			m_csProvider.Unlock();
+			return;
+		}
+
+		std::cout << m_timeOutputbuffer[m_head] << "\n";
+		std::cout << m_textOutputbuffer[m_head] << "\n";
+		std::cout << "---------------------------------------------------" << "\n";
+		m_head = (m_head + 1) % m_maxPending;
+	}
+	m_csProvider.Unlock();
+}
+
 void ConsoleLogger::Info(const char* text)
 {
 	m_csProvider.Lock();
