@@ -1,6 +1,7 @@
 #pragma once
 #include "d3d12_renderer.h"
 #include "per_timer.h"
+#include "per_world.h"
 
 class GameFramework {
 public: 
@@ -13,9 +14,9 @@ public:
 
 	void ChangeScreenMode();
 
-	// 오브젝트 생성 삭제
-	void BuildObjects();
-	void ReleaseObjects();
+	// 월드 생성, 삭제
+	void CreateWorld();
+	void DeleteWorld();
 
 	// 업데이트, 렌더링
 	void Update(int deltaTime);
@@ -50,6 +51,9 @@ private:
 	// 클래스
 	D3D12Renderer m_renderer;
 	PERTimer m_timer;
+
+	// 월드
+	PERWorld* m_world;
 
 	wchar_t m_textFrameRate[50];
 };

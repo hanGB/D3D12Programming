@@ -19,8 +19,8 @@ bool GameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	// 렌더러 생성
 	m_renderer.CreateInterface(hMainWnd);
 
-	// 게임 객체 생성
-	BuildObjects();
+	// 월드 생성
+	CreateWorld();
 
 	// 쓰레드 생성
 	CreateWorkerThreads();
@@ -38,8 +38,8 @@ void GameFramework::OnDestroy()
 	// 스레드 종료
 	EndWorkerThreads();	
 
-	// 게임 객체 삭제
-	ReleaseObjects();
+	// 월드 삭제
+	DeleteWorld();
 
 	// 렌더러 삭제
 	m_renderer.ReleaseInterface();
@@ -52,16 +52,26 @@ void GameFramework::ChangeScreenMode()
 	m_renderer.ChangeSwapChainState();
 }
 
-void GameFramework::BuildObjects()
+void GameFramework::CreateWorld()
 {
+	m_world = new PERWorld();
+	m_renderer.BuildWorld(m_world);
 }
 
-void GameFramework::ReleaseObjects()
+void GameFramework::DeleteWorld()
 {
+	if (m_world) m_world->ReleaseObjects();
+	if (m_world) delete m_world;
 }
 
 void GameFramework::Update(int deltaTime)
 {
+	float dTime = (float)deltaTime / 1'000'000.0f;
+
+	m_world->InputUpdate(dTime);
+	m_world->AiUpdate(dTime);
+	m_world->PhysicsUpdate(dTime);
+	m_world->GraphicsUpdate(dTime);
 }
 
 void GameFramework::Render()
@@ -69,7 +79,7 @@ void GameFramework::Render()
 	// 타이머 시간 갱신 및 프레임 레이트 계산
 	m_timer.Tick();
 
-	m_renderer.FrameAdvance();
+	m_renderer.FrameAdvance(m_world);
 
 	// 윈도우에 프레임 레이트 출력
 	m_timer.GetFrameRate(m_textFrameRate + 12, 37);

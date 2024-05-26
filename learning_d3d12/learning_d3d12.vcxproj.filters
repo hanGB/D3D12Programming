@@ -28,6 +28,12 @@
     <Filter Include="timer">
       <UniqueIdentifier>{6d4f509b-574a-4abe-8d30-12288fba3d80}</UniqueIdentifier>
     </Filter>
+    <Filter Include="world">
+      <UniqueIdentifier>{2e6c876d-c3cf-4c00-a39a-0e92e9e7c280}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="renderer\shader">
+      <UniqueIdentifier>{9c9c8bec-74b4-4b4c-b084-44b463594b6e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -56,6 +62,12 @@
     </ClCompile>
     <ClCompile Include="simple_timer.cpp">
       <Filter>timer</Filter>
+    </ClCompile>
+    <ClCompile Include="per_world.cpp">
+      <Filter>world</Filter>
+    </ClCompile>
+    <ClCompile Include="d3d12_pipleline.cpp">
+      <Filter>renderer\d3d12_init</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -104,5 +116,19 @@
     <ClInclude Include="simple_timer.h">
       <Filter>timer</Filter>
     </ClInclude>
+    <ClInclude Include="per_world.h">
+      <Filter>world</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_pipleline.h">
+      <Filter>renderer\d3d12_init</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="vertex_shader.hlsl">
+      <Filter>renderer\shader</Filter>
+    </FxCompile>
+    <FxCompile Include="pixel_shader.hlsl">
+      <Filter>renderer\shader</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

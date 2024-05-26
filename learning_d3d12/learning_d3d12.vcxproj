@@ -131,12 +131,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="console_logger.cpp" />
+    <ClCompile Include="d3d12_pipleline.cpp" />
     <ClCompile Include="d3d12_renderer.cpp" />
     <ClCompile Include="game_framework.cpp" />
     <ClCompile Include="game_framework_thread.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="per_log.cpp" />
     <ClCompile Include="per_timer.cpp" />
+    <ClCompile Include="per_world.cpp" />
     <ClCompile Include="simple_timer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -148,6 +150,7 @@
     <ClInclude Include="d3d12_command.h" />
     <ClInclude Include="d3d12_descriptor.h" />
     <ClInclude Include="d3d12_device.h" />
+    <ClInclude Include="d3d12_pipleline.h" />
     <ClInclude Include="d3d12_renderer.h" />
     <ClInclude Include="d3d12_swapchain.h" />
     <ClInclude Include="d3d12_view.h" />
@@ -156,8 +159,25 @@
     <ClInclude Include="per_log.h" />
     <ClInclude Include="per_logger.h" />
     <ClInclude Include="per_timer.h" />
+    <ClInclude Include="per_world.h" />
     <ClInclude Include="simple_timer.h" />
     <ClInclude Include="stdafx.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="pixel_shader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="vertex_shader.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
