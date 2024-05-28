@@ -1,10 +1,24 @@
-float4 main(uint nVertexID : SV_VertexID) : SV_Position
+
+// 버텍스 셰이더 입력을 위한 구조체
+struct VS_INPUT
 {
-    float4 output;
+    float3 position : POSITION;
+    float4 color : COLOR;
+};
+
+// 버텍스 쉐이더 출력(픽셀 셰이더 입력)을 위한 구조체
+struct VS_OUTPUT
+{
+    float4 position : SV_POSITION;
+    float4 color : COLOR;
+};
+
+VS_OUTPUT main(VS_INPUT input)
+{
+    VS_OUTPUT output;
     
-    if (nVertexID == 0)         output = float4(0.0, 0.5, 0.5, 1.0);
-    else if (nVertexID == 1)    output = float4(0.5, -0.5, 0.5, 1.0);
-    else if (nVertexID == 2)    output = float4(-0.5, -0.5, 0.5, 1.0);
+    output.position = float4(input.position, 1.0f);
+    output.color = input.color;
     
     return output;
 }

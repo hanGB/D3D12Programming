@@ -2,47 +2,39 @@
 
 namespace d3d12_init {
 
+	// 루트 시그니쳐
+	D3D12_ROOT_SIGNATURE_DESC SetAndGetRootSignatureDesc();
+	ID3D12RootSignature* CreateRootSignature(ID3D12Device* device);
+
 	class PipelineBuilder {
 	public:
-		PipelineBuilder(ID3D12Device* device);
+		PipelineBuilder();
 		~PipelineBuilder();
 
-		void Build();
-		ID3D12RootSignature* GetRootSignature();
-		ID3D12PipelineState* GetPipelineState();
+		void SetVertexShader(const wchar_t* vertexShaderFile);
+		void SetPixelShader(const wchar_t* pixelShaderFile);
 
-		void SetVetexShaderName(const wchar_t* name);
-		void SetPixelShaderName(const wchar_t* name);
+		ID3D12PipelineState* Build(ID3D12Device* device, ID3D12RootSignature* rootSignature);
 
 	private:
-		void CreateRootSignature();
-		void CreatePipelineState();
+		virtual D3D12_GRAPHICS_PIPELINE_STATE_DESC SetAndGetPipelineStateDesc(
+			ID3D12RootSignature* rootSignature,
+			const wchar_t* vertexShaderFile, ID3DBlob** vertexShaderBlob,
+			const wchar_t* pixelShaderFile, ID3DBlob** pixelShaderBlob);
 
-		void SetRootSignatureDesc();
-		void MakeSignatureBlob();
+		D3D12_SHADER_BYTECODE CreateVertexShader(const wchar_t* vertexShaderFile, ID3DBlob** vertexShaderBlob);
+		D3D12_SHADER_BYTECODE CreatePixelShader(const wchar_t* pixelShaderFile, ID3DBlob** pixelShaderBlob);
+		D3D12_SHADER_BYTECODE LoadShader(const wchar_t* shaderFile, ID3DBlob** shaderBlob);
 
-		void CompileShader();
-		void SetRasterizerDesc();
-		void SetBlendDesc();
-		void SetPipelineStateDesc();
+		virtual D3D12_RASTERIZER_DESC SetAndGetRasterizerDesc();
+		virtual D3D12_BLEND_DESC SetAndGetBlendDesc();
+		virtual D3D12_DEPTH_STENCIL_DESC SetAndGetDepthStencilDesc();
+		virtual D3D12_INPUT_LAYOUT_DESC SetAndGetInputLayoutDesc();
 
-		ID3D12Device*	m_device;
-
-		ID3D12RootSignature* m_rootSignature;
-		ID3D12PipelineState* m_pipelineState;
-
-		// 루트 시그니처를 만드는 데 필요한 변수
-		D3D12_ROOT_SIGNATURE_DESC	m_rootSignatureDesc;
-		ID3DBlob*					m_rootSignatureBlob = NULL;
-		ID3DBlob*					m_errorBlob = NULL;
+		D3D12_SHADER_BYTECODE CompileShader(const wchar_t* shaderFile, LPCSTR shaderMainFuncName, LPCSTR shaderPropile, ID3DBlob** shaderBlob);
 
 		// 파이프라인 스테이트를 만드는데 필요한 변수
-		std::wstring						m_vertexShaderName;
-		std::wstring						m_pixelShaderName;
-		ID3DBlob*							m_vertexShaderBlob = NULL;
-		ID3DBlob*							m_pixelShaderBlob = NULL;
-		D3D12_RASTERIZER_DESC				m_rasterizerDesc;
-		D3D12_BLEND_DESC					m_blendDesc;
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC	m_pipelineStateDesc;
+		std::wstring m_vertexShaderName;
+		std::wstring m_pixelShaderName;
 	};
 }

@@ -126,7 +126,21 @@ void D3D12Renderer::MoveToNextFrame()
 
 void D3D12Renderer::BuildWorld(PERWorld* world)
 {
-	world->BuildObjects(m_device);
+	m_commandList->Reset(m_commandAllocator, NULL);
+
+	// 게임 월드 내 게임 객체 생성
+	world->BuildObjects(m_device, m_commandList);
+
+	// 월드 객체를 생성하기 위해 필요한 그래픽 커맨드 큐를 커맨드 큐에 추가
+	m_commandList->Close();
+	ID3D12CommandList* commandLists[] = { m_commandList };
+	m_commandQueue->ExecuteCommandLists(1, commandLists);
+
+	// 커맨드 리스트들이 모두 실행 될 때까지 대기
+	WaitForGpuComplete();
+
+
+	if (world)world;
 }
 
 void D3D12Renderer::FrameAdvance(PERWorld* world)

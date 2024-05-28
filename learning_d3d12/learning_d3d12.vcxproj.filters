@@ -13,61 +13,106 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="log">
-      <UniqueIdentifier>{02a4df39-b93b-4269-9a74-33cec4ffd69a}</UniqueIdentifier>
+    <Filter Include="00. framework">
+      <UniqueIdentifier>{9cd963b7-4f84-4e6a-85f7-f6f88b31ff4a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="game_framework">
+    <Filter Include="00. framework\game_framework">
       <UniqueIdentifier>{fc6889fd-e0e1-4076-9d4e-bf3609c8f665}</UniqueIdentifier>
     </Filter>
-    <Filter Include="renderer">
+    <Filter Include="00. framework\renderer">
       <UniqueIdentifier>{ef2d7b8f-7593-4bb5-a11e-1c8a4643f864}</UniqueIdentifier>
     </Filter>
-    <Filter Include="renderer\d3d12_init">
+    <Filter Include="00. framework\renderer\d3d12_init">
       <UniqueIdentifier>{dd67f6e3-3a4f-425d-ab18-68c3c9fa549e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="timer">
+    <Filter Include="00. framework\renderer\d3d12_mesh">
+      <UniqueIdentifier>{921d3003-a424-482f-a177-fb099ccf2600}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="00. framework\renderer\d3d12_shader">
+      <UniqueIdentifier>{7e7d110e-f3bd-4eff-9de7-ad440a6a0bad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="00. framework\renderer\shader_files">
+      <UniqueIdentifier>{9c9c8bec-74b4-4b4c-b084-44b463594b6e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="00. framework\renderer\d3d12_util">
+      <UniqueIdentifier>{08be72f1-c8c7-4ad3-8e3e-c8b4f508c1da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="00. framework\timer">
       <UniqueIdentifier>{6d4f509b-574a-4abe-8d30-12288fba3d80}</UniqueIdentifier>
     </Filter>
-    <Filter Include="world">
-      <UniqueIdentifier>{2e6c876d-c3cf-4c00-a39a-0e92e9e7c280}</UniqueIdentifier>
+    <Filter Include="02. debug">
+      <UniqueIdentifier>{2a01e927-f0b5-41ef-9db4-aba3ef592379}</UniqueIdentifier>
     </Filter>
-    <Filter Include="renderer\shader">
-      <UniqueIdentifier>{9c9c8bec-74b4-4b4c-b084-44b463594b6e}</UniqueIdentifier>
+    <Filter Include="03. data">
+      <UniqueIdentifier>{805be51f-967f-4ecd-9827-fe171b0c1fb1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="02. debug\log">
+      <UniqueIdentifier>{02a4df39-b93b-4269-9a74-33cec4ffd69a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game">
+      <UniqueIdentifier>{c85daa4e-6358-46f3-8cc2-6d067c21a74e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game\object">
+      <UniqueIdentifier>{58fe0cff-03de-4a64-acf9-995458b1d7a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game\object\component">
+      <UniqueIdentifier>{e4ec06c2-8b42-4700-96d9-7055c73cd234}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game\object\component\graphics">
+      <UniqueIdentifier>{c9a38a4d-ebb1-4f87-b089-c37ad4dbbfe7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game\world">
+      <UniqueIdentifier>{2e6c876d-c3cf-4c00-a39a-0e92e9e7c280}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="console_logger.cpp">
-      <Filter>log</Filter>
+      <Filter>02. debug\log</Filter>
     </ClCompile>
     <ClCompile Include="per_log.cpp">
-      <Filter>log</Filter>
+      <Filter>02. debug\log</Filter>
     </ClCompile>
     <ClCompile Include="game_framework.cpp">
-      <Filter>game_framework</Filter>
+      <Filter>00. framework\game_framework</Filter>
     </ClCompile>
     <ClCompile Include="d3d12_renderer.cpp">
-      <Filter>renderer</Filter>
+      <Filter>00. framework\renderer</Filter>
     </ClCompile>
     <ClCompile Include="game_framework_thread.cpp">
-      <Filter>game_framework</Filter>
+      <Filter>00. framework\game_framework</Filter>
     </ClCompile>
     <ClCompile Include="per_timer.cpp">
-      <Filter>timer</Filter>
+      <Filter>00. framework\timer</Filter>
     </ClCompile>
     <ClCompile Include="simple_timer.cpp">
-      <Filter>timer</Filter>
+      <Filter>00. framework\timer</Filter>
     </ClCompile>
     <ClCompile Include="per_world.cpp">
-      <Filter>world</Filter>
+      <Filter>01. game\world</Filter>
     </ClCompile>
     <ClCompile Include="d3d12_pipleline.cpp">
-      <Filter>renderer\d3d12_init</Filter>
+      <Filter>00. framework\renderer\d3d12_init</Filter>
+    </ClCompile>
+    <ClCompile Include="d3d12_mesh.cpp">
+      <Filter>00. framework\renderer\d3d12_mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="d3d12_vertex.cpp">
+      <Filter>00. framework\renderer\d3d12_mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="per_object.cpp">
+      <Filter>01. game\object</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics_component.cpp">
+      <Filter>01. game\object\component\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="d3d12_shader.cpp">
+      <Filter>00. framework\renderer\d3d12_shader</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -75,60 +120,84 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="per_log.h">
-      <Filter>log</Filter>
+      <Filter>02. debug\log</Filter>
     </ClInclude>
     <ClInclude Include="per_logger.h">
-      <Filter>log</Filter>
+      <Filter>02. debug\log</Filter>
     </ClInclude>
     <ClInclude Include="console_logger.h">
-      <Filter>log</Filter>
+      <Filter>02. debug\log</Filter>
     </ClInclude>
     <ClInclude Include="null_logger.h">
-      <Filter>log</Filter>
+      <Filter>02. debug\log</Filter>
     </ClInclude>
     <ClInclude Include="d3d12_renderer.h">
-      <Filter>renderer</Filter>
+      <Filter>00. framework\renderer</Filter>
     </ClInclude>
     <ClInclude Include="game_framework.h">
-      <Filter>game_framework</Filter>
+      <Filter>00. framework\game_framework</Filter>
     </ClInclude>
     <ClInclude Include="d3d12_swapchain.h">
-      <Filter>renderer\d3d12_init</Filter>
+      <Filter>00. framework\renderer\d3d12_init</Filter>
     </ClInclude>
     <ClInclude Include="d3d12_device.h">
-      <Filter>renderer\d3d12_init</Filter>
+      <Filter>00. framework\renderer\d3d12_init</Filter>
     </ClInclude>
     <ClInclude Include="d3d12_command.h">
-      <Filter>renderer\d3d12_init</Filter>
+      <Filter>00. framework\renderer\d3d12_init</Filter>
     </ClInclude>
     <ClInclude Include="d3d12_descriptor.h">
-      <Filter>renderer\d3d12_init</Filter>
+      <Filter>00. framework\renderer\d3d12_init</Filter>
     </ClInclude>
     <ClInclude Include="d3d12_view.h">
-      <Filter>renderer\d3d12_init</Filter>
+      <Filter>00. framework\renderer\d3d12_init</Filter>
     </ClInclude>
     <ClInclude Include="cs_provider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="per_timer.h">
-      <Filter>timer</Filter>
+      <Filter>00. framework\timer</Filter>
     </ClInclude>
     <ClInclude Include="simple_timer.h">
-      <Filter>timer</Filter>
+      <Filter>00. framework\timer</Filter>
     </ClInclude>
     <ClInclude Include="per_world.h">
-      <Filter>world</Filter>
+      <Filter>01. game\world</Filter>
     </ClInclude>
     <ClInclude Include="d3d12_pipleline.h">
-      <Filter>renderer\d3d12_init</Filter>
+      <Filter>00. framework\renderer\d3d12_init</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_resource.h">
+      <Filter>00. framework\renderer\d3d12_init</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_mesh.h">
+      <Filter>00. framework\renderer\d3d12_mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_vertex.h">
+      <Filter>00. framework\renderer\d3d12_mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="per_object.h">
+      <Filter>01. game\object</Filter>
+    </ClInclude>
+    <ClInclude Include="per_component.h">
+      <Filter>01. game\object\component</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics_component.h">
+      <Filter>01. game\object\component\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_shader.h">
+      <Filter>00. framework\renderer\d3d12_shader</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_read_file.h">
+      <Filter>00. framework\renderer\d3d12_util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="vertex_shader.hlsl">
-      <Filter>renderer\shader</Filter>
+      <Filter>00. framework\renderer\shader_files</Filter>
     </FxCompile>
     <FxCompile Include="pixel_shader.hlsl">
-      <Filter>renderer\shader</Filter>
+      <Filter>00. framework\renderer\shader_files</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

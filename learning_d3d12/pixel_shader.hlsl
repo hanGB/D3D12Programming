@@ -1,4 +1,11 @@
-float4 main() : SV_TARGET
+// 버텍스 쉐이더 출력(픽셀 셰이더 입력)을 위한 구조체
+struct VS_OUTPUT
 {
-	return float4(1.0f, 1.0f, 0.0f, 1.0f);
+    float4 position : SV_POSITION;
+    float4 color : COLOR;
+};
+
+float4 main(VS_OUTPUT input) : SV_TARGET
+{
+    return input.color;
 }

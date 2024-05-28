@@ -131,12 +131,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="console_logger.cpp" />
+    <ClCompile Include="d3d12_mesh.cpp" />
     <ClCompile Include="d3d12_pipleline.cpp" />
     <ClCompile Include="d3d12_renderer.cpp" />
+    <ClCompile Include="d3d12_shader.cpp" />
+    <ClCompile Include="d3d12_vertex.cpp" />
     <ClCompile Include="game_framework.cpp" />
     <ClCompile Include="game_framework_thread.cpp" />
+    <ClCompile Include="graphics_component.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="per_log.cpp" />
+    <ClCompile Include="per_object.cpp" />
     <ClCompile Include="per_timer.cpp" />
     <ClCompile Include="per_world.cpp" />
     <ClCompile Include="simple_timer.cpp" />
@@ -150,16 +155,24 @@
     <ClInclude Include="d3d12_command.h" />
     <ClInclude Include="d3d12_descriptor.h" />
     <ClInclude Include="d3d12_device.h" />
+    <ClInclude Include="d3d12_mesh.h" />
     <ClInclude Include="d3d12_pipleline.h" />
     <ClInclude Include="d3d12_renderer.h" />
+    <ClInclude Include="d3d12_resource.h" />
+    <ClInclude Include="d3d12_shader.h" />
     <ClInclude Include="d3d12_swapchain.h" />
+    <ClInclude Include="d3d12_vertex.h" />
     <ClInclude Include="d3d12_view.h" />
     <ClInclude Include="game_framework.h" />
+    <ClInclude Include="graphics_component.h" />
     <ClInclude Include="null_logger.h" />
+    <ClInclude Include="per_component.h" />
     <ClInclude Include="per_log.h" />
     <ClInclude Include="per_logger.h" />
+    <ClInclude Include="per_object.h" />
     <ClInclude Include="per_timer.h" />
     <ClInclude Include="per_world.h" />
+    <ClInclude Include="d3d12_read_file.h" />
     <ClInclude Include="simple_timer.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
@@ -169,14 +182,16 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
     </FxCompile>
     <FxCompile Include="vertex_shader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.1</ShaderModel>
     </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
