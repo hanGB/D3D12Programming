@@ -11,6 +11,9 @@ d3d12_mesh::Mesh::~Mesh()
 {
 	if (m_vertexBuffer) m_vertexBuffer->Release();
 	if (m_vertexUploadBuffer) m_vertexUploadBuffer->Release();
+
+	if (m_indexBuffer) m_indexBuffer->Release();
+	if (m_indexUploadBuffer) m_indexUploadBuffer->Release();
 }
 
 void d3d12_mesh::Mesh::Render(ID3D12GraphicsCommandList* commandList)
@@ -19,8 +22,17 @@ void d3d12_mesh::Mesh::Render(ID3D12GraphicsCommandList* commandList)
 	commandList->IASetPrimitiveTopology(m_primitiveTopology);
 	// 버텍스 버퍼 뷰 설정
 	commandList->IASetVertexBuffers(m_slot, 1, &m_vertexBufferView);
-	// 버텍스 버퍼 뷰 렌더링
-	commandList->DrawInstanced(m_numVertices, 1, m_offSet, 0);
+	if (m_indexBuffer)
+	{
+		// 인덱스 버퍼 뷰 렌더링
+		commandList->IASetIndexBuffer(&m_indexBufferView);
+		commandList->DrawIndexedInstanced(m_numIndices, 1, 0, 0, 0);
+	}
+	else
+	{
+		// 버텍스 버퍼 뷰 렌더링
+		commandList->DrawInstanced(m_numVertices, 1, m_offSet, 0);
+	}
 }
 
 void d3d12_mesh::Mesh::AddRef()
@@ -37,6 +49,9 @@ void d3d12_mesh::Mesh::ReleaseUploadBuffers()
 {
 	if (m_vertexUploadBuffer) m_vertexUploadBuffer->Release();
 	m_vertexUploadBuffer = NULL;
+
+	if (m_indexUploadBuffer) m_indexUploadBuffer->Release();
+	m_indexUploadBuffer = NULL;
 }
 
 d3d12_mesh::TriangleMesh::TriangleMesh(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
@@ -74,67 +89,24 @@ d3d12_mesh::CubeMeshDiffused::CubeMeshDiffused(
 	float width, float height, float depth)
 	: Mesh(device, commandList)
 {
-	m_numVertices = 36;
+	m_numVertices = 8;
 	m_stride = sizeof(DiffusedVertex);
-	m_offSet = 0;
-	m_slot = 0;
 	m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	float x = width * 0.5f; 
 	float y = height * 0.5f; 
 	float z = depth * 0.5f;
 
-	DiffusedVertex vertices[36];
-	// 사각형 버텍스 설정
-	int i = 0;
-	//Front 사각형의 위쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, -z), RANDOM_COLOR);
-	//Front 사각형의 아래쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, -z), RANDOM_COLOR);
-	//Top 사각형의 위쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, -z), RANDOM_COLOR);
-	//Top 사각형의 아래쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, -z), RANDOM_COLOR);
-	//Back 사각형의 위쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, +z), RANDOM_COLOR);
-	//Back 사각형의 아래쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, +z), RANDOM_COLOR);
-	//Bottom 사각형의 위쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, +z), RANDOM_COLOR);
-	//Bottom 사각형의 아래쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, +z), RANDOM_COLOR);
-	//Left 사각형의 위쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, -z), RANDOM_COLOR);
-	//Left 사각형의 아래쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, +z), RANDOM_COLOR);
-	//Right 사각형의 위쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, +z), RANDOM_COLOR);
-	//Right 사각형의 아래쪽 삼각형
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, -z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, +z), RANDOM_COLOR);
-	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, -z), RANDOM_COLOR);
+	// 버텍스 생성
+	DiffusedVertex vertices[8];
+	vertices[0] = DiffusedVertex(XMFLOAT3(-x, +y, -z), RANDOM_COLOR);
+	vertices[1] = DiffusedVertex(XMFLOAT3(+x, +y, -z), RANDOM_COLOR);
+	vertices[2] = DiffusedVertex(XMFLOAT3(+x, +y, +z), RANDOM_COLOR);
+	vertices[3] = DiffusedVertex(XMFLOAT3(-x, +y, +z), RANDOM_COLOR);
+	vertices[4] = DiffusedVertex(XMFLOAT3(-x, -y, -z), RANDOM_COLOR);
+	vertices[5] = DiffusedVertex(XMFLOAT3(+x, -y, -z), RANDOM_COLOR);
+	vertices[6] = DiffusedVertex(XMFLOAT3(+x, -y, +z), RANDOM_COLOR);
+	vertices[7] = DiffusedVertex(XMFLOAT3(-x, -y, +z), RANDOM_COLOR);
 
 	m_vertexBuffer = d3d12_init::CreateBufferResource(
 		device, commandList, vertices, m_stride * m_numVertices, 
@@ -144,6 +116,45 @@ d3d12_mesh::CubeMeshDiffused::CubeMeshDiffused(
 	m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
 	m_vertexBufferView.StrideInBytes = m_stride;
 	m_vertexBufferView.SizeInBytes = m_stride * m_numVertices;
+
+	// 인덱스 버퍼
+	m_numIndices = 36;
+
+	UINT indices[36];
+	//Front 사각형의 위쪽 삼각형
+	indices[0] = 3; indices[1] = 1; indices[2] = 0;
+	//Front 사각형의 아래쪽 삼각형
+	indices[3] = 2; indices[4] = 1; indices[5] = 3;
+	//Top 사각형의 위쪽 삼각형
+	indices[6] = 0; indices[7] = 5; indices[8] = 4;
+	//Top 사각형의 아래쪽 삼각형
+	indices[9] = 1; indices[10] = 5; indices[11] = 0;
+	//Back 사각형의 위쪽 삼각형
+	indices[12] = 3; indices[13] = 4; indices[14] = 7;
+	//Back 사각형의 아래쪽 삼각형
+	indices[15] = 0; indices[16] = 4; indices[17] = 3;
+	//Bottom 사각형의 위쪽 삼각형
+	indices[18] = 1; indices[19] = 6; indices[20] = 5;
+	//Bottom 사각형의 아래쪽 삼각형
+	indices[21] = 2; indices[22] = 6; indices[23] = 1;
+	//Left 사각형의 위쪽 삼각형
+	indices[24] = 2; indices[25] = 7; indices[26] = 6;
+	//Left 사각형의 아래쪽 삼각형
+	indices[27] = 3; indices[28] = 7; indices[29] = 2;
+	//Right 사각형의 위쪽 삼각형
+	indices[30] = 6; indices[31] = 4; indices[32] = 5;
+	//Right 사각형의 아래쪽 삼각형
+	indices[33] = 7; indices[34] = 4; indices[35] = 6;
+
+	// 인덱스 버퍼 생성
+	m_indexBuffer = d3d12_init::CreateBufferResource(
+		device, commandList, indices, sizeof(UINT) * m_numIndices,
+		D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_INDEX_BUFFER, &m_indexUploadBuffer);
+
+	// 인덱스 뷰 생성
+	m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
+	m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+	m_indexBufferView.SizeInBytes = sizeof(UINT) * m_numIndices;
 }
 
 d3d12_mesh::CubeMeshDiffused::~CubeMeshDiffused()

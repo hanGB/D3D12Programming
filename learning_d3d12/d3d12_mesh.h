@@ -16,6 +16,7 @@ namespace d3d12_mesh {
 		void ReleaseUploadBuffers();
 
 	protected:
+		// 베텍스
 		ID3D12Resource* m_vertexBuffer = NULL;
 		ID3D12Resource* m_vertexUploadBuffer = NULL;
 
@@ -26,6 +27,16 @@ namespace d3d12_mesh {
 		UINT m_numVertices = 0;
 		UINT m_stride = 0;
 		UINT m_offSet = 0;
+
+		// 인덱스
+		ID3D12Resource* m_indexBuffer = NULL;
+		ID3D12Resource* m_indexUploadBuffer = NULL;
+
+		D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
+
+		UINT m_numIndices = 0;
+		UINT m_startIndex = 0;
+		int m_numBaseVertex = 0;
 
 	private:
 		int m_numReferences = 0;
