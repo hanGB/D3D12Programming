@@ -3,6 +3,7 @@
 #include "d3d12_mesh.h"
 
 class PERObject;
+class D3D12Camera;
 
 class PERWorld {
 public:
@@ -12,12 +13,14 @@ public:
 	void BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 	void ReleaseObjects();
 
+	void SetCameraInformation(D3D12Camera* camera, int width, int height);
+
 	void InputUpdate(float deltaTime) {};
 	void AiUpdate(float deltaTime) {};
-	void PhysicsUpdate(float deltaTime) {};
-	void GraphicsUpdate(float deltaTime) {};
+	void PhysicsUpdate(float deltaTime); 
+	void GraphicsUpdate(float deltaTime);
 
-	void Render(ID3D12GraphicsCommandList* commandList);
+	void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera);
 
 	void ReleaseUploadBuffers();
 

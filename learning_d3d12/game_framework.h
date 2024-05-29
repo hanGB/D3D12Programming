@@ -1,5 +1,6 @@
 #pragma once
 #include "d3d12_renderer.h"
+#include "d3d12_camera.h"
 #include "per_timer.h"
 #include "per_world.h"
 
@@ -14,9 +15,9 @@ public:
 
 	void ChangeScreenMode();
 
-	// 월드 생성, 삭제
-	void CreateWorld();
-	void DeleteWorld();
+	// 생성, 삭제
+	void CreateObjectsWithRenderer();
+	void DeleteObjects();
 
 	// 업데이트, 렌더링
 	void Update(int deltaTime);
@@ -52,8 +53,12 @@ private:
 	D3D12Renderer m_renderer;
 	PERTimer m_timer;
 
+	// 카메라
+	D3D12Camera* m_camera = NULL;
 	// 월드
-	PERWorld* m_world;
+	PERWorld* m_world = NULL;
 
 	wchar_t m_textFrameRate[50];
+
+	std::atomic<bool> m_updateEnd = false;
 };

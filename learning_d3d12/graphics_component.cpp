@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "graphics_component.h"
+#include "per_object.h"
 
 GraphicsComponent::GraphicsComponent()
 {
@@ -21,11 +22,16 @@ void GraphicsComponent::Initialize()
 
 void GraphicsComponent::Update(float dTime)
 {
+	m_modelTransform = GetOwner()->GetModelTransform();
 }
 
-void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList)
+void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
 {
-	if (m_shader) m_shader->Render(commandList);
+	if (m_shader)
+	{
+		m_shader->UpdateShaderVariable(commandList, &m_modelTransform);
+		m_shader->Render(commandList, camera);
+	}
 	if (m_mesh) m_mesh->Render(commandList);
 }
 

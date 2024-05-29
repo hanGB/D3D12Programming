@@ -5,7 +5,7 @@
 #include "d3d12_command.h"
 #include "d3d12_descriptor.h"
 #include "d3d12_view.h"
-#include "d3d12_pipleline.h"
+#include "d3d12_camera.h"
 #include "per_world.h"
 
 D3D12Renderer::D3D12Renderer()
@@ -124,9 +124,15 @@ void D3D12Renderer::MoveToNextFrame()
 	}
 }
 
-void D3D12Renderer::BuildWorld(PERWorld* world)
+void D3D12Renderer::BuildObjects(PERWorld* world, D3D12Camera* camera)
 {
 	m_commandList->Reset(m_commandAllocator, NULL);
+
+
+	// 카메라 설정
+	camera->SetViewport(0, 0, m_clientWidth, m_clientHeight);
+	camera->SetScissorRect(0, 0, (LONG)m_clientWidth, (LONG)m_clientHeight);
+	world->SetCameraInformation(camera, m_clientWidth, m_clientHeight);
 
 	// 게임 월드 내 게임 객체 생성
 	world->BuildObjects(m_device, m_commandList);
@@ -139,18 +145,14 @@ void D3D12Renderer::BuildWorld(PERWorld* world)
 	// 커맨드 리스트들이 모두 실행 될 때까지 대기
 	WaitForGpuComplete();
 
-
-	if (world)world;
+	if (world)world->ReleaseUploadBuffers();
 }
 
-void D3D12Renderer::FrameAdvance(PERWorld* world)
+void D3D12Renderer::FrameAdvance(PERWorld* world, D3D12Camera* camera)
 {
 	// 커맨드 할당자, 커맨드 리스트 리셋
 	HRESULT result = m_commandAllocator->Reset();
 	result = m_commandList->Reset(m_commandAllocator, NULL);
-
-	// 뷰포트, 씨저 설정
-	SetViewportAndScissor();
 
 	// 현재 렌더 타켓에 대한 프리젠트가 끝나길 대기
 	// 프리젠트가 끝나면 렌더 타겟 버퍼의 상태는 프리젠트 상태에서 렌더 타겟 상태로 바뀜
@@ -160,7 +162,7 @@ void D3D12Renderer::FrameAdvance(PERWorld* world)
 	ClearViewAndSetToOM();
 
 	// 렌더 코드 추가 위치
-	world->Render(m_commandList);
+	world->Render(m_commandList, camera);
 
 	// 현재 렌더 타겟이 렌더링 끝나길 대기
 	// GPU가 렌더 타켓(버퍼)를 더 이상 사용하지 않으면 렌더 타겟의 상태는 프리젠트 상태로 바뀜
@@ -210,8 +212,6 @@ void D3D12Renderer::CreateDirect3DDevice()
 	// 디바이스 생성
 	m_device = d3d12_init::CreateDevice(m_factory);
 
-	// 뷰포트 써저 설정
-	d3d12_init::SetViewportAndScissorRect(m_viewport, m_scissorRect, m_clientWidth, m_clientHeight);
 	// MSAA 설정
 	d3d12_init::SetMsaa(m_device, m_isMsaa4xEnable, m_msaa4xQualityLevels);
 	// 펜스 생성
@@ -267,12 +267,6 @@ void D3D12Renderer::CreateDepthStencilView()
 	// 깊이-스텐실 버퍼, 뷰 생성
 	m_depthStencilTargetBuffer = d3d12_init::CreateDepthStencilView(m_device, m_dsvDescriptorHeap,
 		m_clientWidth, m_clientHeight, m_isMsaa4xEnable, m_msaa4xQualityLevels);
-}
-
-void D3D12Renderer::SetViewportAndScissor()
-{
-	m_commandList->RSSetViewports(1, &m_viewport);
-	m_commandList->RSSetScissorRects(1, &m_scissorRect);
 }
 
 void D3D12Renderer::WaitForCurrentRenderTargetStateChange(D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)

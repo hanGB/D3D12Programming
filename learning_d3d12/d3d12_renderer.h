@@ -1,6 +1,7 @@
 #pragma once
 
 class PERWorld;
+class D3D12Camera;
 
 class D3D12Renderer
 {
@@ -15,9 +16,9 @@ public:
 	void ChangeSwapChainState();
 	void MoveToNextFrame();
 
-	void BuildWorld(PERWorld* world);
+	void BuildObjects(PERWorld* world, D3D12Camera* camera);
 
-	void FrameAdvance(PERWorld* world);
+	void FrameAdvance(PERWorld* world, D3D12Camera* camera);
 
 	void SetClientSize(int width, int height);
 	void WaitForGpuComplete();
@@ -33,8 +34,6 @@ private:
 	void CreateRenderTargetViews();
 	void CreateDepthStencilView();
 
-	// 뷰포트, 씨져 설정
-	void SetViewportAndScissor();
 	// 현재 렌더 타겟의 상태가 변경될 때까지 대기
 	void WaitForCurrentRenderTargetStateChange(D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after);
 	// 뷰 초기화 및 출력 병합에 연결
@@ -82,8 +81,4 @@ private:
 	ID3D12Fence*	m_fence;
 	UINT64			m_fenceValues[c_NUM_SWAP_CAHIN_BUFFERS];
 	HANDLE			m_fenceEvent;
-
-	// 뷰포트, 씨저
-	D3D12_VIEWPORT	m_viewport;
-	D3D12_RECT		m_scissorRect;
 };

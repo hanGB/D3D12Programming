@@ -19,8 +19,8 @@ bool GameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd)
 	// 렌더러 생성
 	m_renderer.CreateInterface(hMainWnd);
 
-	// 월드 생성
-	CreateWorld();
+	// 오브젝트 생성
+	CreateObjectsWithRenderer();
 
 	// 쓰레드 생성
 	CreateWorkerThreads();
@@ -38,8 +38,8 @@ void GameFramework::OnDestroy()
 	// 스레드 종료
 	EndWorkerThreads();	
 
-	// 월드 삭제
-	DeleteWorld();
+	// 오브젝트들 삭제
+	DeleteObjects();
 
 	// 렌더러 삭제
 	m_renderer.ReleaseInterface();
@@ -52,14 +52,17 @@ void GameFramework::ChangeScreenMode()
 	m_renderer.ChangeSwapChainState();
 }
 
-void GameFramework::CreateWorld()
+void GameFramework::CreateObjectsWithRenderer()
 {
+	m_camera = new D3D12Camera(PER_DEFAULT_WINDOW_WIDTH, PER_DEFAULT_WINDOW_HEIGHT);
 	m_world = new PERWorld();
-	m_renderer.BuildWorld(m_world);
+	m_renderer.BuildObjects(m_world, m_camera);
 }
 
-void GameFramework::DeleteWorld()
+void GameFramework::DeleteObjects()
 {
+	if (m_camera) m_camera->ReleaseShderVariables();
+	if (m_camera) delete m_camera;
 	if (m_world) m_world->ReleaseObjects();
 	if (m_world) delete m_world;
 }
@@ -71,19 +74,27 @@ void GameFramework::Update(int deltaTime)
 	m_world->InputUpdate(dTime);
 	m_world->AiUpdate(dTime);
 	m_world->PhysicsUpdate(dTime);
+	if (m_updateEnd) return;
+
 	m_world->GraphicsUpdate(dTime);
+	m_updateEnd = true;
 }
 
 void GameFramework::Render()
 {
+	if (!m_updateEnd) return;
+
+
 	// 타이머 시간 갱신 및 프레임 레이트 계산
 	m_timer.Tick();
 
-	m_renderer.FrameAdvance(m_world);
+	m_renderer.FrameAdvance(m_world, m_camera);
 
 	// 윈도우에 프레임 레이트 출력
 	m_timer.GetFrameRate(m_textFrameRate + 12, 37);
 	::SetWindowText(m_hWnd, m_textFrameRate);
+
+	m_updateEnd = false;
 }
 
 void GameFramework::CreateWorkerThreads()

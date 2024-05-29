@@ -1,5 +1,6 @@
 #pragma once
-#include "d3d12_pipleline.h"
+
+class D3D12Camera;
 
 namespace d3d12_shader {
 	class Shader {
@@ -14,15 +15,36 @@ namespace d3d12_shader {
 
 		void ReleaseUploadBuffers();
 
-		void Render(ID3D12GraphicsCommandList* commandList);
+		void OnPrepareRender(ID3D12GraphicsCommandList* commandList);
+
+		void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera);
+
+		virtual void CreateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
+		virtual void UpdateShaderVariables(ID3D12GraphicsCommandList* commandList);
+		virtual void ReleaseShaderVariables();
+		virtual void UpdateShaderVariable(ID3D12GraphicsCommandList* commandList, XMFLOAT4X4* modelTransform);
 
 	protected:
-		d3d12_init::PipelineBuilder* m_pipelineBuilder;
+		ID3D12PipelineState* BuildPipelineState(ID3D12Device* device, ID3D12RootSignature* rootSignature);
+
+		D3D12_SHADER_BYTECODE LoadShader(const wchar_t* shaderFile, ID3DBlob** shaderBlob);
+
+		virtual D3D12_RASTERIZER_DESC SetAndGetRasterizerDesc();
+		virtual D3D12_BLEND_DESC SetAndGetBlendDesc();
+		virtual D3D12_DEPTH_STENCIL_DESC SetAndGetDepthStencilDesc();
+		virtual D3D12_INPUT_LAYOUT_DESC SetAndGetInputLayoutDesc();
+
+		virtual D3D12_GRAPHICS_PIPELINE_STATE_DESC SetAndGetPipelineStateDesc(
+			ID3D12RootSignature* rootSignature,
+			const wchar_t* vertexShaderFile, ID3DBlob** vertexShaderBlob,
+			const wchar_t* pixelShaderFile, ID3DBlob** pixelShaderBlob);
 
 		ID3D12PipelineState** m_pipelineStates = NULL;
 		int m_numPipelineStaes = 0;
 
 	private:
+		std::wstring m_vertex, m_pixel;
+
 		int m_numReferences = 0;
 	};
 }

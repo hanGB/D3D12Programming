@@ -64,6 +64,15 @@
     <Filter Include="01. game\world">
       <UniqueIdentifier>{2e6c876d-c3cf-4c00-a39a-0e92e9e7c280}</UniqueIdentifier>
     </Filter>
+    <Filter Include="01. game\object\component\physics">
+      <UniqueIdentifier>{e49c6f28-7b29-49bd-be8f-471b4e38f589}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="00. framework\camera">
+      <UniqueIdentifier>{dd257be6-3371-4ba1-8a7c-edb3d9706cca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="00. framework\renderer\d3d12_shader\diffused">
+      <UniqueIdentifier>{bb3becbc-b789-4167-b43c-b03a3e39ee14}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -93,9 +102,6 @@
     <ClCompile Include="per_world.cpp">
       <Filter>01. game\world</Filter>
     </ClCompile>
-    <ClCompile Include="d3d12_pipleline.cpp">
-      <Filter>00. framework\renderer\d3d12_init</Filter>
-    </ClCompile>
     <ClCompile Include="d3d12_mesh.cpp">
       <Filter>00. framework\renderer\d3d12_mesh</Filter>
     </ClCompile>
@@ -113,6 +119,18 @@
     </ClCompile>
     <ClCompile Include="d3d12_shader.cpp">
       <Filter>00. framework\renderer\d3d12_shader</Filter>
+    </ClCompile>
+    <ClCompile Include="d3d12_camera.cpp">
+      <Filter>00. framework\camera</Filter>
+    </ClCompile>
+    <ClCompile Include="physics_component.cpp">
+      <Filter>01. game\object\component\physics</Filter>
+    </ClCompile>
+    <ClCompile Include="dxmath_helper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="diffused_shader.cpp">
+      <Filter>00. framework\renderer\d3d12_shader\diffused</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -164,7 +182,7 @@
     <ClInclude Include="per_world.h">
       <Filter>01. game\world</Filter>
     </ClInclude>
-    <ClInclude Include="d3d12_pipleline.h">
+    <ClInclude Include="d3d12_root.h">
       <Filter>00. framework\renderer\d3d12_init</Filter>
     </ClInclude>
     <ClInclude Include="d3d12_resource.h">
@@ -190,6 +208,18 @@
     </ClInclude>
     <ClInclude Include="d3d12_read_file.h">
       <Filter>00. framework\renderer\d3d12_util</Filter>
+    </ClInclude>
+    <ClInclude Include="dxmath_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="d3d12_camera.h">
+      <Filter>00. framework\camera</Filter>
+    </ClInclude>
+    <ClInclude Include="physics_component.h">
+      <Filter>01. game\object\component\physics</Filter>
+    </ClInclude>
+    <ClInclude Include="diffused_shader.h">
+      <Filter>00. framework\renderer\d3d12_shader\diffused</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
