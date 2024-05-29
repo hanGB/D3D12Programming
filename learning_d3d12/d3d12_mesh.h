@@ -12,7 +12,7 @@ namespace d3d12_mesh {
 
 		void AddRef();
 		void Release();
-		
+
 		void ReleaseUploadBuffers();
 
 	protected:
@@ -37,4 +37,10 @@ namespace d3d12_mesh {
 		~TriangleMesh();
 	};
 
+	class CubeMeshDiffused : public Mesh {
+	public:
+		CubeMeshDiffused(ID3D12Device* device, ID3D12GraphicsCommandList* commandList,
+			float width = 2.0f, float height = 2.0f, float depth = 2.0f);
+		~CubeMeshDiffused();
+	};
 }

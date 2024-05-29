@@ -35,6 +35,8 @@ using namespace Microsoft::WRL;
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "winmm.lib") 
 
+#define RANDOM_COLOR XMFLOAT4(rand() / float(RAND_MAX), rand() / float(RAND_MAX), rand() / float(RAND_MAX), rand() / float(RAND_MAX))
+
 // 설정
 // 윈도우 기본 위치
 #define PER_DEFAULT_WINDOW_LOCATION_X	200
@@ -50,9 +52,6 @@ using namespace Microsoft::WRL;
 
 // 로그
 #include "per_log.h"
-
-// DirectXMath 도우미
-//#include "dxmath_helper.h"
 
 //3차원 벡터의 연산 
 namespace Vector3

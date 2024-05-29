@@ -126,9 +126,6 @@
     <ClCompile Include="physics_component.cpp">
       <Filter>01. game\object\component\physics</Filter>
     </ClCompile>
-    <ClCompile Include="dxmath_helper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="diffused_shader.cpp">
       <Filter>00. framework\renderer\d3d12_shader\diffused</Filter>
     </ClCompile>
@@ -208,9 +205,6 @@
     </ClInclude>
     <ClInclude Include="d3d12_read_file.h">
       <Filter>00. framework\renderer\d3d12_util</Filter>
-    </ClInclude>
-    <ClInclude Include="dxmath_helper.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="d3d12_camera.h">
       <Filter>00. framework\camera</Filter>

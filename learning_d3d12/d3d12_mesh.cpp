@@ -68,3 +68,84 @@ d3d12_mesh::TriangleMesh::TriangleMesh(ID3D12Device* device, ID3D12GraphicsComma
 d3d12_mesh::TriangleMesh::~TriangleMesh()
 {
 }
+
+d3d12_mesh::CubeMeshDiffused::CubeMeshDiffused(
+	ID3D12Device* device, ID3D12GraphicsCommandList* commandList, 
+	float width, float height, float depth)
+	: Mesh(device, commandList)
+{
+	m_numVertices = 36;
+	m_stride = sizeof(DiffusedVertex);
+	m_offSet = 0;
+	m_slot = 0;
+	m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	float x = width * 0.5f; 
+	float y = height * 0.5f; 
+	float z = depth * 0.5f;
+
+	DiffusedVertex vertices[36];
+	// 사각형 버텍스 설정
+	int i = 0;
+	//Front 사각형의 위쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, -z), RANDOM_COLOR);
+	//Front 사각형의 아래쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, -z), RANDOM_COLOR);
+	//Top 사각형의 위쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, -z), RANDOM_COLOR);
+	//Top 사각형의 아래쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, -z), RANDOM_COLOR);
+	//Back 사각형의 위쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, +z), RANDOM_COLOR);
+	//Back 사각형의 아래쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, +z), RANDOM_COLOR);
+	//Bottom 사각형의 위쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, +z), RANDOM_COLOR);
+	//Bottom 사각형의 아래쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, +z), RANDOM_COLOR);
+	//Left 사각형의 위쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, -z), RANDOM_COLOR);
+	//Left 사각형의 아래쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, +y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y, +z), RANDOM_COLOR);
+	//Right 사각형의 위쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, +z), RANDOM_COLOR);
+	//Right 사각형의 아래쪽 삼각형
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, +y, -z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, +z), RANDOM_COLOR);
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y, -z), RANDOM_COLOR);
+
+	m_vertexBuffer = d3d12_init::CreateBufferResource(
+		device, commandList, vertices, m_stride * m_numVertices, 
+		D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_vertexUploadBuffer);
+
+	// 버텍스 버퍼 뷰 생성
+	m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+	m_vertexBufferView.StrideInBytes = m_stride;
+	m_vertexBufferView.SizeInBytes = m_stride * m_numVertices;
+}
+
+d3d12_mesh::CubeMeshDiffused::~CubeMeshDiffused()
+{
+}

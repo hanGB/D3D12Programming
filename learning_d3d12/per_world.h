@@ -30,7 +30,7 @@ private:
 	d3d12_shader::Shader* m_shader;
 
 	// 메쉬
-	d3d12_mesh::TriangleMesh* m_mesh;
+	d3d12_mesh::Mesh* m_mesh;
 
 	// 오브젝트
 	PERObject* m_object;

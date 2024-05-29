@@ -137,9 +137,6 @@
     <ClCompile Include="d3d12_shader.cpp" />
     <ClCompile Include="d3d12_vertex.cpp" />
     <ClCompile Include="diffused_shader.cpp" />
-    <ClCompile Include="dxmath_helper.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="game_framework.cpp" />
     <ClCompile Include="game_framework_thread.cpp" />
     <ClCompile Include="graphics_component.cpp" />
@@ -171,9 +168,6 @@
     <ClInclude Include="diffused_shader.h" />
     <ClInclude Include="game_framework.h" />
     <ClInclude Include="graphics_component.h" />
-    <ClInclude Include="dxmath_helper.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="null_logger.h" />
     <ClInclude Include="d3d12_camera.h" />
     <ClInclude Include="per_component.h" />

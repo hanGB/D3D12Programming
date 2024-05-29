@@ -27,7 +27,7 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 	m_shader = new DiffusedShader(L"./shader/vertex_shader.cso", L"./shader/pixel_shader.cso");
 	m_shader->CreatePipelineState(device, m_rootSignature);
 
-	m_mesh = new d3d12_mesh::TriangleMesh(device, commandList);
+	m_mesh = new d3d12_mesh::CubeMeshDiffused(device, commandList, 12.0f, 12.0f, 12.0f);
 
 	m_object = new PERObject(new PhysicsComponent(), new GraphicsComponent());
 	m_object->GetGraphics().SetShader(m_shader);
@@ -43,7 +43,7 @@ void PERWorld::ReleaseObjects()
 void PERWorld::SetCameraInformation(D3D12Camera* camera, int width, int height)
 {
 	camera->GenerateProjectionMatrix(90.0f, (float)width / (float)height, 0.1f, 300.0f);
-	camera->GenerateViewMatrix(XMFLOAT3(0.0f, 0.0f, -2.0f), XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f));
+	camera->GenerateViewMatrix(XMFLOAT3(0.0f, 15.0f, -25.0f), XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f));
 }
 
 void PERWorld::PhysicsUpdate(float deltaTime)
