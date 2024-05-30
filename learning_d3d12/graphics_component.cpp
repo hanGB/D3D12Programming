@@ -17,6 +17,8 @@ GraphicsComponent::~GraphicsComponent()
 
 void GraphicsComponent::Initialize()
 {
+	m_isLiving = false;
+
 	if (GetNext()) GetNext()->Initialize();
 }
 
@@ -27,11 +29,10 @@ void GraphicsComponent::Update(float dTime)
 
 void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
 {
-	if (m_shader)
-	{
-		m_shader->UpdateShaderVariable(commandList, &m_modelTransform);
-		m_shader->Render(commandList, camera);
-	}
+	UpdateShaderVariables(commandList);
+
+	if (m_shader) m_shader->Render(commandList, camera);
+
 	if (m_mesh) m_mesh->Render(commandList);
 }
 
@@ -51,5 +52,31 @@ void GraphicsComponent::SetShader(d3d12_shader::Shader* shader)
 
 void GraphicsComponent::ReleaseUploadBuffers()
 {
-	if (m_mesh) m_mesh->ReleaseUploadBuffers();
+	
+}
+
+void GraphicsComponent::CreateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
+{
+}
+
+void GraphicsComponent::UpdateShaderVariables(ID3D12GraphicsCommandList* commandList)
+{
+	XMFLOAT4X4 transposedModel;
+	XMStoreFloat4x4(&transposedModel, XMMatrixTranspose(XMLoadFloat4x4(&m_modelTransform)));
+
+	commandList->SetGraphicsRoot32BitConstants(0, 16, &transposedModel, 0);
+}
+
+void GraphicsComponent::ReleaseShaderVariables()
+{
+}
+
+void GraphicsComponent::SetIsLiving(bool live)
+{
+	m_isLiving = live;
+}
+
+bool GraphicsComponent::GetIsLiving() const
+{
+	return m_isLiving;
 }

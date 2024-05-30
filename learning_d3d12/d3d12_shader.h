@@ -17,7 +17,7 @@ namespace d3d12_shader {
 
 		void OnPrepareRender(ID3D12GraphicsCommandList* commandList);
 
-		void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera);
+		virtual void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera);
 
 		virtual void CreateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 		virtual void UpdateShaderVariables(ID3D12GraphicsCommandList* commandList);

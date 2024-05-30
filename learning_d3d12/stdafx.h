@@ -23,6 +23,7 @@
 #include <chrono>
 #include <string>
 #include <functional>
+#include <vector>
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;

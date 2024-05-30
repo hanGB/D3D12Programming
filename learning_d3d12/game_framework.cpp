@@ -84,7 +84,6 @@ void GameFramework::Render()
 {
 	if (!m_updateEnd) return;
 
-
 	// 타이머 시간 갱신 및 프레임 레이트 계산
 	m_timer.Tick();
 

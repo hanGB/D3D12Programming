@@ -11,6 +11,4 @@ public:
 	virtual void Initialize();
 
 	virtual void Update(float dTime);
-
-	XMMATRIX Rotate(XMFLOAT3 axis, float angle);
 };
