@@ -76,6 +76,18 @@
     <Filter Include="00. framework\renderer\d3d12_shader\graphics_components">
       <UniqueIdentifier>{0596b07a-88f1-4987-bf5b-aa896477f37b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="00. framework\camera\space_ship">
+      <UniqueIdentifier>{cffa3e74-94b9-467e-a170-e92e01bfc062}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="00. framework\camera\first_person">
+      <UniqueIdentifier>{fd16297a-0236-463f-bc32-7be20671b1ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="00. framework\camera\third_person">
+      <UniqueIdentifier>{b21f10be-30e4-434a-a84d-80465984c051}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="00. framework\controller">
+      <UniqueIdentifier>{905e6106-9385-4c7f-9ab1-17fd66243c40}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -134,6 +146,21 @@
     </ClCompile>
     <ClCompile Include="graphics_components_shader.cpp">
       <Filter>00. framework\renderer\d3d12_shader\graphics_components</Filter>
+    </ClCompile>
+    <ClCompile Include="space_ship_camera.cpp">
+      <Filter>00. framework\camera\space_ship</Filter>
+    </ClCompile>
+    <ClCompile Include="first_person_camera.cpp">
+      <Filter>00. framework\camera\first_person</Filter>
+    </ClCompile>
+    <ClCompile Include="third_person_camera.cpp">
+      <Filter>00. framework\camera\third_person</Filter>
+    </ClCompile>
+    <ClCompile Include="per_controller.cpp">
+      <Filter>00. framework\controller</Filter>
+    </ClCompile>
+    <ClCompile Include="key_setting.cpp">
+      <Filter>00. framework\controller</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -223,6 +250,21 @@
     </ClInclude>
     <ClInclude Include="graphics_components_shader.h">
       <Filter>00. framework\renderer\d3d12_shader\graphics_components</Filter>
+    </ClInclude>
+    <ClInclude Include="space_ship_camera.h">
+      <Filter>00. framework\camera\space_ship</Filter>
+    </ClInclude>
+    <ClInclude Include="first_person_camera.h">
+      <Filter>00. framework\camera\first_person</Filter>
+    </ClInclude>
+    <ClInclude Include="third_person_camera.h">
+      <Filter>00. framework\camera\third_person</Filter>
+    </ClInclude>
+    <ClInclude Include="per_controller.h">
+      <Filter>00. framework\controller</Filter>
+    </ClInclude>
+    <ClInclude Include="key_setting.h">
+      <Filter>00. framework\controller</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -54,4 +54,11 @@ namespace d3d12_mesh {
 			float width = 2.0f, float height = 2.0f, float depth = 2.0f);
 		~CubeMeshDiffused();
 	};
+
+	class AirplaneMeshDiffused : public Mesh {
+	public:
+		AirplaneMeshDiffused(ID3D12Device* device, ID3D12GraphicsCommandList* commandList,
+			float width = 20.0f, float height = 20.0f, float depth = 4.0f, XMFLOAT4 color = XMFLOAT4(1.0f, 1.0f, 0.0, 0.0f));
+		~AirplaneMeshDiffused();
+	};
 }

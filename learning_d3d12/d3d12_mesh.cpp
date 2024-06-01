@@ -160,3 +160,115 @@ d3d12_mesh::CubeMeshDiffused::CubeMeshDiffused(
 d3d12_mesh::CubeMeshDiffused::~CubeMeshDiffused()
 {
 }
+
+d3d12_mesh::AirplaneMeshDiffused::AirplaneMeshDiffused(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, 
+	float width, float height, float depth, XMFLOAT4 color)
+	: Mesh(device, commandList)
+{
+	m_numVertices = 24 * 3;
+	m_stride = sizeof(DiffusedVertex);
+	m_offSet = 0;
+	m_slot = 0;
+	m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	float x = width * 0.5f;
+	float y = height * 0.5f;
+	float z = depth * 0.5f;
+
+	DiffusedVertex vertices[24 * 3];
+
+	float x1 = x * 0.2f, y1 = y * 0.2f, x2 = x * 0.1f, y3 = y * 0.3f, y2 = ((y1 - (y - y3)) / x1) * x2 + (y - y3);
+
+	int i = 0;
+
+	//비행기 메쉬의 위쪽 면
+	XMFLOAT4 randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, +(y + y3), -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x1, -y1, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, 0.0f, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, +(y + y3), -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, 0.0f, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x1, -y1, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x2, +y2, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y3, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x1, -y1, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x2, +y2, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x1, -y1, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y3, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	//비행기 메쉬의 아래쪽 면
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, +(y + y3), +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, 0.0f, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x1, -y1, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, +(y + y3), +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x1, -y1, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, 0.0f, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x2, +y2, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x1, -y1, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y3, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x2, +y2, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y3, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x1, -y1, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	//비행기 메쉬의 오른쪽 면
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, +(y + y3), -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, +(y + y3), +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x2, +y2, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x2, +y2, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, +(y + y3), +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x2, +y2, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x2, +y2, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x2, +y2, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y3, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y3, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x2, +y2, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y3, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	//비행기 메쉬의 뒤쪽/오른쪽 면
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x1, -y1, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y3, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y3, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x1, -y1, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x, -y3, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x1, -y1, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, 0.0f, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x1, -y1, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x1, -y1, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, 0.0f, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(+x1, -y1, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, 0.0f, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	//비행기 메쉬의 왼쪽 면
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, +(y + y3), +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, +(y + y3), -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x2, +y2, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, +(y + y3), +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x2, +y2, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x2, +y2, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x2, +y2, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x2, +y2, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y3, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x2, +y2, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y3, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y3, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	//비행기 메쉬의 뒤쪽/왼쪽 면
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, 0.0f, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, 0.0f, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x1, -y1, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(0.0f, 0.0f, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x1, -y1, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x1, -y1, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x1, -y1, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x1, -y1, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y3, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x1, -y1, -z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y3, +z), Vector4::Add(color, randomColor)); randomColor = RANDOM_COLOR;
+	vertices[i++] = DiffusedVertex(XMFLOAT3(-x, -y3, -z), Vector4::Add(color, randomColor)); 
+
+	m_vertexBuffer = d3d12_init::CreateBufferResource(device, commandList, vertices, m_stride * m_numVertices, D3D12_HEAP_TYPE_DEFAULT,
+		D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_vertexUploadBuffer);
+
+	m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+	m_vertexBufferView.StrideInBytes = m_stride;
+	m_vertexBufferView.SizeInBytes = m_stride * m_numVertices;
+}
+
+d3d12_mesh::AirplaneMeshDiffused::~AirplaneMeshDiffused()
+{
+}

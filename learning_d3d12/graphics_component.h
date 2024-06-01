@@ -26,7 +26,7 @@ public:
 	bool GetIsLiving() const;
 
 protected:
-	XMFLOAT4X4 m_modelTransform;
+	XMFLOAT4X4 m_worldTransform;
 
 	d3d12_mesh::Mesh* m_mesh;
 	d3d12_shader::Shader* m_shader;

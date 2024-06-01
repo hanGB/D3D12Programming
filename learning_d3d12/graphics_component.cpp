@@ -24,7 +24,7 @@ void GraphicsComponent::Initialize()
 
 void GraphicsComponent::Update(float dTime)
 {
-	m_modelTransform = GetOwner()->GetModelTransform();
+	m_worldTransform = GetOwner()->GetWorldTransform();
 }
 
 void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
@@ -62,7 +62,7 @@ void GraphicsComponent::CreateShaderVariables(ID3D12Device* device, ID3D12Graphi
 void GraphicsComponent::UpdateShaderVariables(ID3D12GraphicsCommandList* commandList)
 {
 	XMFLOAT4X4 transposedModel;
-	XMStoreFloat4x4(&transposedModel, XMMatrixTranspose(XMLoadFloat4x4(&m_modelTransform)));
+	XMStoreFloat4x4(&transposedModel, XMMatrixTranspose(XMLoadFloat4x4(&m_worldTransform)));
 
 	commandList->SetGraphicsRoot32BitConstants(0, 16, &transposedModel, 0);
 }

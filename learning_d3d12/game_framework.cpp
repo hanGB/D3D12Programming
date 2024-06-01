@@ -54,7 +54,7 @@ void GameFramework::ChangeScreenMode()
 
 void GameFramework::CreateObjectsWithRenderer()
 {
-	m_camera = new D3D12Camera(PER_DEFAULT_WINDOW_WIDTH, PER_DEFAULT_WINDOW_HEIGHT);
+	m_camera = new D3D12Camera();
 	m_world = new PERWorld();
 	m_renderer.BuildObjects(m_world, m_camera);
 }
