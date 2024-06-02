@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "per_controller.h"
 
-PERController::PERController(int width, int height)
+PERController::PERController()
 {
 	// 초기화
 	for (int i = 0; i < (int)PERKeyValue::NUM_KEY_VALUE; ++i) {
@@ -10,12 +10,26 @@ PERController::PERController(int width, int height)
 		m_KeyInputTimeMap.insert(std::pair<PERKeyValue, float>((PERKeyValue)i, 0.0));
 	}
 
-	GiveMouseMoveInput((double)width / 2.0, (double)height / 2.0);
-	SetWindowSize((double)width, (double)height);
+	GiveMouseMoveInput((float)PER_DEFAULT_WINDOW_WIDTH / 2.0, (float)PER_DEFAULT_WINDOW_HEIGHT / 2.0);
+	SetWindowSize((float)PER_DEFAULT_WINDOW_WIDTH, (float)PER_DEFAULT_WINDOW_WIDTH);
 }
 
 PERController::~PERController()
 {	
+}
+
+void PERController::HandleWindowKeyboardInput(WPARAM wParam, bool pressed)
+{
+	if (wParam == 'W' || wParam == 'w') GiveKeyInput(PERKeyValue::W, pressed);
+	if (wParam == 'A' || wParam == 'a') GiveKeyInput(PERKeyValue::A, pressed);
+	if (wParam == 'S' || wParam == 's') GiveKeyInput(PERKeyValue::S, pressed);
+	if (wParam == 'D' || wParam == 'd') GiveKeyInput(PERKeyValue::D, pressed);
+	if (wParam == 'Q' || wParam == 'q') GiveKeyInput(PERKeyValue::Q, pressed);
+	if (wParam == 'E' || wParam == 'e') GiveKeyInput(PERKeyValue::E, pressed);
+	if (wParam == 'R' || wParam == 'r') GiveKeyInput(PERKeyValue::R, pressed);
+	if (wParam == 'F' || wParam == 'f') GiveKeyInput(PERKeyValue::F, pressed);
+	if (wParam == 'C' || wParam == 'c') GiveKeyInput(PERKeyValue::C, pressed);
+	if (wParam == 'V' || wParam == 'v') GiveKeyInput(PERKeyValue::V, pressed);
 }
 
 void PERController::GiveKeyInput(PERKeyValue key, bool pressed)
@@ -26,7 +40,7 @@ void PERController::GiveKeyInput(PERKeyValue key, bool pressed)
 	InitProcessedAndInputTime(key, false);
 }
 
-void PERController::GiveMouseMoveInput(double x, double y)
+void PERController::GiveMouseMoveInput(float x, float y)
 {
 	m_mousePosX = x;
 	m_mousePosY = y;
@@ -42,19 +56,19 @@ void PERController::SetIsMouseFixed(bool fix)
 	m_isMouseFixed = fix;
 }
 
-void PERController::GetMousePos(double* x, double* y)
+void PERController::GetMousePos(float* x, float* y)
 {
 	*x = m_mousePosX;
 	*y = m_mousePosY;
 }
 
-void PERController::SetWindowSize(double width, double height)
+void PERController::SetWindowSize(float width, float height)
 {
 	m_windowWidth = width;
 	m_windowHeight = height;
 }
 
-void PERController::GetWindowSize(double* width, double* height)
+void PERController::GetWindowSize(float* width, float* height)
 {
 	*width = m_windowWidth;
 	*height = m_windowHeight;

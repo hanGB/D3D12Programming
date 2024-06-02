@@ -12,6 +12,7 @@ enum class PERKeyValue {
 	R,
 	F,
 	C,
+	V,
 	ESC,
 	TAB,
 	SHIFT,

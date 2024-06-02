@@ -17,9 +17,9 @@ class D3D12Camera
 public:
 	D3D12Camera();
 	D3D12Camera(D3D12Camera* camera);
-	~D3D12Camera();
+	virtual ~D3D12Camera();
 
-	virtual void CreeateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
+	virtual void CreateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 	virtual void ReleaseShderVariables();
 	virtual void UpdateShaderVariables(ID3D12GraphicsCommandList* commandList);
 

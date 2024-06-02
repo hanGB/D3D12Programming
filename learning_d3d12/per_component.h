@@ -12,7 +12,7 @@ public:
 	
 	PERObject* GetOwner() { return m_owner; }
 	PERComponent* GetNext() { return m_next; }
-	void SetOwner(PERObject* owner) { m_owner = owner; }
+	void SetOwner(PERObject* owner) { m_owner = owner; if (m_next) m_next->SetOwner(owner); }
 	void SetNext(PERComponent* next) { m_next = next; }
 
 private:

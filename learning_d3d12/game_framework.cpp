@@ -71,7 +71,7 @@ void GameFramework::Update(int deltaTime)
 {
 	float dTime = (float)deltaTime / 1'000'000.0f;
 
-	m_world->InputUpdate(dTime);
+	m_world->InputUpdate(m_controller, dTime);
 	m_world->AiUpdate(dTime);
 	m_world->PhysicsUpdate(dTime);
 	if (m_updateEnd) return;
@@ -141,11 +141,24 @@ void GameFramework::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageId, WPAR
 			::PostQuitMessage(0);
 			break;
 		}
+		break;
+
 	case VK_F9:
 		ChangeScreenMode();
 		break;
 	}
 	default:
+		break;
+	}
+
+	// 컨트롤러 입력
+	switch (nMessageId)
+	{
+	case WM_KEYUP: 
+		m_controller.HandleWindowKeyboardInput(wParam, false);
+		break;
+	case WM_KEYDOWN:
+		m_controller.HandleWindowKeyboardInput(wParam, true);
 		break;
 	}
 }

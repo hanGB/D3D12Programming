@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "graphics_component.h"
 #include "per_object.h"
+#include "camera_component.h"
 
 GraphicsComponent::GraphicsComponent()
 {
@@ -19,12 +20,14 @@ void GraphicsComponent::Initialize()
 {
 	m_isLiving = false;
 
-	if (GetNext()) GetNext()->Initialize();
+	PERComponent::Initialize();
 }
 
 void GraphicsComponent::Update(float dTime)
 {
 	m_worldTransform = GetOwner()->GetWorldTransform();
+
+	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Update(dTime);
 }
 
 void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
@@ -34,6 +37,8 @@ void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Came
 	if (m_shader) m_shader->Render(commandList, camera);
 
 	if (m_mesh) m_mesh->Render(commandList);
+
+	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Render(commandList, camera);
 }
 
 void GraphicsComponent::SetMesh(d3d12_mesh::Mesh* mesh)
@@ -57,6 +62,8 @@ void GraphicsComponent::ReleaseUploadBuffers()
 
 void GraphicsComponent::CreateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
+	D3D12Camera* camera = GetOwner()->GetComponentWithType<CameraComponent>(nullptr)->GetCamera();
+	if (camera) camera->CreateShaderVariables(device, commandList);
 }
 
 void GraphicsComponent::UpdateShaderVariables(ID3D12GraphicsCommandList* commandList)

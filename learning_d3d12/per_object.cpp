@@ -1,15 +1,19 @@
 #include "stdafx.h"
 #include "per_object.h"
 
-PERObject::PERObject(PhysicsComponent* physics, GraphicsComponent* graphics)
-	: m_physics(physics), m_graphics(graphics)
+PERObject::PERObject(InputComponent* input, AiComponent* ai, PhysicsComponent* physics, GraphicsComponent* graphics)
+	: m_input(input), m_ai(ai), m_physics(physics), m_graphics(graphics)
 {
+	m_input->SetOwner(this);
+	m_ai->SetOwner(this);
 	m_physics->SetOwner(this);
 	m_graphics->SetOwner(this);
 }
 
 PERObject::~PERObject()
 {
+	delete m_input;
+	delete m_ai;
 	delete m_graphics;
 	delete m_physics;
 }
@@ -22,8 +26,20 @@ void PERObject::Initialize()
 	SetScale(XMFLOAT3(1.f, 1.f, 1.f));
 	SetRotation(XMFLOAT3(0.f, 0.f, 0.f));
 
+	m_input->Initialize();
+	m_ai->Initialize();
 	m_physics->Initialize();
 	m_graphics->Initialize();
+}
+
+InputComponent& PERObject::GetInput()
+{
+	return *m_input;
+}
+
+AiComponent& PERObject::GetAi()
+{
+	return *m_ai;
 }
 
 GraphicsComponent& PERObject::GetGraphics()
@@ -34,6 +50,27 @@ GraphicsComponent& PERObject::GetGraphics()
 PhysicsComponent& PERObject::GetPhysics()
 {
 	return *m_physics;
+}
+
+void PERObject::AddComponent(PERComponent* component)
+{
+	if (!m_component) 
+	{
+		m_component = component;
+		return;
+	}
+
+	// 이미 컨포넌트가 있을 경우 그 컨포넌트의 다음으로 설정
+	while (true) 
+	{
+		PERComponent* next = m_component;
+		if (!next)
+		{
+			next = component;
+			return;
+		}
+		next = next->GetNext();
+	}
 }
 
 XMFLOAT3 PERObject::GetPosition() const
@@ -49,6 +86,21 @@ XMFLOAT3 PERObject::GetScale() const
 XMFLOAT3 PERObject::GetRotation() const
 {
 	return m_rotation;
+}
+
+XMFLOAT3 PERObject::GetLocalAsixForce() const
+{
+	return m_localAsixForce;
+}
+
+XMFLOAT3 PERObject::GetWorldAsixForce() const
+{
+	return m_worldAsixForce;
+}
+
+XMFLOAT3 PERObject::GetRotateForce() const
+{
+	return m_rotateForce;
 }
 
 void PERObject::SetPosition(XMFLOAT3 position)
@@ -82,6 +134,21 @@ void PERObject::SetRotation(XMFLOAT3 rotation)
 
 	// 위치 적용
 	SetPosition(m_position);
+}
+
+void PERObject::SetLocalAsixForce(XMFLOAT3 force)
+{
+	m_localAsixForce = force;
+}
+
+void PERObject::SetWorldAsixForce(XMFLOAT3 force)
+{
+	m_worldAsixForce = force;
+}
+
+void PERObject::SetRotateForce(XMFLOAT3 force)
+{
+	m_rotateForce = force;
 }
 
 XMFLOAT3 PERObject::GetLookVector()

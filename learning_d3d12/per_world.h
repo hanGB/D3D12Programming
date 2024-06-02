@@ -4,6 +4,7 @@
 
 class PERObject;
 class D3D12Camera;
+class PERController;
 
 class PERWorld {
 public:
@@ -15,8 +16,8 @@ public:
 
 	void SetCameraInformation(D3D12Camera* camera, int width, int height);
 
-	void InputUpdate(float deltaTime) {};
-	void AiUpdate(float deltaTime) {};
+	void InputUpdate(PERController& controller, float deltaTime);
+	void AiUpdate(float deltaTime);
 	void PhysicsUpdate(float deltaTime); 
 	void GraphicsUpdate(float deltaTime);
 

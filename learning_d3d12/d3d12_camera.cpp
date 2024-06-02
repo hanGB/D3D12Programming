@@ -58,7 +58,7 @@ D3D12Camera::~D3D12Camera()
 {
 }
 
-void D3D12Camera::CreeateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
+void D3D12Camera::CreateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
 
 }

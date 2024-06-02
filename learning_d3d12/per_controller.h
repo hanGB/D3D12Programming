@@ -8,19 +8,21 @@
 
 class PERController {
 public:
-	PERController(int width, int height);
+	PERController();
 	~PERController();
+
+	void HandleWindowKeyboardInput(WPARAM wParam, bool pressed);
 
 	// 키 입력 저장
 	void GiveKeyInput(PERKeyValue key, bool pressed);
-	void GiveMouseMoveInput(double x, double y);
+	void GiveMouseMoveInput(float x, float y);
 
 	bool GetIsMouseFixed() const;
 	void SetIsMouseFixed(bool fix);
-	void GetMousePos(double* x, double* y);
+	void GetMousePos(float* x, float* y);
 
-	void SetWindowSize(double width, double height);
-	void GetWindowSize(double* width, double* height);
+	void SetWindowSize(float width, float height);
+	void GetWindowSize(float* width, float* height);
 
 	// 키 입력 확인
 	bool IsInputed(PERKeyValue key, bool pressed = true);
@@ -39,8 +41,8 @@ private:
 	void InitProcessedAndInputTime(PERKeyValue key, bool processed);
 
 	std::atomic<bool> m_isMouseFixed;
-	std::atomic<double> m_mousePosX, m_mousePosY;
-	std::atomic<double> m_windowWidth, m_windowHeight;
+	std::atomic<float> m_mousePosX, m_mousePosY;
+	std::atomic<float> m_windowWidth, m_windowHeight;
 
 	concurrency::concurrent_unordered_map<PERKeyValue, bool> m_KeyPressedMap;
 	concurrency::concurrent_unordered_map<PERKeyValue, bool> m_KeyProcessedMap;

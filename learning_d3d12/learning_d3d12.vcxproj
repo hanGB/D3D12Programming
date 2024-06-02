@@ -130,6 +130,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ai_component.cpp" />
+    <ClCompile Include="camera_component.cpp" />
     <ClCompile Include="console_logger.cpp" />
     <ClCompile Include="d3d12_camera.cpp" />
     <ClCompile Include="d3d12_mesh.cpp" />
@@ -142,6 +144,7 @@
     <ClCompile Include="game_framework_thread.cpp" />
     <ClCompile Include="graphics_component.cpp" />
     <ClCompile Include="graphics_components_shader.cpp" />
+    <ClCompile Include="input_component.cpp" />
     <ClCompile Include="key_setting.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="per_controller.cpp" />
@@ -150,6 +153,8 @@
     <ClCompile Include="per_timer.cpp" />
     <ClCompile Include="per_world.cpp" />
     <ClCompile Include="physics_component.cpp" />
+    <ClCompile Include="player_input.cpp" />
+    <ClCompile Include="rotating_ai.cpp" />
     <ClCompile Include="simple_timer.cpp" />
     <ClCompile Include="space_ship_camera.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -158,6 +163,8 @@
     <ClCompile Include="third_person_camera.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ai_component.h" />
+    <ClInclude Include="camera_component.h" />
     <ClInclude Include="console_logger.h" />
     <ClInclude Include="cs_provider.h" />
     <ClInclude Include="d3d12_command.h" />
@@ -175,6 +182,7 @@
     <ClInclude Include="first_person_camera.h" />
     <ClInclude Include="game_framework.h" />
     <ClInclude Include="graphics_component.h" />
+    <ClInclude Include="input_component.h" />
     <ClInclude Include="key_setting.h" />
     <ClInclude Include="null_logger.h" />
     <ClInclude Include="d3d12_camera.h" />
@@ -188,6 +196,8 @@
     <ClInclude Include="per_world.h" />
     <ClInclude Include="d3d12_read_file.h" />
     <ClInclude Include="physics_component.h" />
+    <ClInclude Include="player_input.h" />
+    <ClInclude Include="rotating_ai.h" />
     <ClInclude Include="simple_timer.h" />
     <ClInclude Include="space_ship_camera.h" />
     <ClInclude Include="stdafx.h" />

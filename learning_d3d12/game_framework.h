@@ -3,6 +3,7 @@
 #include "d3d12_camera.h"
 #include "per_timer.h"
 #include "per_world.h"
+#include "per_controller.h"
 
 class GameFramework {
 public: 
@@ -52,6 +53,7 @@ private:
 	// 클래스
 	D3D12Renderer m_renderer;
 	PERTimer m_timer;
+	PERController m_controller;
 
 	// 카메라
 	D3D12Camera* m_camera = NULL;

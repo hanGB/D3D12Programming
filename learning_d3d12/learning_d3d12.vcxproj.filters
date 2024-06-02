@@ -88,6 +88,21 @@
     <Filter Include="00. framework\controller">
       <UniqueIdentifier>{905e6106-9385-4c7f-9ab1-17fd66243c40}</UniqueIdentifier>
     </Filter>
+    <Filter Include="01. game\object\component\other">
+      <UniqueIdentifier>{b0be2f3f-8586-4b5e-afe8-2321bc441cb6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game\object\component\input">
+      <UniqueIdentifier>{04d2ed6a-100c-4301-a59a-29d25a44a555}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game\object\component\ai">
+      <UniqueIdentifier>{d27f668e-e362-4d5f-804c-2f10b668b495}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game\object\component\ai\rotating_ai">
+      <UniqueIdentifier>{54e63dec-c7d4-4e40-a1d2-c8add3ec81b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game\object\component\input\player_input">
+      <UniqueIdentifier>{b6856ea9-36ab-4f28-8292-c98c2912377c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -161,6 +176,21 @@
     </ClCompile>
     <ClCompile Include="key_setting.cpp">
       <Filter>00. framework\controller</Filter>
+    </ClCompile>
+    <ClCompile Include="camera_component.cpp">
+      <Filter>01. game\object\component\other</Filter>
+    </ClCompile>
+    <ClCompile Include="input_component.cpp">
+      <Filter>01. game\object\component\input</Filter>
+    </ClCompile>
+    <ClCompile Include="ai_component.cpp">
+      <Filter>01. game\object\component\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="rotating_ai.cpp">
+      <Filter>01. game\object\component\ai\rotating_ai</Filter>
+    </ClCompile>
+    <ClCompile Include="player_input.cpp">
+      <Filter>01. game\object\component\input\player_input</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -265,6 +295,21 @@
     </ClInclude>
     <ClInclude Include="key_setting.h">
       <Filter>00. framework\controller</Filter>
+    </ClInclude>
+    <ClInclude Include="camera_component.h">
+      <Filter>01. game\object\component\other</Filter>
+    </ClInclude>
+    <ClInclude Include="input_component.h">
+      <Filter>01. game\object\component\input</Filter>
+    </ClInclude>
+    <ClInclude Include="ai_component.h">
+      <Filter>01. game\object\component\ai</Filter>
+    </ClInclude>
+    <ClInclude Include="rotating_ai.h">
+      <Filter>01. game\object\component\ai\rotating_ai</Filter>
+    </ClInclude>
+    <ClInclude Include="player_input.h">
+      <Filter>01. game\object\component\input\player_input</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

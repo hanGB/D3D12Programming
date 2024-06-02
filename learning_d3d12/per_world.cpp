@@ -6,6 +6,10 @@
 #include "physics_component.h"
 #include "d3d12_camera.h"
 #include "graphics_components_shader.h"
+#include "input_component.h"
+#include "ai_component.h"
+#include "player_input.h"
+#include "rotating_ai.h"
 
 PERWorld::PERWorld()
 {
@@ -94,6 +98,20 @@ void PERWorld::SetCameraInformation(D3D12Camera* camera, int width, int height)
 	camera->GenerateViewMatrix(XMFLOAT3(0.0f, 0.0f, -50.0f), XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f));
 }
 
+void PERWorld::InputUpdate(PERController& controller, float deltaTime)
+{
+	for (int i = 0; i < m_numObjects; ++i) {
+		m_objects[i]->GetInput().Update(controller, deltaTime);
+	}
+}
+
+void PERWorld::AiUpdate(float deltaTime)
+{
+	for (int i = 0; i < m_numObjects; ++i) {
+		m_objects[i]->GetAi().Update(deltaTime);
+	}
+}
+
 void PERWorld::PhysicsUpdate(float deltaTime)
 {
 	for (int i = 0; i < m_numObjects; ++i) {
@@ -128,11 +146,14 @@ void PERWorld::ReleaseUploadBuffers()
 
 PERObject* PERWorld::CreateObject()
 {
+	InputComponent* input = new InputComponent();
+	RotatingAi* ai = new RotatingAi();
+	ai->SetAmount(XMFLOAT3(0.f, 90.f, 0.f));
 	PhysicsComponent* physics = new PhysicsComponent();
 	GraphicsComponent* graphics = new GraphicsComponent();
 	graphics->SetMesh(m_mesh);
 
-	PERObject* object = new PERObject(physics, graphics);
+	PERObject* object = new PERObject(input, ai, physics, graphics);
 	dynamic_cast<GraphicsComponentsShader*>(m_shaders[0])->AddGraphicsComponent(graphics);
 
 	return object;
