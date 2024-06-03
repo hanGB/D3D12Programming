@@ -10,7 +10,7 @@ struct VS_CB_CAMERA_INFO
 	XMFLOAT4X4 projection;
 };
 
-class PERObject;
+class PERPlayer;
 
 class D3D12Camera
 {
@@ -35,7 +35,7 @@ public:
 	virtual void SetViewportsAndScissorRect(ID3D12GraphicsCommandList* commandList);
 
 	// getter
-	PERObject* GetPlayer();
+	PERPlayer* GetPlayer();
 	DWORD GetMode() const;
 
 	XMFLOAT3& GetLookAt();
@@ -59,12 +59,14 @@ public:
 	D3D12_RECT GetScissorRect() const;
 
 	// setter
-	void SetPlayer(PERObject* player);
+	void SetPlayer(PERPlayer* player);
 	void SetMode(DWORD mode);
 
 	void SetOffSet(XMFLOAT3 offSet);
 	void SetTimeLag(float timeLag);
  
+	void SetPosition(XMFLOAT3 pos);
+
 	virtual void Move(XMFLOAT3& shift);
 	virtual void Rotate(float pitch = 0.0f, float yaw = 0.0f, float roll = 0.0f);
 	virtual void Update(XMFLOAT3& lookAt, float timeElapsed);
@@ -93,7 +95,7 @@ protected:
 	// 카메라 랙
 	float m_timeLag;
 
-	PERObject* m_player;
+	PERPlayer* m_player;
 	
 	// 카메라 변환 행렬
 	XMFLOAT4X4 m_view;

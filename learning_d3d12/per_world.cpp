@@ -8,8 +8,8 @@
 #include "graphics_components_shader.h"
 #include "input_component.h"
 #include "ai_component.h"
-#include "player_input.h"
 #include "rotating_ai.h"
+#include "per_player.h"
 
 PERWorld::PERWorld()
 {
@@ -32,7 +32,7 @@ PERWorld::~PERWorld()
 	m_objects.shrink_to_fit();
 }
 
-void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
+void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, PERPlayer* player)
 {
 	// 루트 시그니처 생성
 	m_rootSignature = d3d12_init::CreateRootSignature(device);
@@ -42,6 +42,9 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 	m_shaders[m_numShaders] = new GraphicsComponentsShader(L"./shader/vertex_shader.cso", L"./shader/pixel_shader.cso");
 	m_shaders[m_numShaders]->CreatePipelineState(device, m_rootSignature);
 	m_numShaders++;
+
+	// 플레이어 설정
+	player->Build(device, commandList, m_rootSignature);
 
 	m_mesh = new d3d12_mesh::CubeMeshDiffused(device, commandList, 12.0f, 12.0f, 12.0f);
 

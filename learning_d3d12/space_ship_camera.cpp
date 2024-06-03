@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "space_ship_camera.h"
-#include "per_object.h"
+#include "per_player.h"
 
 SpaceShipCamera::SpaceShipCamera(D3D12Camera* camera)
 	: D3D12Camera(camera)

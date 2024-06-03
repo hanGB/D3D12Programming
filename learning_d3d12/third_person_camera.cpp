@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "third_person_camera.h"
-#include "per_object.h"
+#include "per_player.h"
 
-ThridPersonCamera::ThridPersonCamera(D3D12Camera* camera)
+ThirdPersonCamera::ThirdPersonCamera(D3D12Camera* camera)
 	: D3D12Camera(camera)
 {
 	m_viewMode = THIRD_PERSON_CAMERA;
@@ -19,11 +19,11 @@ ThridPersonCamera::ThridPersonCamera(D3D12Camera* camera)
 	}
 }
 
-ThridPersonCamera::~ThridPersonCamera()
+ThirdPersonCamera::~ThirdPersonCamera()
 {
 }
 
-void ThridPersonCamera::Update(XMFLOAT3& lookAt, float timeElapsed)
+void ThirdPersonCamera::Update(XMFLOAT3& lookAt, float timeElapsed)
 {
 	if (!m_player) return;
 
@@ -55,7 +55,7 @@ void ThridPersonCamera::Update(XMFLOAT3& lookAt, float timeElapsed)
 	SetLookAt(lookAt);
 }
 
-void ThridPersonCamera::SetLookAt(XMFLOAT3& lookAt)
+void ThirdPersonCamera::SetLookAt(XMFLOAT3& lookAt)
 {
 	// 현재 카메라의 위치에서 플레이어를 바라보기 위한 카메라 변환 행렬 생성
 	XMFLOAT4X4 lookAtMat = Matrix4x4::LookAtLH(m_position, lookAt, m_calculatedPlayerUp);

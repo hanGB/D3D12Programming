@@ -57,6 +57,7 @@ void PERObject::AddComponent(PERComponent* component)
 	if (!m_component) 
 	{
 		m_component = component;
+		m_component->SetOwner(this);
 		return;
 	}
 
@@ -67,6 +68,7 @@ void PERObject::AddComponent(PERComponent* component)
 		if (!next)
 		{
 			next = component;
+			next->SetOwner(this);
 			return;
 		}
 		next = next->GetNext();
@@ -85,22 +87,29 @@ XMFLOAT3 PERObject::GetScale() const
 
 XMFLOAT3 PERObject::GetRotation() const
 {
+	
 	return m_rotation;
 }
 
-XMFLOAT3 PERObject::GetLocalAsixForce() const
+XMFLOAT3 PERObject::GetLocalAsixForce()
 {
-	return m_localAsixForce;
+	XMFLOAT3 force = m_localAsixForce;
+	m_localAsixForce = XMFLOAT3(0.f, 0.f, 0.f);
+	return force;
 }
 
-XMFLOAT3 PERObject::GetWorldAsixForce() const
+XMFLOAT3 PERObject::GetWorldAsixForce() 
 {
-	return m_worldAsixForce;
+	XMFLOAT3 force = m_worldAsixForce;
+	m_worldAsixForce = XMFLOAT3(0.f, 0.f, 0.f);
+	return force;
 }
 
-XMFLOAT3 PERObject::GetRotateForce() const
+XMFLOAT3 PERObject::GetRotateForce() 
 {
-	return m_rotateForce;
+	XMFLOAT3 force = m_rotateForce;
+	m_rotateForce = XMFLOAT3(0.f, 0.f, 0.f);
+	return force;
 }
 
 void PERObject::SetPosition(XMFLOAT3 position)

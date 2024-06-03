@@ -7,6 +7,8 @@
 #include "d3d12_view.h"
 #include "d3d12_camera.h"
 #include "per_world.h"
+#include "per_player.h"
+#include "graphics_component.h"
 
 D3D12Renderer::D3D12Renderer()
 {
@@ -124,18 +126,12 @@ void D3D12Renderer::MoveToNextFrame()
 	}
 }
 
-void D3D12Renderer::BuildObjects(PERWorld* world, D3D12Camera* camera)
+void D3D12Renderer::BuildObjects(PERWorld* world, PERPlayer* player)
 {
 	m_commandList->Reset(m_commandAllocator, NULL);
 
-
-	// 카메라 설정
-	camera->SetViewport(0, 0, m_clientWidth, m_clientHeight);
-	camera->SetScissorRect(0, 0, (LONG)m_clientWidth, (LONG)m_clientHeight);
-	world->SetCameraInformation(camera, m_clientWidth, m_clientHeight);
-
 	// 게임 월드 내 게임 객체 생성
-	world->BuildObjects(m_device, m_commandList);
+	world->BuildObjects(m_device, m_commandList, player);
 
 	// 월드 객체를 생성하기 위해 필요한 그래픽 커맨드 큐를 커맨드 큐에 추가
 	m_commandList->Close();
@@ -148,7 +144,7 @@ void D3D12Renderer::BuildObjects(PERWorld* world, D3D12Camera* camera)
 	if (world)world->ReleaseUploadBuffers();
 }
 
-void D3D12Renderer::FrameAdvance(PERWorld* world, D3D12Camera* camera)
+void D3D12Renderer::FrameAdvance(PERWorld* world, PERPlayer* player, D3D12Camera* camera)
 {
 	// 커맨드 할당자, 커맨드 리스트 리셋
 	HRESULT result = m_commandAllocator->Reset();
@@ -163,6 +159,10 @@ void D3D12Renderer::FrameAdvance(PERWorld* world, D3D12Camera* camera)
 
 	// 렌더 코드 추가 위치
 	world->Render(m_commandList, camera);
+
+	m_commandList->ClearDepthStencilView(m_dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 
+		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, NULL);
+	if (player) player->GetGraphics().Render(m_commandList, camera);
 
 	// 현재 렌더 타겟이 렌더링 끝나길 대기
 	// GPU가 렌더 타켓(버퍼)를 더 이상 사용하지 않으면 렌더 타겟의 상태는 프리젠트 상태로 바뀜

@@ -3,6 +3,7 @@
 #include "d3d12_mesh.h"
 
 class PERObject;
+class PERPlayer;
 class D3D12Camera;
 class PERController;
 
@@ -11,7 +12,7 @@ public:
 	PERWorld();
 	~PERWorld();
 
-	void BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
+	void BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, PERPlayer* player);
 	void ReleaseObjects();
 
 	void SetCameraInformation(D3D12Camera* camera, int width, int height);
@@ -31,7 +32,7 @@ protected:
 
 	static const int c_MAXIMUM_SHADER = 512;
 	static const int c_INITIAL_MAXIMUM_OBJECTS = 1024;
-
+	
 	std::vector<d3d12_shader::Shader*> m_shaders;
 	int m_numShaders = 0;
 

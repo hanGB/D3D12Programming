@@ -28,7 +28,7 @@ D3D12Camera::D3D12Camera(D3D12Camera* camera)
 {
 	if (camera)
 	{
-		*this = camera;
+		*this = *camera;
 	}
 	else
 	{
@@ -100,8 +100,8 @@ void D3D12Camera::RegenerateViewMatrix()
 	m_up = Vector3::CrossProduct(m_look, m_right, true);
 
 	m_view._11 = m_right.x; m_view._12 = m_up.x; m_view._13 = m_look.x;
-	m_view._11 = m_right.y; m_view._12 = m_up.y; m_view._13 = m_look.y;
-	m_view._11 = m_right.z; m_view._12 = m_up.z; m_view._13 = m_look.z;
+	m_view._21 = m_right.y; m_view._22 = m_up.y; m_view._23 = m_look.y;
+	m_view._31 = m_right.z; m_view._32 = m_up.z; m_view._33 = m_look.z;
 	m_view._41 = -Vector3::DotProduct(m_position, m_right);
 	m_view._42 = -Vector3::DotProduct(m_position, m_up);
 	m_view._43 = -Vector3::DotProduct(m_position, m_look);
@@ -136,7 +136,7 @@ void D3D12Camera::SetViewportsAndScissorRect(ID3D12GraphicsCommandList* commandL
 	commandList->RSSetScissorRects(1, &m_scissorRect);
 }
 
-PERObject* D3D12Camera::GetPlayer()
+PERPlayer* D3D12Camera::GetPlayer()
 {
 	return m_player;
 }
@@ -210,7 +210,7 @@ D3D12_RECT D3D12Camera::GetScissorRect() const
 	return m_scissorRect;
 }
 
-void D3D12Camera::SetPlayer(PERObject* player)
+void D3D12Camera::SetPlayer(PERPlayer* player)
 {
 	m_player = player;
 }
@@ -228,6 +228,11 @@ void D3D12Camera::SetOffSet(XMFLOAT3 offSet)
 void D3D12Camera::SetTimeLag(float timeLag)
 {
 	m_timeLag = timeLag;
+}
+
+void D3D12Camera::SetPosition(XMFLOAT3 pos)
+{
+	m_position = pos;
 }
 
 void D3D12Camera::Move(XMFLOAT3& shift)

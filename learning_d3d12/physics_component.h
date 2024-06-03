@@ -9,17 +9,24 @@ public:
 
 	virtual void Update(float dTime);
 
-private:
+	void SetGravity(XMFLOAT3 gravity);
+	void SetFriction(float friction);
+	void SetMaxVelocity(float xz, float y);
+
+protected:
 	// 상대적 이동
 	// 월드 축으로 이동
-	void MoveWorldAxis(float xDistance, float yDistance, float zDistance);
+	virtual void MoveWorldAxis(float xDistance, float yDistance, float zDistance);
+
 	// 로컬 축으로 이동
+	virtual void MoveLocalAxis(float xDistance, float yDistance, float zDistance);
+
 	void MoveStafe(float distance);
 	void MoveUp(float distance);
 	void MoveForward(float distance);
 
 	// 상대적 회전
-	void Rotate(float pitch, float yaw, float roll);
+	virtual void Rotate(float pitch, float yaw, float roll);
 
 	// 중력
 	XMFLOAT3 m_gravity;

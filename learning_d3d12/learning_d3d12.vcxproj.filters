@@ -103,6 +103,15 @@
     <Filter Include="01. game\object\component\input\player_input">
       <UniqueIdentifier>{b6856ea9-36ab-4f28-8292-c98c2912377c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="01. game\object\player">
+      <UniqueIdentifier>{10e9f756-01bf-4006-bdf9-c940dc2302e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game\object\component\physics\player_physics">
+      <UniqueIdentifier>{3c7baa3d-fe36-49ac-9d83-354b8b85a266}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game\object\component\graphics\player_graphics">
+      <UniqueIdentifier>{51525cc2-d437-4099-9118-1d9cfc2fcd2a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -191,6 +200,15 @@
     </ClCompile>
     <ClCompile Include="player_input.cpp">
       <Filter>01. game\object\component\input\player_input</Filter>
+    </ClCompile>
+    <ClCompile Include="per_player.cpp">
+      <Filter>01. game\object\player</Filter>
+    </ClCompile>
+    <ClCompile Include="player_physics.cpp">
+      <Filter>01. game\object\component\physics\player_physics</Filter>
+    </ClCompile>
+    <ClCompile Include="player_graphics.cpp">
+      <Filter>01. game\object\component\graphics\player_graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -310,6 +328,15 @@
     </ClInclude>
     <ClInclude Include="player_input.h">
       <Filter>01. game\object\component\input\player_input</Filter>
+    </ClInclude>
+    <ClInclude Include="per_player.h">
+      <Filter>01. game\object\player</Filter>
+    </ClInclude>
+    <ClInclude Include="player_physics.h">
+      <Filter>01. game\object\component\physics\player_physics</Filter>
+    </ClInclude>
+    <ClInclude Include="player_graphics.h">
+      <Filter>01. game\object\component\graphics\player_graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

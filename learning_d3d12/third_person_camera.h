@@ -1,10 +1,10 @@
 #pragma once
 #include "d3d12_camera.h"
 
-class ThridPersonCamera : public D3D12Camera {
+class ThirdPersonCamera : public D3D12Camera {
 public:
-	ThridPersonCamera(D3D12Camera* camera);
-	virtual ~ThridPersonCamera();
+	ThirdPersonCamera(D3D12Camera* camera);
+	virtual ~ThirdPersonCamera();
 
 	virtual void Update(XMFLOAT3& lookAt, float timeElapsed);
 	virtual void SetLookAt(XMFLOAT3& lookAt);

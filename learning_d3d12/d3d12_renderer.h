@@ -1,6 +1,7 @@
 #pragma once
 
 class PERWorld;
+class PERPlayer;
 class D3D12Camera;
 
 class D3D12Renderer
@@ -16,9 +17,9 @@ public:
 	void ChangeSwapChainState();
 	void MoveToNextFrame();
 
-	void BuildObjects(PERWorld* world, D3D12Camera* camera);
+	void BuildObjects(PERWorld* world, PERPlayer* player);
 
-	void FrameAdvance(PERWorld* world, D3D12Camera* camera);
+	void FrameAdvance(PERWorld* world, PERPlayer* player, D3D12Camera* camera);
 
 	void SetClientSize(int width, int height);
 	void WaitForGpuComplete();

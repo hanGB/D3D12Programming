@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "first_person_camera.h"
-#include "per_object.h"
+#include "per_player.h"
 
 FirstPersonCamera::FirstPersonCamera(D3D12Camera* camera)
 	: D3D12Camera(camera)

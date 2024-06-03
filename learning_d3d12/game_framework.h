@@ -4,6 +4,7 @@
 #include "per_timer.h"
 #include "per_world.h"
 #include "per_controller.h"
+#include "per_player.h"
 
 class GameFramework {
 public: 
@@ -50,7 +51,7 @@ private:
 	DWORD m_threadID;
 	bool m_isGameEnd;
 
-	// 클래스
+	// 프레임워크 클래스
 	D3D12Renderer m_renderer;
 	PERTimer m_timer;
 	PERController m_controller;
@@ -59,6 +60,8 @@ private:
 	D3D12Camera* m_camera = NULL;
 	// 월드
 	PERWorld* m_world = NULL;
+	// 플레이어
+	PERPlayer* m_player = NULL;
 
 	wchar_t m_textFrameRate[50];
 

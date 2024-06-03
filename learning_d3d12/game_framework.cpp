@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "game_framework.h"
+#include "camera_component.h"
 
 GameFramework::GameFramework()
 {
@@ -54,9 +55,10 @@ void GameFramework::ChangeScreenMode()
 
 void GameFramework::CreateObjectsWithRenderer()
 {
-	m_camera = new D3D12Camera();
+	m_player = new PERPlayer();
 	m_world = new PERWorld();
-	m_renderer.BuildObjects(m_world, m_camera);
+	m_renderer.BuildObjects(m_world, m_player);
+	m_camera = m_player->GetComponentWithType<CameraComponent>()->GetCamera();
 }
 
 void GameFramework::DeleteObjects()
@@ -72,11 +74,14 @@ void GameFramework::Update(int deltaTime)
 	float dTime = (float)deltaTime / 1'000'000.0f;
 
 	m_world->InputUpdate(m_controller, dTime);
+	m_player->GetInput().Update(m_controller, dTime);
 	m_world->AiUpdate(dTime);
 	m_world->PhysicsUpdate(dTime);
+	m_player->GetPhysics().Update(dTime);
 	if (m_updateEnd) return;
 
 	m_world->GraphicsUpdate(dTime);
+	m_player->GetGraphics().Update(dTime);
 	m_updateEnd = true;
 }
 
@@ -87,7 +92,7 @@ void GameFramework::Render()
 	// 타이머 시간 갱신 및 프레임 레이트 계산
 	m_timer.Tick();
 
-	m_renderer.FrameAdvance(m_world, m_camera);
+	m_renderer.FrameAdvance(m_world, m_player, m_camera);
 
 	// 윈도우에 프레임 레이트 출력
 	m_timer.GetFrameRate(m_textFrameRate + 12, 37);
@@ -124,6 +129,7 @@ void GameFramework::OnProcessingMouseMessage(HWND hWnd, UINT nMessageId, WPARAM 
 	case WM_RBUTTONUP:
 		break;
 	case WM_MOUSEMOVE:
+		
 		break;
 	default:
 		break;
@@ -140,12 +146,17 @@ void GameFramework::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageId, WPAR
 		case VK_ESCAPE:
 			::PostQuitMessage(0);
 			break;
+		case VK_F1:
+		case VK_F2:
+		case VK_F3:
+			if (m_player) m_camera = m_player->GetComponentWithType<CameraComponent>()->ChangeCamera(wParam - VK_F1 + 1, 0.0f);
+			break;
+		case VK_F9:
+			ChangeScreenMode();
+			break;
 		}
 		break;
-
-	case VK_F9:
-		ChangeScreenMode();
-		break;
+	
 	}
 	default:
 		break;
