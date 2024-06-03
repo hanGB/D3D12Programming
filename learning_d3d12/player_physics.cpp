@@ -19,11 +19,39 @@ void PlayerPhysics::Initialize()
 void PlayerPhysics::Update(float dTime)
 {
 	PhysicsComponent::Update(dTime);
+	
+	MatchCamera(dTime);
+}
 
+void PlayerPhysics::MoveLocalAxis(XMFLOAT3& shift, float dTime)
+{
 
+	XMFLOAT3 look = GetOwner()->GetLookVector();
+	XMFLOAT3 right = GetOwner()->GetRightVector();
+	XMFLOAT3 up = GetOwner()->GetUpVector();
+
+	XMFLOAT3 worldShift = XMFLOAT3(0.f, 0.f, 0.f);
+
+	worldShift = Vector3::Add(worldShift, look, shift.z);
+	worldShift = Vector3::Add(worldShift, right, shift.x);
+	worldShift = Vector3::Add(worldShift, up, shift.y);
+
+	MoveWorldAxis(worldShift, dTime);
+	CameraComponent* cameraComponent = GetOwner()->GetComponentWithType<CameraComponent>();
+	cameraComponent->GetCamera()->Move(worldShift, dTime);
+}
+
+void PlayerPhysics::Rotate(float pitch, float yaw, float roll, float dTime)
+{
+
+}
+
+void PlayerPhysics::MatchCamera(float dTime)
+{
+	// 변경된 물리값과 카메라 맞춤
 	CameraComponent* cameraComponent = GetOwner()->GetComponentWithType<CameraComponent>();
 	if (!cameraComponent) return;
-	
+
 	D3D12Camera* camera = cameraComponent->GetCamera();
 	XMFLOAT3 pos = GetOwner()->GetPosition();
 	if (camera->GetMode() == THIRD_PERSON_CAMERA) camera->Update(pos, dTime);
@@ -32,28 +60,4 @@ void PlayerPhysics::Update(float dTime)
 	camera->RegenerateViewMatrix();
 }
 
-void PlayerPhysics::MoveLocalAxis(float xDistance, float yDistance, float zDistance)
-{
-	XMFLOAT3 look = GetOwner()->GetLookVector();
-	XMFLOAT3 right = GetOwner()->GetRightVector();
-	XMFLOAT3 up = GetOwner()->GetUpVector();
 
-	PERLog::Logger().InfoWithFormat("%f, %f, %f", xDistance, yDistance, zDistance);
-	XMFLOAT3 shift = XMFLOAT3(0.f, 0.f, 0.f);
-
-	shift = Vector3::Add(shift, look, zDistance);
-	shift = Vector3::Add(shift, right, xDistance);
-	shift = Vector3::Add(shift, up, yDistance);
-
-	PERLog::Logger().InfoWithFormat("%f, %f, %f", shift.x, shift.y, shift.z);
-
-	MoveWorldAxis(shift.x, shift.y, shift.z);
-	CameraComponent* cameraComponent = GetOwner()->GetComponentWithType<CameraComponent>();
-	cameraComponent->GetCamera()->Move(shift);
-}
-
-void PlayerPhysics::Rotate(float pitch, float yaw, float roll)
-{
-	CameraComponent* cameraComponent = GetOwner()->GetComponentWithType<CameraComponent>();
-	if (cameraComponent) cameraComponent->RotatePlayerAndCamera(pitch, yaw, roll);
-}

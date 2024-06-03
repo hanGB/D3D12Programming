@@ -17,7 +17,7 @@ void CameraComponent::Initialize()
 {
 }
 
-void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll)
+void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll, float dTime)
 {
 	PERPlayer* player = dynamic_cast<PERPlayer*>(GetOwner());
 
@@ -30,13 +30,13 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll)
 		{
 			// 끄덕임
 			// x축 중심 회전 각을 -90도~ 90도 안으로 제한
-			rotation.x += pitch;
+			rotation.x += pitch * dTime;
 			rotation.x = std::clamp(rotation.x, -90.f, 90.f);
 		}
 		if (yaw != 0.0f)
 		{
 			// 몸통 회전
-			rotation.y += yaw;
+			rotation.y += yaw * dTime;
 			if (rotation.y > 360.0f) rotation.y -= 360.0f;
 			if (rotation.y < 0.0f) rotation.y += 360.0f;
 		}
@@ -44,11 +44,11 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll)
 		{
 			// 기울임
 			// z축 중심 회전 각을 -20도~ 90도 안으로 제한
-			rotation.z += roll;
+			rotation.z += roll * dTime;
 			rotation.z = std::clamp(rotation.z, -20.0f, 20.0f);
 		}
 		// 카메라 회전
-		m_camera->Rotate(pitch, yaw, roll);
+		m_camera->Rotate(pitch, yaw, roll, dTime);
 
 		// 플레이어 회전
 		if (yaw != 0.0f)
@@ -64,12 +64,12 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll)
 	else if (cameraMode == SPACE_SHIP_CAMERA)
 	{
 		// 스페이스 쉽 카메라는 회전에 제한이 없음
-		m_camera->Rotate(pitch, yaw, roll);
+		m_camera->Rotate(pitch, yaw, roll, dTime);
 
 		if (pitch != 0.0f)
 		{
 			XMFLOAT3 right = player->GetRightVector();
-			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&right), XMConvertToRadians(pitch));
+			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&right), XMConvertToRadians(pitch * dTime));
 			XMFLOAT3 look = player->GetLookVector();
 			player->SetLookVector(Vector3::TransformNormal(look, rotate));
 			XMFLOAT3 up = GetOwner()->GetUpVector();
@@ -78,7 +78,7 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll)
 		if (yaw != 0.0f)
 		{
 			XMFLOAT3 up = GetOwner()->GetUpVector();
-			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw));
+			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw * dTime));
 			XMFLOAT3 look = player->GetLookVector();
 			player->SetLookVector(Vector3::TransformNormal(look, rotate));
 			XMFLOAT3 right = GetOwner()->GetRightVector();
@@ -87,7 +87,7 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll)
 		if (roll != 0.0f)
 		{
 			XMFLOAT3 look = player->GetLookVector();
-			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&look), XMConvertToRadians(roll));
+			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&look), XMConvertToRadians(roll * dTime));
 			XMFLOAT3 up = player->GetUpVector();
 			player->SetLookVector(Vector3::TransformNormal(up, rotate));
 			XMFLOAT3 right = GetOwner()->GetRightVector();

@@ -16,17 +16,17 @@ public:
 protected:
 	// 상대적 이동
 	// 월드 축으로 이동
-	virtual void MoveWorldAxis(float xDistance, float yDistance, float zDistance);
+	virtual void MoveWorldAxis(XMFLOAT3& shift, float dTime);
 
 	// 로컬 축으로 이동
-	virtual void MoveLocalAxis(float xDistance, float yDistance, float zDistance);
+	virtual void MoveLocalAxis(XMFLOAT3& shift, float dTime);
 
 	void MoveStafe(float distance);
 	void MoveUp(float distance);
 	void MoveForward(float distance);
 
 	// 상대적 회전
-	virtual void Rotate(float pitch, float yaw, float roll);
+	virtual void Rotate(float pitch, float yaw, float roll, float dTime);
 
 	// 중력
 	XMFLOAT3 m_gravity;

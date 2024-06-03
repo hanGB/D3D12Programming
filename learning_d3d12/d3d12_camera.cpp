@@ -235,14 +235,14 @@ void D3D12Camera::SetPosition(XMFLOAT3 pos)
 	m_position = pos;
 }
 
-void D3D12Camera::Move(XMFLOAT3& shift)
+void D3D12Camera::Move(XMFLOAT3& shift, float dTime)
 {
-	m_position.x += shift.x;
-	m_position.y += shift.y;
-	m_position.z += shift.z;
+	m_position.x += shift.x * dTime;
+	m_position.y += shift.y * dTime;
+	m_position.z += shift.z * dTime;
 }
 
-void D3D12Camera::Rotate(float pitch, float yaw, float roll)
+void D3D12Camera::Rotate(float pitch, float yaw, float roll, float dTime)
 {
 }
 

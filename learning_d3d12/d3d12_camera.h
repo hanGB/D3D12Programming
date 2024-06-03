@@ -67,8 +67,8 @@ public:
  
 	void SetPosition(XMFLOAT3 pos);
 
-	virtual void Move(XMFLOAT3& shift);
-	virtual void Rotate(float pitch = 0.0f, float yaw = 0.0f, float roll = 0.0f);
+	virtual void Move(XMFLOAT3& shift, float dTime);
+	virtual void Rotate(float pitch, float yaw, float roll, float dTime);
 	virtual void Update(XMFLOAT3& lookAt, float timeElapsed);
 	virtual void SetLookAt(XMFLOAT3& lookAt);
 

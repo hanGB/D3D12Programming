@@ -23,12 +23,12 @@ FirstPersonCamera::~FirstPersonCamera()
 {
 }
 
-void FirstPersonCamera::Rotate(float pitch, float yaw, float roll)
+void FirstPersonCamera::Rotate(float pitch, float yaw, float roll, float dTime)
 {
 	if (pitch != 0.0f)
 	{
 		// 카메라의 로컬 x축으로 회전
-		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&m_right), XMConvertToRadians(pitch));
+		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&m_right), XMConvertToRadians(pitch * dTime));
 		RotateCameraLocalAxis(rotateMat);
 	}
 	if (!m_player) return;
@@ -40,7 +40,7 @@ void FirstPersonCamera::Rotate(float pitch, float yaw, float roll)
 	{
 		// 플레이어의 로컬 y축으로 회전
 		XMFLOAT3 up = m_player->GetUpVector();
-		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw));
+		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw * dTime));
 		RotateCameraLocalAxis(rotateMat);
 	}
 	if (roll != 0.0f)
@@ -48,7 +48,7 @@ void FirstPersonCamera::Rotate(float pitch, float yaw, float roll)
 	
 		// 플레이어의 로컬 z축으로 회전
 		XMFLOAT3 look = m_player->GetLookVector();
-		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&look), XMConvertToRadians(roll));
+		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&look), XMConvertToRadians(roll * dTime));
 		// 카메라 위치에서 플레이어 위치를 빼 플레이어 위치를 원점으로한 카메라 위치를 얻음
 		m_position = Vector3::Subtract(m_position, playerPos);
 		// 플레이어 중심으로 카메라 위치 벡터 회전

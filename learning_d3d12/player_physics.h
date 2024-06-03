@@ -10,7 +10,9 @@ public:
 	virtual void Update(float dTime);
 
 protected:
-	virtual void MoveLocalAxis(float xDistance, float yDistance, float zDistance);
+	virtual void MoveLocalAxis(XMFLOAT3& shift, float dTime);
 	// 상대적 회전
-	virtual void Rotate(float pitch, float yaw, float roll);
+	virtual void Rotate(float pitch, float yaw, float roll, float dTime);
+
+	void MatchCamera(float dTime);
 };

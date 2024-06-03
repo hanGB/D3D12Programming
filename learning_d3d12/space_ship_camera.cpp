@@ -12,7 +12,7 @@ SpaceShipCamera::~SpaceShipCamera()
 {
 }
 
-void SpaceShipCamera::Rotate(float pitch, float yaw, float roll)
+void SpaceShipCamera::Rotate(float pitch, float yaw, float roll, float dTime)
 {
 	if (!m_player) return;
 
@@ -20,7 +20,7 @@ void SpaceShipCamera::Rotate(float pitch, float yaw, float roll)
 	{
 		// 플레이어의 로컬 x축에 대한 pitch 회전 행렬 계산
 		XMFLOAT3 right = m_player->GetRightVector();
-		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&right), XMConvertToRadians(pitch));
+		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&right), XMConvertToRadians(pitch * dTime));
 		// 회전 변환 행렬로 카메라 값 업데이트
 		UpdateWithRotateMatrix(rotateMat);
 	}
@@ -28,7 +28,7 @@ void SpaceShipCamera::Rotate(float pitch, float yaw, float roll)
 	{
 		// 플레이어의 로컬 y축에 대한 yaw 회전 행렬 계산
 		XMFLOAT3 up = m_player->GetUpVector();
-		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw));
+		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw * dTime));
 		// 회전 변환 행렬로 카메라 값 업데이트
 		UpdateWithRotateMatrix(rotateMat);
 	}
@@ -36,7 +36,7 @@ void SpaceShipCamera::Rotate(float pitch, float yaw, float roll)
 	{
 		// 플레이어의 로컬 z축에 대한 roll 회전 행렬 계산
 		XMFLOAT3 look = m_player->GetLookVector();
-		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&look), XMConvertToRadians(roll));
+		XMMATRIX rotateMat = XMMatrixRotationAxis(XMLoadFloat3(&look), XMConvertToRadians(roll * dTime));
 		// 회전 변환 행렬로 카메라 값 업데이트
 		UpdateWithRotateMatrix(rotateMat);
 	}

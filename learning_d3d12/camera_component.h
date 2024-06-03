@@ -10,12 +10,12 @@ public:
 	virtual void Initialize();
 
 	// 플레이어와 카메라 회전
-	void RotatePlayerAndCamera(float pitch, float yaw, float roll);
+	void RotatePlayerAndCamera(float pitch, float yaw, float roll, float dTime);
 
 	void SetCamera(D3D12Camera* camera);
 	D3D12Camera* GetCamera();
 
-	D3D12Camera* ChangeCamera(DWORD newCameraMode, float deltaTime);
+	D3D12Camera* ChangeCamera(DWORD newCameraMode, float dTime);
 
 private:
 	// 카메라 변경

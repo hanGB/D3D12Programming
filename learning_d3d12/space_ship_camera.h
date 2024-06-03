@@ -6,7 +6,7 @@ public:
 	SpaceShipCamera(D3D12Camera* camera);
 	virtual ~SpaceShipCamera();
 
-	virtual void Rotate(float pitch = 0.0f, float yaw = 0.0f, float roll = 0.0f);
+	virtual void Rotate(float pitch, float yaw, float roll, float dTime);
 
 private:
 	void UpdateWithRotateMatrix(XMMATRIX& rotateMat);
