@@ -35,6 +35,8 @@ public:
 	LRESULT CALLBACK OnProcessingWindowMessage(HWND hWnd, UINT nMessageId, WPARAM wParam, LPARAM lParam);
 
 private:
+	std::pair<short, short> SetMouseCursorPosWindowCenter(HWND hWnd);
+
 	// 스레드로 실행되는 함수
 	static DWORD WINAPI WrapGameThread(LPVOID lParam);
 	static DWORD WINAPI WrapLogThread(LPVOID lParam);

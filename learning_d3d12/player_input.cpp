@@ -28,5 +28,17 @@ void PlayerInput::Update(PERController& controller, float dTime)
 
 	GetOwner()->SetLocalAsixForce(force);
 
+	// 마우스가 고정된 경우 카메라 회전 적용
+	if (controller.GetIsMouseFixed()) 
+	{
+		short x, y;
+		controller.GetMouseMoveDistance(&x, &y);
+
+		XMFLOAT3 rotate = {(float)(y * c_ROTATION_SPEED), (float)(x * c_ROTATION_SPEED), 0.0f };
+
+		GetOwner()->SetRotateForce(rotate);
+	}
+
+
 	InputComponent::Update(controller, dTime);
 }

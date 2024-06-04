@@ -1,6 +1,8 @@
 #pragma once
 #include "physics_component.h"
 
+class CameraComponent;
+
 class PlayerPhysics: public PhysicsComponent{
 public:
 	PlayerPhysics();
@@ -15,4 +17,7 @@ protected:
 	virtual void Rotate(float pitch, float yaw, float roll, float dTime);
 
 	void MatchCamera(float dTime);
+
+private:
+	CameraComponent* m_cameraComponent;
 };

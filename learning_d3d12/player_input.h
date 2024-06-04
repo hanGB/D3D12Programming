@@ -10,5 +10,5 @@ public:
 	virtual void Update(PERController& controller, float dTime);
 
 private:
-
+	static const int c_ROTATION_SPEED = 20;
 };

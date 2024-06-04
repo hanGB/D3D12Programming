@@ -15,14 +15,16 @@ public:
 
 	// 키 입력 저장
 	void GiveKeyInput(PERKeyValue key, bool pressed);
-	void GiveMouseMoveInput(float x, float y);
+	void GiveMouseMoveInput(short x, short y);
 
 	bool GetIsMouseFixed() const;
-	void SetIsMouseFixed(bool fix);
-	void GetMousePos(float* x, float* y);
+	// 마우스 고정 설정, 고정된 상태가 아닌 경우 중간 설정 없음
+	void SetIsMouseFixed(bool fix, short centerX, short centerY);
+	void GetMousePos(short* x, short* y);
+	void GetMouseMoveDistance(short* x, short* y);
 
-	void SetWindowSize(float width, float height);
-	void GetWindowSize(float* width, float* height);
+	void SetWindowSize(short width, short height);
+	void GetWindowSize(short* width, short* height);
 
 	// 키 입력 확인
 	bool IsInputed(PERKeyValue key, bool pressed = true);
@@ -41,8 +43,9 @@ private:
 	void InitProcessedAndInputTime(PERKeyValue key, bool processed);
 
 	std::atomic<bool> m_isMouseFixed;
-	std::atomic<float> m_mousePosX, m_mousePosY;
-	std::atomic<float> m_windowWidth, m_windowHeight;
+	std::atomic<short> m_mousePosX, m_mousePosY;
+	std::atomic<short> m_windowWidth, m_windowHeight;
+	std::atomic<short> m_centerX, m_centerY;
 
 	concurrency::concurrent_unordered_map<PERKeyValue, bool> m_KeyPressedMap;
 	concurrency::concurrent_unordered_map<PERKeyValue, bool> m_KeyProcessedMap;

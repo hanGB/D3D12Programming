@@ -120,16 +120,35 @@ void GameFramework::OnProcessingMouseMessage(HWND hWnd, UINT nMessageId, WPARAM 
 {
 	switch (nMessageId)
 	{
-	case WM_LBUTTONDOWN:
+	case WM_LBUTTONDOWN: 
+	{
+		m_controller.GiveKeyInput(PERKeyValue::MOUSE_LEFT, true);
+		SetCapture(hWnd);
+		auto pos = SetMouseCursorPosWindowCenter(hWnd);
+		m_controller.SetIsMouseFixed(true, pos.first, pos.second);
+		ShowCursor(false);
+	}
 		break;
 	case WM_RBUTTONDOWN:
+		m_controller.GiveKeyInput(PERKeyValue::MOUSE_RIGHT, true);
+		m_controller.SetIsMouseFixed(false, 0, 0);
+		ReleaseCapture();
+		ShowCursor(true);
+
 		break;
 	case WM_LBUTTONUP:
+		m_controller.GiveKeyInput(PERKeyValue::MOUSE_LEFT, false);
+
 		break;
-	case WM_RBUTTONUP:
+	case WM_RBUTTONUP: 
+		m_controller.GiveKeyInput(PERKeyValue::MOUSE_RIGHT, false);
 		break;
 	case WM_MOUSEMOVE:
-		
+		if (m_controller.GetIsMouseFixed())
+		{
+			m_controller.GiveMouseMoveInput((short)LOWORD(lParam), (short)HIWORD(lParam));
+			SetMouseCursorPosWindowCenter(hWnd);
+		}
 		break;
 	default:
 		break;
@@ -196,4 +215,22 @@ LRESULT GameFramework::OnProcessingWindowMessage(HWND hWnd, UINT nMessageId, WPA
 	}
 
 	return 0;
+}
+
+std::pair<short, short> GameFramework::SetMouseCursorPosWindowCenter(HWND hWnd)
+{
+	// 커서 위치는 클라이언트 좌표로 제공
+	RECT rect;
+	GetClientRect(hWnd, &rect);
+	short x = (short)((rect.right - rect.left) * 0.5);
+	short y = (short)((rect.bottom - rect.top) * 0.5);
+
+	// SetCursorPos는 윈도우 좌표를 사용하여 설정
+	// 클라이언트 좌표를 윈도우 좌표로 변경 후 커서 위치 설정
+	POINT lp;
+	lp.x = x; lp.y = y;
+	ClientToScreen(hWnd, &lp);
+	SetCursorPos(lp.x, lp.y);
+
+	return std::pair<short, short>(x, y);
 }

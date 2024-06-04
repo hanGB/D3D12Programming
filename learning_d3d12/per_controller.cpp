@@ -40,7 +40,7 @@ void PERController::GiveKeyInput(PERKeyValue key, bool pressed)
 	InitProcessedAndInputTime(key, false);
 }
 
-void PERController::GiveMouseMoveInput(float x, float y)
+void PERController::GiveMouseMoveInput(short x, short y)
 {
 	m_mousePosX = x;
 	m_mousePosY = y;
@@ -51,24 +51,34 @@ bool PERController::GetIsMouseFixed() const
 	return m_isMouseFixed;
 }
 
-void PERController::SetIsMouseFixed(bool fix)
+void PERController::SetIsMouseFixed(bool fix, short centerX, short centerY)
 {
 	m_isMouseFixed = fix;
+	if (!fix) return;
+
+	m_centerX = centerX;
+	m_centerY = centerY;
 }
 
-void PERController::GetMousePos(float* x, float* y)
+void PERController::GetMousePos(short* x, short* y)
 {
 	*x = m_mousePosX;
 	*y = m_mousePosY;
 }
 
-void PERController::SetWindowSize(float width, float height)
+void PERController::GetMouseMoveDistance(short* x, short* y)
+{
+	*x = m_mousePosX - m_centerX;
+	*y = m_mousePosY - m_centerY;
+}
+
+void PERController::SetWindowSize(short width, short height)
 {
 	m_windowWidth = width;
 	m_windowHeight = height;
 }
 
-void PERController::GetWindowSize(float* width, float* height)
+void PERController::GetWindowSize(short* width, short* height)
 {
 	*width = m_windowWidth;
 	*height = m_windowHeight;

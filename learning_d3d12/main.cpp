@@ -99,7 +99,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 #ifdef PER_DEBUG
 		PERLog::Logger().PrintAll();
-		system("pause");
+		//system("pause");
 #endif 
 		PostQuitMessage(0);
 		break;

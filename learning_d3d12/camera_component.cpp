@@ -99,7 +99,7 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll, 
 	XMFLOAT3 look = player->GetLookVector();
 	XMFLOAT3 right = player->GetRightVector();
 	XMFLOAT3 up = player->GetUpVector();
-	up = Vector3::Normalize(look);
+	look = Vector3::Normalize(look);
 	right = Vector3::CrossProduct(up, look, true);
 	up = Vector3::CrossProduct(look, right, true);
 
