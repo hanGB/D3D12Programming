@@ -73,6 +73,8 @@ void GameFramework::Update(int deltaTime)
 {
 	float dTime = (float)deltaTime / 1'000'000.0f;
 
+	if (m_controller.GetIsMouseFixed()) ClipMouseCursorPosToWindow();
+
 	m_world->InputUpdate(m_controller, dTime);
 	m_player->GetInput().Update(m_controller, dTime);
 	m_world->AiUpdate(dTime);
@@ -124,7 +126,7 @@ void GameFramework::OnProcessingMouseMessage(HWND hWnd, UINT nMessageId, WPARAM 
 	{
 		m_controller.GiveKeyInput(PERKeyValue::MOUSE_LEFT, true);
 		SetCapture(hWnd);
-		auto pos = SetMouseCursorPosWindowCenter(hWnd);
+		auto pos = SetMouseCursorPosWindowCenter();
 		m_controller.SetIsMouseFixed(true, pos.first, pos.second);
 		ShowCursor(false);
 	}
@@ -147,7 +149,7 @@ void GameFramework::OnProcessingMouseMessage(HWND hWnd, UINT nMessageId, WPARAM 
 		if (m_controller.GetIsMouseFixed())
 		{
 			m_controller.GiveMouseMoveInput((short)LOWORD(lParam), (short)HIWORD(lParam));
-			SetMouseCursorPosWindowCenter(hWnd);
+			SetMouseCursorPosWindowCenter();
 		}
 		break;
 	default:
@@ -217,11 +219,11 @@ LRESULT GameFramework::OnProcessingWindowMessage(HWND hWnd, UINT nMessageId, WPA
 	return 0;
 }
 
-std::pair<short, short> GameFramework::SetMouseCursorPosWindowCenter(HWND hWnd)
+std::pair<short, short> GameFramework::SetMouseCursorPosWindowCenter()
 {
 	// 커서 위치는 클라이언트 좌표로 제공
 	RECT rect;
-	GetClientRect(hWnd, &rect);
+	GetClientRect(m_hWnd, &rect);
 	short x = (short)((rect.right - rect.left) * 0.5);
 	short y = (short)((rect.bottom - rect.top) * 0.5);
 
@@ -229,8 +231,16 @@ std::pair<short, short> GameFramework::SetMouseCursorPosWindowCenter(HWND hWnd)
 	// 클라이언트 좌표를 윈도우 좌표로 변경 후 커서 위치 설정
 	POINT lp;
 	lp.x = x; lp.y = y;
-	ClientToScreen(hWnd, &lp);
+	ClientToScreen(m_hWnd, &lp);
 	SetCursorPos(lp.x, lp.y);
 
 	return std::pair<short, short>(x, y);
+}
+
+void GameFramework::ClipMouseCursorPosToWindow()
+{
+	RECT rect;
+	GetWindowRect(m_hWnd, &rect);
+	ClipCursor(&rect);
+	ClipCursor(NULL);
 }

@@ -31,7 +31,18 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll, 
 			// 끄덕임
 			// x축 중심 회전 각을 -90도~ 90도 안으로 제한
 			rotation.x += pitch * dTime;
-			rotation.x = std::clamp(rotation.x, -90.f, 90.f);
+			if (rotation.x > 89.f)
+			{
+				pitch = pitch * dTime - rotation.x + 89.f;
+				pitch /= dTime;
+				rotation.x = 89.f;
+			}
+			else if (rotation.x < -89.f)
+			{
+				pitch = pitch * dTime - rotation.x - 89.f;
+				pitch /= dTime;
+				rotation.x = -89.f;
+			}
 		}
 		if (yaw != 0.0f)
 		{
@@ -43,10 +54,24 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll, 
 		if (roll != 0.0f)
 		{
 			// 기울임
-			// z축 중심 회전 각을 -20도~ 90도 안으로 제한
+			// z축 중심 회전 각을 -20도~ 20도 안으로 제한
 			rotation.z += roll * dTime;
-			rotation.z = std::clamp(rotation.z, -20.0f, 20.0f);
+			if (rotation.z > 19.f)
+			{
+				roll = roll * dTime - rotation.z + 19.f;
+				roll /= dTime;
+				rotation.z = 19.f;
+			}
+			else if (rotation.x < -19.f)
+			{
+				roll = roll * dTime - rotation.z - 19.f;
+				roll /= dTime;
+				rotation.z = -19.f;
+			}
 		}
+		// rotation 저장
+		player->SetRotation(rotation);
+
 		// 카메라 회전
 		m_camera->Rotate(pitch, yaw, roll, dTime);
 
@@ -99,6 +124,7 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll, 
 	XMFLOAT3 look = player->GetLookVector();
 	XMFLOAT3 right = player->GetRightVector();
 	XMFLOAT3 up = player->GetUpVector();
+
 	look = Vector3::Normalize(look);
 	right = Vector3::CrossProduct(up, look, true);
 	up = Vector3::CrossProduct(look, right, true);
@@ -130,14 +156,13 @@ D3D12Camera* CameraComponent::OnChangeCamera(DWORD newCameraMode, DWORD currentC
 	{
 		XMFLOAT3 look = player->GetLookVector();
 		XMFLOAT3 right = player->GetRightVector();
-		XMFLOAT3 up = player->GetUpVector();
 		XMFLOAT3 rotation = player->GetRotation();
-
-		right = XMFLOAT3(right.x, 0.f, right.y);
-		right = Vector3::Normalize(right);
-		up = XMFLOAT3(0.f, 1.f, 0.f);
+		
+		XMFLOAT3 up = XMFLOAT3(0.f, 1.f, 0.f);
 		up = Vector3::Normalize(up);
-		look = XMFLOAT3(look.x, 0.f, look.y);
+		right = XMFLOAT3(right.x, 0.f, right.z);
+		right = Vector3::Normalize(right);
+		look = XMFLOAT3(look.x, 0.f, look.z);
 		look = Vector3::Normalize(look);
 
 		rotation.x = 0.0f;
@@ -183,6 +208,8 @@ D3D12Camera* CameraComponent::GetCamera()
 
 D3D12Camera* CameraComponent::ChangeCamera(DWORD newCameraMode, float deltaTime)
 {
+	PERLog::Logger().Info("카메라 변경");
+
 	DWORD currentCameraMode = (m_camera) ? m_camera->GetMode() : 0x00;
 	if (currentCameraMode == newCameraMode) return m_camera;
 

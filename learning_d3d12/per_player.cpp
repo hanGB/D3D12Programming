@@ -39,15 +39,17 @@ void PERPlayer::Initialize()
 
 void PERPlayer::SetPosition(XMFLOAT3 position)
 {
+	m_position = position;
 }
 
 void PERPlayer::SetScale(XMFLOAT3 scale)
 {
+	m_scale = scale;
 }
-
 
 void PERPlayer::SetRotation(XMFLOAT3 rotation)
 {
+	m_rotation = rotation;
 }
 
 XMFLOAT3 PERPlayer::GetLookVector()
