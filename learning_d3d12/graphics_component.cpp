@@ -71,6 +71,9 @@ void GraphicsComponent::UpdateShaderVariables(ID3D12GraphicsCommandList* command
 	XMFLOAT4X4 transposedModel;
 	XMStoreFloat4x4(&transposedModel, XMMatrixTranspose(XMLoadFloat4x4(&m_worldTransform)));
 
+	if (m_mesh && m_mesh->IsHaveToRotate()) {
+		transposedModel = Matrix4x4::Multiply(transposedModel, m_mesh->GetDefaultRotation());
+	}
 	commandList->SetGraphicsRoot32BitConstants(0, 16, &transposedModel, 0);
 }
 

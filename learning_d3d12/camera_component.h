@@ -22,4 +22,6 @@ private:
 	D3D12Camera* OnChangeCamera(DWORD newCameraMode, DWORD currentCameraMode);
 
 	D3D12Camera* m_camera = nullptr;
+
+	float Angle(XMFLOAT3& vec1, XMFLOAT3& vec2);
 };

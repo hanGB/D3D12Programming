@@ -15,6 +15,12 @@ namespace d3d12_mesh {
 
 		void ReleaseUploadBuffers();
 
+		// mesh 기본 회전 설정
+		void SetDefaultRotation(float x, float y, float z);
+
+		bool IsHaveToRotate() const;
+		XMMATRIX& GetDefaultRotation();
+
 	protected:
 		// 베텍스
 		ID3D12Resource* m_vertexBuffer = NULL;
@@ -37,6 +43,10 @@ namespace d3d12_mesh {
 		UINT m_numIndices = 0;
 		UINT m_startIndex = 0;
 		int m_numBaseVertex = 0;
+
+		// 기본 회전 변환
+		bool m_isNotCorrectRotation = false;
+		XMMATRIX m_defaultRotation;
 
 	private:
 		int m_numReferences = 0;

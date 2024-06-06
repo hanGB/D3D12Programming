@@ -75,11 +75,11 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll, 
 		// 카메라 회전
 		m_camera->Rotate(pitch, yaw, roll, dTime);
 
-		// 플레이어 회전
+		// 플레이어 회전(y축만 회전)
 		if (yaw != 0.0f)
 		{
 			XMFLOAT3 up = player->GetUpVector();
-			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw));
+			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw * dTime));
 			XMFLOAT3 look = player->GetLookVector();
 			player->SetLookVector(Vector3::TransformNormal(look, rotate));
 			XMFLOAT3 right = GetOwner()->GetRightVector();
@@ -170,7 +170,8 @@ D3D12Camera* CameraComponent::OnChangeCamera(DWORD newCameraMode, DWORD currentC
 
 		// look 벡터와 월드 좌표계의 z축이 이루는 각도를 플레이어의 y축의 회전 각도로 설정
 		XMFLOAT3 zAxis = XMFLOAT3(0.f, 0.f, 1.0f);
-		rotation.y = Vector3::Angle(zAxis, look);
+		rotation.y = Angle(zAxis, look);
+
 		if (look.x < 0.0f) rotation.y = -rotation.y;
 
 		player->SetLookVector(look);
@@ -194,6 +195,18 @@ D3D12Camera* CameraComponent::OnChangeCamera(DWORD newCameraMode, DWORD currentC
 	if (m_camera) delete m_camera;
 
 	return newCamera;
+}
+
+float CameraComponent::Angle(XMFLOAT3& vec1, XMFLOAT3& vec2)
+{
+	// Vector3::Angle가 잘못된 값을 발생시켜 오류가 생겨 직접 두 벡터 사이의 값을 계산
+	float length1 = Vector3::Length(vec1);
+	float length2 = Vector3::Length(vec2);
+	float value = vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z;
+
+	float valueNormal = value / (length1 * length2);
+
+	return XMConvertToDegrees(acosf(valueNormal));
 }
 
 void CameraComponent::SetCamera(D3D12Camera* camera)

@@ -54,6 +54,23 @@ void d3d12_mesh::Mesh::ReleaseUploadBuffers()
 	m_indexUploadBuffer = NULL;
 }
 
+void d3d12_mesh::Mesh::SetDefaultRotation(float x, float y, float z)
+{
+	m_isNotCorrectRotation = true;
+
+	m_defaultRotation = XMMatrixRotationRollPitchYaw(XMConvertToRadians(x), XMConvertToRadians(y), XMConvertToRadians(z));
+}
+
+bool d3d12_mesh::Mesh::IsHaveToRotate() const
+{
+	return m_isNotCorrectRotation;
+}
+
+XMMATRIX& d3d12_mesh::Mesh::GetDefaultRotation()
+{
+	return m_defaultRotation;
+}
+
 d3d12_mesh::TriangleMesh::TriangleMesh(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 	: Mesh(device, commandList)
 {
@@ -267,6 +284,9 @@ d3d12_mesh::AirplaneMeshDiffused::AirplaneMeshDiffused(ID3D12Device* device, ID3
 	m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
 	m_vertexBufferView.StrideInBytes = m_stride;
 	m_vertexBufferView.SizeInBytes = m_stride * m_numVertices;
+
+	// 90도 회전해서 그림
+	SetDefaultRotation(-90.f, 0.f, 0.f);
 }
 
 d3d12_mesh::AirplaneMeshDiffused::~AirplaneMeshDiffused()

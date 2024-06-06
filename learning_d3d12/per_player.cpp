@@ -20,7 +20,7 @@ PERPlayer::~PERPlayer()
 
 void PERPlayer::Build(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSignature)
 {
-	d3d12_mesh::AirplaneMeshDiffused* mesh = new d3d12_mesh::AirplaneMeshDiffused(device, commandList);
+	d3d12_mesh::AirplaneMeshDiffused* mesh = new d3d12_mesh::AirplaneMeshDiffused(device, commandList, 20.f, 20.f, 4.f);
 	GraphicsComponentsShader* shader = new GraphicsComponentsShader(L"./shader/vertex_shader.cso", L"./shader/pixel_shader.cso");
 	shader->CreatePipelineState(device, rootSignature);
 
