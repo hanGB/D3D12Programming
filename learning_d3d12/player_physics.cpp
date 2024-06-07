@@ -31,19 +31,31 @@ void PlayerPhysics::MoveLocalAxis(XMFLOAT3& shift, float dTime)
 	XMFLOAT3 right = GetOwner()->GetRightVector();
 	XMFLOAT3 up = GetOwner()->GetUpVector();
 
-	XMFLOAT3 worldShift = XMFLOAT3(0.f, 0.f, 0.f);
+	XMFLOAT3 addVelocity = XMFLOAT3(0.f, 0.f, 0.f);
 
-	worldShift = Vector3::Add(worldShift, look, shift.z);
-	worldShift = Vector3::Add(worldShift, right, shift.x);
-	worldShift = Vector3::Add(worldShift, up, shift.y);
+	addVelocity = Vector3::Add(addVelocity, look, shift.z);
+	addVelocity = Vector3::Add(addVelocity, right, shift.x);
+	addVelocity = Vector3::Add(addVelocity, up, shift.y);
 
-	MoveWorldAxis(worldShift, dTime);
-	if (m_cameraComponent) m_cameraComponent->GetCamera()->Move(worldShift, dTime);
+	XMFLOAT3 velocity = GetOwner()->GetVelocity();
+	velocity = Vector3::Add(velocity, Vector3::ScalarProduct(addVelocity, dTime, false));
+	GetOwner()->SetVelocity(velocity);
 }
 
 void PlayerPhysics::Rotate(float pitch, float yaw, float roll, float dTime)
 {
 	if (m_cameraComponent) m_cameraComponent->RotatePlayerAndCamera(pitch, yaw, roll, dTime);
+}
+
+void PlayerPhysics::UseVelocity(float dTime)
+{
+	XMFLOAT3 velocity = GetVelocityByApplyingVariousPhysicalValues(dTime);
+
+	XMFLOAT3 shift = Vector3::ScalarProduct(velocity, dTime, false);
+	MoveWorldAxis(velocity, dTime);
+	if (m_cameraComponent) m_cameraComponent->GetCamera()->Move(velocity, dTime);
+
+	GetOwner()->SetVelocity(velocity);
 }
 
 void PlayerPhysics::MatchCamera(float dTime)

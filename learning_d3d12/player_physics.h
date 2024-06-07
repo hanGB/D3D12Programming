@@ -16,6 +16,9 @@ protected:
 	// 상대적 회전
 	virtual void Rotate(float pitch, float yaw, float roll, float dTime);
 
+	// 속도 사용
+	virtual void UseVelocity(float dTime);
+
 	void MatchCamera(float dTime);
 
 private:

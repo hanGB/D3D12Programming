@@ -53,6 +53,10 @@ private:
 	HANDLE m_hWorkerThreads[c_NUM_WORKER_THREAD];
 	DWORD m_threadID;
 	bool m_isGameEnd;
+	// 업데이트
+	std::atomic<bool> m_updateEnd = false;
+	std::atomic<float> m_frameGap = 0.0f;
+	int m_updateLag = 0;
 
 	// 프레임워크 클래스
 	D3D12Renderer m_renderer;
@@ -67,6 +71,4 @@ private:
 	PERPlayer* m_player = NULL;
 
 	wchar_t m_textFrameRate[50];
-
-	std::atomic<bool> m_updateEnd = false;
 };

@@ -50,9 +50,9 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 
 	m_numObjects = 0;
 
-	int xObjects = 10;
-	int yObjects = 10;
-	int zObjects = 10;
+	int xObjects = 5;
+	int yObjects = 5;
+	int zObjects = 5;
 	
 	float xPitch = 12.f * 2.5f;
 	float yPitch = 12.f * 2.5f;

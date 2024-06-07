@@ -28,11 +28,17 @@ protected:
 	// 상대적 회전
 	virtual void Rotate(float pitch, float yaw, float roll, float dTime);
 
+	// 속도 사용
+	virtual void UseVelocity(float dTime);
+
+	// 각종 물리 값 적용
+	XMFLOAT3 GetVelocityByApplyingVariousPhysicalValues(float dTime);
+
 	// 중력
 	XMFLOAT3 m_gravity;
 	// 마찰력
 	float m_friction;
 	// 각 축에 대한 최고 속도
-	float m_fMaxVelocityXZ;
-	float m_fMaxVelocityY;
+	float m_maxVelocityXZ;
+	float m_maxVelocityY;
 };

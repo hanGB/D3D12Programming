@@ -25,6 +25,8 @@ public:
 	XMFLOAT3 GetPosition() const;
 	XMFLOAT3 GetScale() const;
 	XMFLOAT3 GetRotation() const;
+	XMFLOAT3 GetVelocity() const;
+	XMFLOAT3 GetRotateVelocity() const;
 	XMFLOAT3 GetLocalAsixForce();
 	XMFLOAT3 GetWorldAsixForce();
 	XMFLOAT3 GetRotateForce();
@@ -32,6 +34,8 @@ public:
 	virtual void SetPosition(XMFLOAT3 position);
 	virtual void SetScale(XMFLOAT3 scale);
 	virtual void SetRotation(XMFLOAT3 rotation);
+	void SetVelocity(XMFLOAT3 velocity);
+	void SetRotateVelocity(XMFLOAT3 rotateVelocity);
 	void SetLocalAsixForce(XMFLOAT3 force);
 	void SetWorldAsixForce(XMFLOAT3 force);
 	void SetRotateForce(XMFLOAT3 force);
@@ -61,6 +65,10 @@ private:
 	AiComponent* m_ai = nullptr;
 	PhysicsComponent* m_physics = nullptr;
 	GraphicsComponent* m_graphics = nullptr;
+
+	// 속도
+	XMFLOAT3 m_velocity = { 0.0f, 0.0f, 0.0f };
+	XMFLOAT3 m_rotateVelocity = { 0.0f, 0.0f, 0.0f };
 
 	// 이동이나 회전을 위한 힘(한 번 사용하면 초기화 됨)
 	XMFLOAT3 m_localAsixForce = { 0.0f, 0.0f, 0.0f };

@@ -98,7 +98,7 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll, 
 			XMFLOAT3 look = player->GetLookVector();
 			player->SetLookVector(Vector3::TransformNormal(look, rotate));
 			XMFLOAT3 up = GetOwner()->GetUpVector();
-			player->SetRightVector(Vector3::TransformNormal(up, rotate));
+			player->SetUpVector(Vector3::TransformNormal(up, rotate));
 		}
 		if (yaw != 0.0f)
 		{
@@ -114,7 +114,7 @@ void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll, 
 			XMFLOAT3 look = player->GetLookVector();
 			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&look), XMConvertToRadians(roll * dTime));
 			XMFLOAT3 up = player->GetUpVector();
-			player->SetLookVector(Vector3::TransformNormal(up, rotate));
+			player->SetUpVector(Vector3::TransformNormal(up, rotate));
 			XMFLOAT3 right = GetOwner()->GetRightVector();
 			player->SetRightVector(Vector3::TransformNormal(right, rotate));
 		}

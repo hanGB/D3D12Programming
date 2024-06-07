@@ -31,6 +31,8 @@ void PhysicsComponent::Update(float dTime)
 	XMFLOAT3 rotateForce = GetOwner()->GetRotateForce();
 	Rotate(rotateForce.x, rotateForce.y, rotateForce.z, dTime);
 
+	UseVelocity(dTime);
+
 	if (GetNext()) dynamic_cast<PhysicsComponent*>(GetNext())->Update(dTime);
 }
 
@@ -46,8 +48,8 @@ void PhysicsComponent::SetFriction(float friction)
 
 void PhysicsComponent::SetMaxVelocity(float xz, float y)
 {
-	m_fMaxVelocityXZ = xz;
-	m_fMaxVelocityY = y;
+	m_maxVelocityXZ = xz;
+	m_maxVelocityY = y;
 }
 
 void PhysicsComponent::MoveWorldAxis(XMFLOAT3& shift, float dTime)
@@ -102,4 +104,47 @@ void PhysicsComponent::Rotate(float pitch, float yaw, float roll, float dTime)
 	rotation.z += roll * dTime;
 
 	GetOwner()->SetRotation(rotation);
+}
+
+void PhysicsComponent::UseVelocity(float dTime)
+{
+	XMFLOAT3 velocity = GetVelocityByApplyingVariousPhysicalValues(dTime);
+
+	XMFLOAT3 shift = Vector3::ScalarProduct(velocity, dTime, false);
+	MoveWorldAxis(velocity, dTime);
+
+	GetOwner()->SetVelocity(velocity);
+}
+
+XMFLOAT3 PhysicsComponent::GetVelocityByApplyingVariousPhysicalValues(float dTime)
+{
+	XMFLOAT3 velocity = GetOwner()->GetVelocity();
+	if (velocity.x == 0.0f && velocity.y == 0.0f && velocity.z == 0.0f) return velocity;
+
+	// 중력 추가
+	velocity = Vector3::Add(velocity, Vector3::ScalarProduct(m_gravity, dTime, false));
+
+	// 마찰력에 의해 감속
+	float length = Vector3::Length(velocity);
+	float deceleration = (m_friction * dTime);
+	if (deceleration > length) deceleration = length;
+	velocity = Vector3::Add(velocity, Vector3::ScalarProduct(velocity, -deceleration, true));
+
+	// xz축의 속도의 크기를 얻어 최대 속도 안으로 변경
+	length = sqrtf(velocity.x * velocity.x + velocity.z * velocity.z);
+	if (length > m_maxVelocityXZ)
+	{
+		velocity.x *= (m_maxVelocityXZ / length);
+		velocity.z *= (m_maxVelocityXZ / length);
+	}
+
+	// y축의 속도의 크기를 얻어 최대 속도 안으로 변경
+	float maxVelocityY = m_maxVelocityY * dTime;
+	length = sqrtf(velocity.y * velocity.y);
+	if (length > m_maxVelocityY)
+	{
+		velocity.y *= (maxVelocityY / length);
+	}
+
+	return velocity;
 }

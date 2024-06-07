@@ -91,6 +91,16 @@ XMFLOAT3 PERObject::GetRotation() const
 	return m_rotation;
 }
 
+XMFLOAT3 PERObject::GetVelocity() const
+{
+	return m_velocity;
+}
+
+XMFLOAT3 PERObject::GetRotateVelocity() const
+{
+	return m_rotateVelocity;
+}
+
 XMFLOAT3 PERObject::GetLocalAsixForce()
 {
 	XMFLOAT3 force = m_localAsixForce;
@@ -143,6 +153,16 @@ void PERObject::SetRotation(XMFLOAT3 rotation)
 
 	// 위치 적용
 	SetPosition(m_position);
+}
+
+void PERObject::SetVelocity(XMFLOAT3 velocity)
+{
+	m_velocity = velocity;
+}
+
+void PERObject::SetRotateVelocity(XMFLOAT3 rotateVelocity)
+{
+	m_rotateVelocity = rotateVelocity;
 }
 
 void PERObject::SetLocalAsixForce(XMFLOAT3 force)

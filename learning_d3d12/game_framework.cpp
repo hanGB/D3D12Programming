@@ -78,12 +78,23 @@ void GameFramework::Update(int deltaTime)
 	m_world->InputUpdate(m_controller, dTime);
 	m_player->GetInput().Update(m_controller, dTime);
 	m_world->AiUpdate(dTime);
-	m_world->PhysicsUpdate(dTime);
-	m_player->GetPhysics().Update(dTime);
+
+	m_updateLag += deltaTime;
+	if (m_updateLag > PER_MICROSEC_PER_UPDATE) {
+		for (int i = 0; i < PER_MAXIMUM_UPDATE_LOOP_COUNT && m_updateLag >= PER_MICROSEC_PER_UPDATE; ++i) {	
+			m_world->PhysicsUpdate(PER_MICROSEC_PER_UPDATE / 1'000'000.0f);
+			m_player->GetPhysics().Update(PER_MICROSEC_PER_UPDATE / 1'000'000.0f);
+			m_updateLag -= PER_MICROSEC_PER_UPDATE;
+		}
+	}
+	m_updateLag %= PER_MICROSEC_PER_UPDATE;
+
 	if (m_updateEnd) return;
 
 	m_world->GraphicsUpdate(dTime);
 	m_player->GetGraphics().Update(dTime);
+
+	m_frameGap = (float)m_updateLag / (float)PER_MICROSEC_PER_UPDATE;
 	m_updateEnd = true;
 }
 
