@@ -18,21 +18,35 @@ d3d12_mesh::Mesh::~Mesh()
 
 void d3d12_mesh::Mesh::Render(ID3D12GraphicsCommandList* commandList)
 {
-	// 프리미티브 유형 설정
-	commandList->IASetPrimitiveTopology(m_primitiveTopology);
 	// 버텍스 버퍼 뷰 설정
 	commandList->IASetVertexBuffers(m_slot, 1, &m_vertexBufferView);
+	Render(commandList, 1);
+}
+
+void d3d12_mesh::Mesh::Render(ID3D12GraphicsCommandList* commandList, UINT numInstances)
+{
+	// 프리미티브 유형 설정
+	commandList->IASetPrimitiveTopology(m_primitiveTopology);
+
 	if (m_indexBuffer)
 	{
 		// 인덱스 버퍼 뷰 렌더링
 		commandList->IASetIndexBuffer(&m_indexBufferView);
-		commandList->DrawIndexedInstanced(m_numIndices, 1, 0, 0, 0);
+		commandList->DrawIndexedInstanced(m_numIndices, numInstances, 0, 0, 0);
 	}
 	else
 	{
 		// 버텍스 버퍼 뷰 렌더링
-		commandList->DrawInstanced(m_numVertices, 1, m_offSet, 0);
+		commandList->DrawInstanced(m_numVertices, numInstances, m_offSet, 0);
 	}
+}
+
+void d3d12_mesh::Mesh::Render(ID3D12GraphicsCommandList* commandList, UINT numInstances, D3D12_VERTEX_BUFFER_VIEW instancingBufferView)
+{
+	// 버텍스 버퍼 뷰와 인스턴싱 버퍼 뷰를 인풋 어쌤블리 단계에 설정
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferViews[] = { m_vertexBufferView, instancingBufferView };
+	commandList->IASetVertexBuffers(m_slot, _countof(vertexBufferViews), vertexBufferViews);
+	Render(commandList, numInstances);
 }
 
 void d3d12_mesh::Mesh::AddRef()

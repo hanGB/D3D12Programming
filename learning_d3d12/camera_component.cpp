@@ -20,118 +20,20 @@ void CameraComponent::Initialize()
 void CameraComponent::RotatePlayerAndCamera(float pitch, float yaw, float roll, float dTime)
 {
 	PERPlayer* player = dynamic_cast<PERPlayer*>(GetOwner());
-
-	XMFLOAT3 rotation = player->GetRotation();
 	DWORD cameraMode = m_camera->GetMode();
 
+	// 카메라 모드에 맞추어 회전
 	if (cameraMode == FIRST_PERSON_CAMERA || cameraMode == THIRD_PERSON_CAMERA)
 	{
-		if (pitch != 0.0f)
-		{
-			// 끄덕임
-			// x축 중심 회전 각을 -90도~ 90도 안으로 제한
-			rotation.x += pitch * dTime;
-			if (rotation.x > 89.f)
-			{
-				pitch = pitch * dTime - rotation.x + 89.f;
-				pitch /= dTime;
-				rotation.x = 89.f;
-			}
-			else if (rotation.x < -89.f)
-			{
-				pitch = pitch * dTime - rotation.x - 89.f;
-				pitch /= dTime;
-				rotation.x = -89.f;
-			}
-		}
-		if (yaw != 0.0f)
-		{
-			// 몸통 회전
-			rotation.y += yaw * dTime;
-			if (rotation.y > 360.0f) rotation.y -= 360.0f;
-			if (rotation.y < 0.0f) rotation.y += 360.0f;
-		}
-		if (roll != 0.0f)
-		{
-			// 기울임
-			// z축 중심 회전 각을 -20도~ 20도 안으로 제한
-			rotation.z += roll * dTime;
-			if (rotation.z > 19.f)
-			{
-				roll = roll * dTime - rotation.z + 19.f;
-				roll /= dTime;
-				rotation.z = 19.f;
-			}
-			else if (rotation.x < -19.f)
-			{
-				roll = roll * dTime - rotation.z - 19.f;
-				roll /= dTime;
-				rotation.z = -19.f;
-			}
-		}
-		// rotation 저장
-		player->SetRotation(rotation);
-
-		// 카메라 회전
-		m_camera->Rotate(pitch, yaw, roll, dTime);
-
-		// 플레이어 회전(y축만 회전)
-		if (yaw != 0.0f)
-		{
-			XMFLOAT3 up = player->GetUpVector();
-			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw * dTime));
-			XMFLOAT3 look = player->GetLookVector();
-			player->SetLookVector(Vector3::TransformNormal(look, rotate));
-			XMFLOAT3 right = GetOwner()->GetRightVector();
-			player->SetRightVector(Vector3::TransformNormal(right, rotate));
-		}
+		RotateWithFirstAndThirdCamera(player, pitch, yaw, roll, dTime);
 	}
 	else if (cameraMode == SPACE_SHIP_CAMERA)
 	{
-		// 스페이스 쉽 카메라는 회전에 제한이 없음
-		m_camera->Rotate(pitch, yaw, roll, dTime);
-
-		if (pitch != 0.0f)
-		{
-			XMFLOAT3 right = player->GetRightVector();
-			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&right), XMConvertToRadians(pitch * dTime));
-			XMFLOAT3 look = player->GetLookVector();
-			player->SetLookVector(Vector3::TransformNormal(look, rotate));
-			XMFLOAT3 up = GetOwner()->GetUpVector();
-			player->SetUpVector(Vector3::TransformNormal(up, rotate));
-		}
-		if (yaw != 0.0f)
-		{
-			XMFLOAT3 up = GetOwner()->GetUpVector();
-			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw * dTime));
-			XMFLOAT3 look = player->GetLookVector();
-			player->SetLookVector(Vector3::TransformNormal(look, rotate));
-			XMFLOAT3 right = GetOwner()->GetRightVector();
-			player->SetRightVector(Vector3::TransformNormal(right, rotate));
-		}
-		if (roll != 0.0f)
-		{
-			XMFLOAT3 look = player->GetLookVector();
-			XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&look), XMConvertToRadians(roll * dTime));
-			XMFLOAT3 up = player->GetUpVector();
-			player->SetUpVector(Vector3::TransformNormal(up, rotate));
-			XMFLOAT3 right = GetOwner()->GetRightVector();
-			player->SetRightVector(Vector3::TransformNormal(right, rotate));
-		}
+		RotateWithSpaceShipCamera(player, pitch, yaw, roll, dTime);
 	}
 
-	// 회전으로 인해 플레이어의 로컬 축 들이 서로 직교하지 않을 수 있으므로 z축 기준으로 서로 직교하는 단위 벡터로 변경
-	XMFLOAT3 look = player->GetLookVector();
-	XMFLOAT3 right = player->GetRightVector();
-	XMFLOAT3 up = player->GetUpVector();
-
-	look = Vector3::Normalize(look);
-	right = Vector3::CrossProduct(up, look, true);
-	up = Vector3::CrossProduct(look, right, true);
-
-	player->SetLookVector(look);
-	player->SetRightVector(right);
-	player->SetUpVector(up);
+	// 회전으로 축들이 직교 안 할 가능성으로 인해 플레이어 로컬 축 재계산
+	RecalculatePlayerLocalAxis(player);
 }
 
 D3D12Camera* CameraComponent::OnChangeCamera(DWORD newCameraMode, DWORD currentCameraMode)
@@ -266,4 +168,119 @@ D3D12Camera* CameraComponent::ChangeCamera(DWORD newCameraMode, float deltaTime)
 	m_camera->SetPosition(Vector3::Add(GetOwner()->GetPosition(), m_camera->GetOffSet()));
 
 	return m_camera;
+}
+
+void CameraComponent::RotateWithFirstAndThirdCamera(PERPlayer* player, float pitch, float yaw, float roll, float dTime)
+{
+	XMFLOAT3 rotation = player->GetRotation();
+
+	if (pitch != 0.0f)
+	{
+		// 끄덕임
+		// x축 중심 회전 각을 -90도~ 90도 안으로 제한
+		rotation.x += pitch * dTime;
+		if (rotation.x > 89.f)
+		{
+			pitch = pitch * dTime - rotation.x + 89.f;
+			pitch /= dTime;
+			rotation.x = 89.f;
+		}
+		else if (rotation.x < -89.f)
+		{
+			pitch = pitch * dTime - rotation.x - 89.f;
+			pitch /= dTime;
+			rotation.x = -89.f;
+		}
+	}
+	if (yaw != 0.0f)
+	{
+		// 몸통 회전
+		rotation.y += yaw * dTime;
+		if (rotation.y > 360.0f) rotation.y -= 360.0f;
+		if (rotation.y < 0.0f) rotation.y += 360.0f;
+	}
+	if (roll != 0.0f)
+	{
+		// 기울임
+		// z축 중심 회전 각을 -20도~ 20도 안으로 제한
+		rotation.z += roll * dTime;
+		if (rotation.z > 19.f)
+		{
+			roll = roll * dTime - rotation.z + 19.f;
+			roll /= dTime;
+			rotation.z = 19.f;
+		}
+		else if (rotation.x < -19.f)
+		{
+			roll = roll * dTime - rotation.z - 19.f;
+			roll /= dTime;
+			rotation.z = -19.f;
+		}
+	}
+	// rotation 저장
+	player->SetRotation(rotation);
+
+	// 카메라 회전
+	m_camera->Rotate(pitch, yaw, roll, dTime);
+
+	// 플레이어 회전(y축만 회전)
+	if (yaw != 0.0f)
+	{
+		XMFLOAT3 up = player->GetUpVector();
+		XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw * dTime));
+		XMFLOAT3 look = player->GetLookVector();
+		player->SetLookVector(Vector3::TransformNormal(look, rotate));
+		XMFLOAT3 right = player->GetRightVector();
+		player->SetRightVector(Vector3::TransformNormal(right, rotate));
+	}
+}
+
+void CameraComponent::RotateWithSpaceShipCamera(PERPlayer* player, float pitch, float yaw, float roll, float dTime)
+{
+	// 스페이스 쉽 카메라는 회전에 제한이 없음
+	m_camera->Rotate(pitch, yaw, roll, dTime);
+
+	if (pitch != 0.0f)
+	{
+		XMFLOAT3 right = player->GetRightVector();
+		XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&right), XMConvertToRadians(pitch * dTime));
+		XMFLOAT3 look = player->GetLookVector();
+		player->SetLookVector(Vector3::TransformNormal(look, rotate));
+		XMFLOAT3 up = player->GetUpVector();
+		player->SetUpVector(Vector3::TransformNormal(up, rotate));
+	}
+	if (yaw != 0.0f)
+	{
+		XMFLOAT3 up = player->GetUpVector();
+		XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&up), XMConvertToRadians(yaw * dTime));
+		XMFLOAT3 look = player->GetLookVector();
+		player->SetLookVector(Vector3::TransformNormal(look, rotate));
+		XMFLOAT3 right = player->GetRightVector();
+		player->SetRightVector(Vector3::TransformNormal(right, rotate));
+	}
+	if (roll != 0.0f)
+	{
+		XMFLOAT3 look = player->GetLookVector();
+		XMMATRIX rotate = XMMatrixRotationAxis(XMLoadFloat3(&look), XMConvertToRadians(roll * dTime));
+		XMFLOAT3 up = player->GetUpVector();
+		player->SetUpVector(Vector3::TransformNormal(up, rotate));
+		XMFLOAT3 right = player->GetRightVector();
+		player->SetRightVector(Vector3::TransformNormal(right, rotate));
+	}
+}
+
+void CameraComponent::RecalculatePlayerLocalAxis(PERPlayer* player)
+{
+	// 회전으로 인해 플레이어의 로컬 축 들이 서로 직교하지 않을 수 있으므로 z축 기준으로 서로 직교하는 단위 벡터로 재계산
+	XMFLOAT3 look = player->GetLookVector();
+	XMFLOAT3 right = player->GetRightVector();
+	XMFLOAT3 up = player->GetUpVector();
+
+	look = Vector3::Normalize(look);
+	right = Vector3::CrossProduct(up, look, true);
+	up = Vector3::CrossProduct(look, right, true);
+
+	player->SetLookVector(look);
+	player->SetRightVector(right);
+	player->SetUpVector(up);
 }

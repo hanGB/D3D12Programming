@@ -12,6 +12,7 @@ public:
 
 	virtual void Update(float dTime);
 	virtual void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera);
+	virtual void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances, D3D12_VERTEX_BUFFER_VIEW instancingBufferView);
 
 	void SetMesh(d3d12_mesh::Mesh* mesh);
 	void SetShader(d3d12_shader::Shader* shader);
@@ -24,6 +25,8 @@ public:
 
 	void SetIsLiving(bool live);
 	bool GetIsLiving() const;
+
+	XMFLOAT4X4 GetWorldTransform() const;
 
 protected:
 	XMFLOAT4X4 m_worldTransform;

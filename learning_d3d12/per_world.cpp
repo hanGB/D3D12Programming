@@ -5,7 +5,7 @@
 #include "graphics_component.h"
 #include "physics_component.h"
 #include "d3d12_camera.h"
-#include "graphics_components_shader.h"
+#include "instancing_shader.h"
 #include "input_component.h"
 #include "ai_component.h"
 #include "rotating_ai.h"
@@ -37,22 +37,22 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 	// 루트 시그니처 생성
 	m_rootSignature = d3d12_init::CreateRootSignature(device);
 
-	// 쉐이더 생성
-	m_numShaders = 0;
-	m_shaders[m_numShaders] = new GraphicsComponentsShader(L"./shader/vertex_shader.cso", L"./shader/pixel_shader.cso");
-	m_shaders[m_numShaders]->CreatePipelineState(device, m_rootSignature);
-	m_numShaders++;
-
 	// 플레이어 설정
 	player->Build(device, commandList, m_rootSignature);
 
-	m_mesh = new d3d12_mesh::CubeMeshDiffused(device, commandList, 12.0f, 12.0f, 12.0f);
+	// 쉐이더 생성
+	m_numShaders = 0;
+	m_shaders[m_numShaders] = new InstancingShader(L"./shader/instancing_vertex.cso", L"./shader/instancing_pixel.cso");
+	m_shaders[m_numShaders]->CreatePipelineState(device, m_rootSignature);
+	m_numShaders++;
+	
+	m_mesh = new d3d12_mesh::CubeMeshDiffused(device, commandList, 12.0f, 12.0f, 12.0f);			
 
 	m_numObjects = 0;
 
-	int xObjects = 5;
-	int yObjects = 5;
-	int zObjects = 5;
+	int xObjects = 8;
+	int yObjects = 8;
+	int zObjects = 8;
 	
 	float xPitch = 12.f * 2.5f;
 	float yPitch = 12.f * 2.5f;
@@ -73,6 +73,7 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 			}
 		}
 	}
+	m_shaders[0]->CreateShaderVariables(device, commandList);
 }
 
 void PERWorld::ReleaseObjects()
@@ -142,7 +143,6 @@ void PERWorld::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camer
 void PERWorld::ReleaseUploadBuffers()
 {
 	for (int i = 0; i < m_numShaders; ++i) {
-		m_shaders[i]->ReleaseShaderVariables();
 		m_shaders[i]->ReleaseUploadBuffers();
 	}
 }

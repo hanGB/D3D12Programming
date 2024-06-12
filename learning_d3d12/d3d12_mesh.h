@@ -9,6 +9,8 @@ namespace d3d12_mesh {
 		virtual ~Mesh();
 
 		virtual void Render(ID3D12GraphicsCommandList* commandList);
+		virtual void Render(ID3D12GraphicsCommandList* commandList, UINT numInstances);
+		virtual void Render(ID3D12GraphicsCommandList* commandList, UINT numInstances, D3D12_VERTEX_BUFFER_VIEW instancingBufferView);
 
 		void AddRef();
 		void Release();

@@ -9,5 +9,5 @@ public:
 	virtual void Rotate(float pitch, float yaw, float roll, float dTime);
 
 private:
-	void UpdateWithRotateMatrix(XMMATRIX& rotateMat);
+	void RotateCameraLocalAxisAndPosition(XMMATRIX& rotateMat);
 };

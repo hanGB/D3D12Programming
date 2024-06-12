@@ -65,8 +65,11 @@ void PlayerPhysics::MatchCamera(float dTime)
 
 	D3D12Camera* camera = m_cameraComponent->GetCamera();
 	XMFLOAT3 pos = GetOwner()->GetPosition();
-	if (camera->GetMode() == THIRD_PERSON_CAMERA) camera->Update(pos, dTime);
-	if (camera->GetMode() == THIRD_PERSON_CAMERA) camera->SetLookAt(pos);
+	if (camera->GetMode() == THIRD_PERSON_CAMERA) 
+	{
+		camera->Update(pos, dTime);
+		camera->SetLookAt(pos);
+	}
 
 	camera->RegenerateViewMatrix();
 }

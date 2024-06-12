@@ -112,6 +112,9 @@
     <Filter Include="01. game\object\component\graphics\player_graphics">
       <UniqueIdentifier>{51525cc2-d437-4099-9118-1d9cfc2fcd2a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="00. framework\renderer\d3d12_shader\instancing">
+      <UniqueIdentifier>{31f3f2e0-e037-4fe0-83ef-9b3db7503285}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -209,6 +212,12 @@
     </ClCompile>
     <ClCompile Include="player_graphics.cpp">
       <Filter>01. game\object\component\graphics\player_graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="instancing_shader.cpp">
+      <Filter>00. framework\renderer\d3d12_shader\instancing</Filter>
+    </ClCompile>
+    <ClCompile Include="d3d12_resource.cpp">
+      <Filter>00. framework\renderer\d3d12_init</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -338,12 +347,21 @@
     <ClInclude Include="player_graphics.h">
       <Filter>01. game\object\component\graphics\player_graphics</Filter>
     </ClInclude>
+    <ClInclude Include="instancing_shader.h">
+      <Filter>00. framework\renderer\d3d12_shader\instancing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="vertex_shader.hlsl">
       <Filter>00. framework\renderer\shader_files</Filter>
     </FxCompile>
     <FxCompile Include="pixel_shader.hlsl">
+      <Filter>00. framework\renderer\shader_files</Filter>
+    </FxCompile>
+    <FxCompile Include="instancing_vertex.hlsl">
+      <Filter>00. framework\renderer\shader_files</Filter>
+    </FxCompile>
+    <FxCompile Include="instancing_pixel.hlsl">
       <Filter>00. framework\renderer\shader_files</Filter>
     </FxCompile>
   </ItemGroup>

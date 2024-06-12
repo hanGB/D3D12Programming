@@ -194,8 +194,8 @@ XMFLOAT3 PERObject::GetUpVector()
 
 XMFLOAT3 PERObject::GetRightVector()
 {
-	XMFLOAT3 look = XMFLOAT3(m_worldTransform._11, m_worldTransform._12, m_worldTransform._13);
-	return Vector3::Normalize(look);
+	XMFLOAT3 right = XMFLOAT3(m_worldTransform._11, m_worldTransform._12, m_worldTransform._13);
+	return Vector3::Normalize(right);
 }
 
 XMFLOAT4X4 PERObject::GetWorldTransform()

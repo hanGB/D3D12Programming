@@ -201,7 +201,5 @@ D3D12_GRAPHICS_PIPELINE_STATE_DESC d3d12_shader::Shader::SetAndGetPipelineStateD
 	pipelineStateDesc.SampleDesc.Count = 1;
 	pipelineStateDesc.SampleDesc.Quality = 0;
 
-
-
 	return pipelineStateDesc;
 }

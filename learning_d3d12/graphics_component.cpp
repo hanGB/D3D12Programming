@@ -41,6 +41,13 @@ void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Came
 	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Render(commandList, camera);
 }
 
+void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances, D3D12_VERTEX_BUFFER_VIEW instancingBufferView)
+{
+	UpdateShaderVariables(commandList);
+
+	if (m_mesh) m_mesh->Render(commandList, numInstances, instancingBufferView);
+}
+
 void GraphicsComponent::SetMesh(d3d12_mesh::Mesh* mesh)
 {
 	if (m_mesh) m_mesh->Release();
@@ -89,4 +96,9 @@ void GraphicsComponent::SetIsLiving(bool live)
 bool GraphicsComponent::GetIsLiving() const
 {
 	return m_isLiving;
+}
+
+XMFLOAT4X4 GraphicsComponent::GetWorldTransform() const
+{
+	return m_worldTransform;
 }

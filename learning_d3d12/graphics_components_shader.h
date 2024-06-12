@@ -17,12 +17,11 @@ public:
 protected:
 	virtual D3D12_INPUT_LAYOUT_DESC SetAndGetInputLayoutDesc();
 
+	void DoGarbegeCollection();
+
 	static const int c_INITIAL_MAXIMUM_COMPONENTS = 1024;
 
 	std::vector<GraphicsComponent*> m_graphicsComponents;
 	int m_numComponents = 0;
 	int m_maximumComponents = c_INITIAL_MAXIMUM_COMPONENTS;
-
-private:
-	void DoGarbegeCollection();
 };

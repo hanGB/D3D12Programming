@@ -3,6 +3,13 @@
 class D3D12Camera;
 
 namespace d3d12_shader {
+	struct VS_VB_INSTNACE
+	{
+		XMFLOAT4X4	transform;
+		XMFLOAT4	color;
+	};
+
+
 	class Shader {
 	public:
 		Shader(const wchar_t* vertex, const wchar_t* pixel);

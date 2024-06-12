@@ -136,6 +136,7 @@
     <ClCompile Include="d3d12_camera.cpp" />
     <ClCompile Include="d3d12_mesh.cpp" />
     <ClCompile Include="d3d12_renderer.cpp" />
+    <ClCompile Include="d3d12_resource.cpp" />
     <ClCompile Include="d3d12_shader.cpp" />
     <ClCompile Include="d3d12_vertex.cpp" />
     <ClCompile Include="diffused_shader.cpp" />
@@ -145,6 +146,7 @@
     <ClCompile Include="graphics_component.cpp" />
     <ClCompile Include="graphics_components_shader.cpp" />
     <ClCompile Include="input_component.cpp" />
+    <ClCompile Include="instancing_shader.cpp" />
     <ClCompile Include="key_setting.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="per_controller.cpp" />
@@ -186,6 +188,7 @@
     <ClInclude Include="game_framework.h" />
     <ClInclude Include="graphics_component.h" />
     <ClInclude Include="input_component.h" />
+    <ClInclude Include="instancing_shader.h" />
     <ClInclude Include="key_setting.h" />
     <ClInclude Include="null_logger.h" />
     <ClInclude Include="d3d12_camera.h" />
@@ -210,6 +213,18 @@
     <ClInclude Include="third_person_camera.h" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="instancing_pixel.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="instancing_vertex.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="pixel_shader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>

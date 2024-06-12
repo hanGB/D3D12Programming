@@ -24,7 +24,7 @@ void PERPlayer::Build(ID3D12Device* device, ID3D12GraphicsCommandList* commandLi
 	GraphicsComponentsShader* shader = new GraphicsComponentsShader(L"./shader/vertex_shader.cso", L"./shader/pixel_shader.cso");
 	shader->CreatePipelineState(device, rootSignature);
 
-	GetComponentWithType<CameraComponent>()->ChangeCamera(SPACE_SHIP_CAMERA, 0.0f);
+	GetComponentWithType<CameraComponent>()->ChangeCamera(THIRD_PERSON_CAMERA, 0.0f);
 
 	GetGraphics().CreateShaderVariables(device, commandList);
 	GetGraphics().SetMesh(mesh);
@@ -69,6 +69,8 @@ XMFLOAT3 PERPlayer::GetRightVector()
 
 XMFLOAT4X4 PERPlayer::GetWorldTransform()
 {
+	m_worldTransform = Matrix4x4::Identity();
+
 	m_worldTransform._11 = m_right.x;
 	m_worldTransform._12 = m_right.y;
 	m_worldTransform._13 = m_right.z;
