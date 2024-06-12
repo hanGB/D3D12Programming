@@ -11,8 +11,7 @@ public:
 	virtual void Initialize();
 
 	virtual void Update(float dTime);
-	virtual void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera);
-	virtual void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances, D3D12_VERTEX_BUFFER_VIEW instancingBufferView);
+	virtual void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances);
 
 	void SetMesh(d3d12_mesh::Mesh* mesh);
 	void SetShader(d3d12_shader::Shader* shader);

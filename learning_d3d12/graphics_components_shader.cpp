@@ -29,7 +29,7 @@ void GraphicsComponentsShader::Render(ID3D12GraphicsCommandList* commandList, D3
 	d3d12_shader::Shader::Render(commandList, camera);
 	for (int i = 0; i < m_numComponents; ++i)
 	{
-		m_graphicsComponents[i]->Render(commandList, camera);
+		m_graphicsComponents[i]->Render(commandList, camera, 1);
 	}
 }
 

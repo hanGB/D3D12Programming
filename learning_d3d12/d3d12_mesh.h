@@ -8,9 +8,7 @@ namespace d3d12_mesh {
 		Mesh(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 		virtual ~Mesh();
 
-		virtual void Render(ID3D12GraphicsCommandList* commandList);
-		virtual void Render(ID3D12GraphicsCommandList* commandList, UINT numInstances);
-		virtual void Render(ID3D12GraphicsCommandList* commandList, UINT numInstances, D3D12_VERTEX_BUFFER_VIEW instancingBufferView);
+		virtual void Render(ID3D12GraphicsCommandList* commandList, UINT numInstances = 1);
 
 		void AddRef();
 		void Release();

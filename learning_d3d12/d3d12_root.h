@@ -43,8 +43,13 @@ namespace d3d12_init {
 		ID3D12RootSignature* rootSignature = nullptr;
 		ID3DBlob* rootSignatureBlob, * errorBlob;
 
-		D3D12_ROOT_PARAMETER rootParameter[2] = { SetAndGetRootParameter(16, 0), SetAndGetRootParameter(32, 1) };
-		D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = SetAndGetRootSignatureDesc(rootParameter, 2);
+		D3D12_ROOT_PARAMETER rootParameter[3] = { SetAndGetRootParameter(16, 0), SetAndGetRootParameter(32, 1) };
+		rootParameter[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+		rootParameter[2].Descriptor.ShaderRegister = 0;
+		rootParameter[2].Descriptor.RegisterSpace = 0;
+		rootParameter[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+		D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = SetAndGetRootSignatureDesc(rootParameter, _countof(rootParameter));
 
 		// Blob 생성
 		::D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1,

@@ -162,7 +162,7 @@ void D3D12Renderer::FrameAdvance(PERWorld* world, PERPlayer* player, D3D12Camera
 
 	m_commandList->ClearDepthStencilView(m_dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 
 		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, NULL);
-	if (player) player->GetGraphics().Render(m_commandList, camera);
+	if (player) player->GetGraphics().Render(m_commandList, camera, 1);
 
 	// 현재 렌더 타겟이 렌더링 끝나길 대기
 	// GPU가 렌더 타켓(버퍼)를 더 이상 사용하지 않으면 렌더 타겟의 상태는 프리젠트 상태로 바뀜

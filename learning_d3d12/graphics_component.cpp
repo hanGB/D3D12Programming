@@ -30,22 +30,15 @@ void GraphicsComponent::Update(float dTime)
 	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Update(dTime);
 }
 
-void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
+void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances)
 {
 	UpdateShaderVariables(commandList);
 
 	if (m_shader) m_shader->Render(commandList, camera);
 
-	if (m_mesh) m_mesh->Render(commandList);
+	if (m_mesh) m_mesh->Render(commandList, numInstances);
 
-	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Render(commandList, camera);
-}
-
-void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances, D3D12_VERTEX_BUFFER_VIEW instancingBufferView)
-{
-	UpdateShaderVariables(commandList);
-
-	if (m_mesh) m_mesh->Render(commandList, numInstances, instancingBufferView);
+	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Render(commandList, camera, numInstances);
 }
 
 void GraphicsComponent::SetMesh(d3d12_mesh::Mesh* mesh)

@@ -13,6 +13,6 @@ void PlayerGraphics::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera*
 {
 	if (camera->GetMode() == THIRD_PERSON_CAMERA)
 	{
-		GraphicsComponent::Render(commandList, camera);
+		GraphicsComponent::Render(commandList, camera, 1);
 	}
 }

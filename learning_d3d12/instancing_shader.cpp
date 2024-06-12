@@ -20,12 +20,13 @@ void InstancingShader::CreatePipelineState(ID3D12Device* device, ID3D12RootSigna
 
 void InstancingShader::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
 {
+	// 렌더링
+	d3d12_shader::Shader::Render(commandList, camera);
+	
 	// 인스턴싱 데이터를 버퍼에 저장
 	UpdateShaderVariables(commandList);
 
-	// 렌더링
-	d3d12_shader::Shader::Render(commandList, camera);
-	m_graphicsComponents[0]->Render(commandList, camera, m_numComponents, m_instancingBufferView);
+	m_graphicsComponents[0]->Render(commandList, camera, m_numComponents);
 }
 
 void InstancingShader::CreateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
@@ -37,17 +38,13 @@ void InstancingShader::CreateShaderVariables(ID3D12Device* device, ID3D12Graphic
 
 	// 버텍스 버퍼(업로드 힙)에 대한 포인터 저장
 	m_cbGraphicsComponents->Map(0, NULL, (void**)&m_cbMappedGraphicsComponents);
-
-	// 버텍스 버퍼에 대한 뷰 생성
-	m_instancingBufferView.BufferLocation = m_cbGraphicsComponents->GetGPUVirtualAddress();
-	m_instancingBufferView.StrideInBytes = sizeof(d3d12_shader::VS_VB_INSTNACE);
-	m_instancingBufferView.SizeInBytes = sizeof(d3d12_shader::VS_VB_INSTNACE) * m_numComponents;
 }
 
 void InstancingShader::UpdateShaderVariables(ID3D12GraphicsCommandList* commandList)
 {
 	DoGarbegeCollection();
 
+	commandList->SetGraphicsRootShaderResourceView(2, m_cbGraphicsComponents->GetGPUVirtualAddress());
 	for (int i = 0; i < m_numComponents; ++i) {
 		m_cbMappedGraphicsComponents[i].color = (i % 2) ? XMFLOAT4(0.5f, 0.0f, 0.0f, 0.0f) : XMFLOAT4(0.0f, 0.0f, 0.5f, 0.0f);
 		XMFLOAT4X4 worldTransform = m_graphicsComponents[i]->GetWorldTransform();
@@ -63,18 +60,12 @@ void InstancingShader::ReleaseShaderVariables()
 
 D3D12_INPUT_LAYOUT_DESC InstancingShader::SetAndGetInputLayoutDesc()
 {
-	UINT numInputElementsDescs = 7;
+	UINT numInputElementsDescs = 2;
 	D3D12_INPUT_ELEMENT_DESC* inputElementDescs = new D3D12_INPUT_ELEMENT_DESC[numInputElementsDescs];
 
 	// 버텍스 정보 입력
 	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 	inputElementDescs[1] = { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-	// 인스턴싱 정보 입력
-	inputElementDescs[2] = { "WORLDMATRIX", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
-	inputElementDescs[3] = { "WORLDMATRIX", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
-	inputElementDescs[4] = { "WORLDMATRIX", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
-	inputElementDescs[5] = { "WORLDMATRIX", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 48, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
-	inputElementDescs[6] = { "INSTANCECOLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 64, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;

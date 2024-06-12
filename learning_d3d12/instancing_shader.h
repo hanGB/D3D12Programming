@@ -20,6 +20,4 @@ protected:
 
 	ID3D12Resource* m_cbGraphicsComponents = NULL;
 	d3d12_shader::VS_VB_INSTNACE* m_cbMappedGraphicsComponents = NULL;
-
-	D3D12_VERTEX_BUFFER_VIEW m_instancingBufferView;
 };
