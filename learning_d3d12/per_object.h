@@ -4,9 +4,11 @@
 #include "physics_component.h"
 #include "graphics_component.h"
 
+class ObjectFactory;
+
 class PERObject {
 public:
-	PERObject(InputComponent* input, AiComponent* ai, PhysicsComponent* physics, GraphicsComponent* graphics);
+	PERObject(ObjectFactory& factory, InputComponent* input, AiComponent* ai, PhysicsComponent* physics, GraphicsComponent* graphics);
 	virtual ~PERObject();
 
 	virtual void Initialize();
@@ -57,6 +59,8 @@ protected:
 private:
 	template <class T>
 	T* GetComponent(PERComponent* component);
+
+	ObjectFactory& m_factory;
 
 	// 일반 컨포넌트
 	PERComponent* m_component = nullptr;

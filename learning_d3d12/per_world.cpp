@@ -1,14 +1,10 @@
 #include "stdafx.h"
 #include "per_world.h"
+#include "object_factory.h"
 #include "d3d12_root.h"
 #include "per_object.h"
-#include "graphics_component.h"
-#include "physics_component.h"
 #include "d3d12_camera.h"
 #include "instancing_shader.h"
-#include "input_component.h"
-#include "ai_component.h"
-#include "rotating_ai.h"
 #include "per_player.h"
 
 PERWorld::PERWorld()
@@ -25,6 +21,10 @@ PERWorld::PERWorld()
 
 PERWorld::~PERWorld()
 {
+	delete m_player;
+	delete m_factory;
+	delete m_playerFactory;
+	
 	m_shaders.clear();
 	m_shaders.shrink_to_fit();
 
@@ -32,13 +32,16 @@ PERWorld::~PERWorld()
 	m_objects.shrink_to_fit();
 }
 
-void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, PERPlayer* player)
+void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
 {
 	// 루트 시그니처 생성
 	m_rootSignature = d3d12_init::CreateRootSignature(device);
 
 	// 플레이어 설정
-	player->Build(device, commandList, m_rootSignature);
+	m_playerFactory = new ObjectFactory(PER_PLAYER_INPUT, PER_BASE_COMPONENT, PER_PLAYER_PHYSICS, PER_PLAYER_GRAPHICS);
+	m_playerFactory->AddOtherComponent(PER_CAMERA_COMPONENT);
+	m_player = m_playerFactory->CreateObject<PERPlayer>();
+	m_player->Build(device, commandList, m_rootSignature);
 
 	// 쉐이더 생성
 	m_numShaders = 0;
@@ -49,6 +52,8 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 	m_mesh = new d3d12_mesh::CubeMeshDiffused(device, commandList, 12.0f, 12.0f, 12.0f);			
 
 	m_numObjects = 0;
+	m_factory = new ObjectFactory(PER_BASE_COMPONENT, PER_ROTATING_AI, PER_BASE_COMPONENT, PER_BASE_COMPONENT);
+	m_factory->SetMesh(m_mesh);
 
 	int xObjects = 8;
 	int yObjects = 8;
@@ -67,7 +72,8 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 					m_objects.resize(m_maxObjects);
 				}
 
-				PERObject* object = CreateObject();
+				PERObject* object = m_factory->CreateObject<PERObject>();
+				dynamic_cast<GraphicsComponentsShader*>(m_shaders[0])->AddGraphicsComponent(&object->GetGraphics());
 				object->SetPosition(XMFLOAT3(xPitch * x, yPitch * y, zPitch * z));
 				m_objects[m_numObjects++] = object;
 			}
@@ -107,6 +113,7 @@ void PERWorld::InputUpdate(PERController& controller, float deltaTime)
 	for (int i = 0; i < m_numObjects; ++i) {
 		m_objects[i]->GetInput().Update(controller, deltaTime);
 	}
+	m_player->GetInput().Update(controller, deltaTime);
 }
 
 void PERWorld::AiUpdate(float deltaTime)
@@ -114,6 +121,7 @@ void PERWorld::AiUpdate(float deltaTime)
 	for (int i = 0; i < m_numObjects; ++i) {
 		m_objects[i]->GetAi().Update(deltaTime);
 	}
+	m_player->GetAi().Update(deltaTime);
 }
 
 void PERWorld::PhysicsUpdate(float deltaTime)
@@ -121,15 +129,17 @@ void PERWorld::PhysicsUpdate(float deltaTime)
 	for (int i = 0; i < m_numObjects; ++i) {
 		m_objects[i]->GetPhysics().Update(deltaTime);
 	}
+	m_player->GetPhysics().Update(deltaTime);
 }
 void PERWorld::GraphicsUpdate(float deltaTime)
 {
 	for (int i = 0; i < m_numObjects; ++i) {
 		m_objects[i]->GetGraphics().Update(deltaTime);
 	}
+	m_player->GetGraphics().Update(deltaTime);
 }
 
-void PERWorld::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
+void PERWorld::Render(ID3D12GraphicsCommandList* commandList, ID3D12DescriptorHeap* dsvDescriptorHeap, D3D12Camera* camera)
 {
 	camera->SetViewportsAndScissorRect(commandList);
 	commandList->SetGraphicsRootSignature(m_rootSignature);
@@ -138,6 +148,11 @@ void PERWorld::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camer
 	for (int i = 0; i < m_numShaders; ++i) {
 		m_shaders[i]->Render(commandList, camera);
 	}
+
+	commandList->ClearDepthStencilView(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, NULL);
+	if (m_player) m_player->GetGraphics().Render(commandList, camera, 1);
+
 }
 
 void PERWorld::ReleaseUploadBuffers()
@@ -147,17 +162,7 @@ void PERWorld::ReleaseUploadBuffers()
 	}
 }
 
-PERObject* PERWorld::CreateObject()
+PERPlayer* PERWorld::GetPlayer()
 {
-	InputComponent* input = new InputComponent();
-	RotatingAi* ai = new RotatingAi();
-	ai->SetAmount(XMFLOAT3(0.f, 90.f, 0.f));
-	PhysicsComponent* physics = new PhysicsComponent();
-	GraphicsComponent* graphics = new GraphicsComponent();
-	graphics->SetMesh(m_mesh);
-
-	PERObject* object = new PERObject(input, ai, physics, graphics);
-	dynamic_cast<GraphicsComponentsShader*>(m_shaders[0])->AddGraphicsComponent(graphics);
-
-	return object;
+	return m_player;
 }

@@ -115,6 +115,9 @@
     <Filter Include="00. framework\renderer\d3d12_shader\instancing">
       <UniqueIdentifier>{31f3f2e0-e037-4fe0-83ef-9b3db7503285}</UniqueIdentifier>
     </Filter>
+    <Filter Include="01. game\object\factory">
+      <UniqueIdentifier>{2ba05bf2-b643-4c6d-bc3c-30fe45e4bc08}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -218,6 +221,9 @@
     </ClCompile>
     <ClCompile Include="d3d12_resource.cpp">
       <Filter>00. framework\renderer\d3d12_init</Filter>
+    </ClCompile>
+    <ClCompile Include="object_factory.cpp">
+      <Filter>01. game\object\factory</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -349,6 +355,9 @@
     </ClInclude>
     <ClInclude Include="instancing_shader.h">
       <Filter>00. framework\renderer\d3d12_shader\instancing</Filter>
+    </ClInclude>
+    <ClInclude Include="object_factory.h">
+      <Filter>01. game\object\factory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

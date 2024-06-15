@@ -12,5 +12,5 @@ public:
 	void SetAmount(XMFLOAT3 amount);
 
 private:
-	XMFLOAT3 m_amount = { 0.f, 30.f, 0.f };
+	XMFLOAT3 m_amount = { 0.f, 90.f, 0.f };
 };

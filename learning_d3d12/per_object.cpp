@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "per_object.h"
 
-PERObject::PERObject(InputComponent* input, AiComponent* ai, PhysicsComponent* physics, GraphicsComponent* graphics)
-	: m_input(input), m_ai(ai), m_physics(physics), m_graphics(graphics)
+PERObject::PERObject(ObjectFactory& factory, InputComponent* input, AiComponent* ai, PhysicsComponent* physics, GraphicsComponent* graphics)
+	: m_factory(factory), m_input(input), m_ai(ai), m_physics(physics), m_graphics(graphics)
 {
 	m_input->SetOwner(this);
 	m_ai->SetOwner(this);
@@ -54,6 +54,8 @@ PhysicsComponent& PERObject::GetPhysics()
 
 void PERObject::AddComponent(PERComponent* component)
 {
+	if (!component) return;
+
 	if (!m_component) 
 	{
 		m_component = component;

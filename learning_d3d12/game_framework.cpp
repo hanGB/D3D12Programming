@@ -55,10 +55,9 @@ void GameFramework::ChangeScreenMode()
 
 void GameFramework::CreateObjectsWithRenderer()
 {
-	m_player = new PERPlayer();
 	m_world = new PERWorld();
-	m_renderer.BuildObjects(m_world, m_player);
-	m_camera = m_player->GetComponentWithType<CameraComponent>()->GetCamera();
+	m_renderer.BuildObjects(m_world);
+	m_camera = m_world->GetPlayer()->GetComponentWithType<CameraComponent>()->GetCamera();
 }
 
 void GameFramework::DeleteObjects()
@@ -76,14 +75,12 @@ void GameFramework::Update(int deltaTime)
 	if (m_controller.GetIsMouseFixed()) ClipMouseCursorPosToWindow();
 
 	m_world->InputUpdate(m_controller, dTime);
-	m_player->GetInput().Update(m_controller, dTime);
 	m_world->AiUpdate(dTime);
 
 	m_updateLag += deltaTime;
 	if (m_updateLag > PER_MICROSEC_PER_UPDATE) {
 		for (int i = 0; i < PER_MAXIMUM_UPDATE_LOOP_COUNT && m_updateLag >= PER_MICROSEC_PER_UPDATE; ++i) {	
 			m_world->PhysicsUpdate(PER_MICROSEC_PER_UPDATE / 1'000'000.0f);
-			m_player->GetPhysics().Update(PER_MICROSEC_PER_UPDATE / 1'000'000.0f);
 			m_updateLag -= PER_MICROSEC_PER_UPDATE;
 		}
 	}
@@ -92,7 +89,6 @@ void GameFramework::Update(int deltaTime)
 	if (m_updateEnd) return;
 
 	m_world->GraphicsUpdate(dTime);
-	m_player->GetGraphics().Update(dTime);
 
 	m_frameGap = (float)m_updateLag / (float)PER_MICROSEC_PER_UPDATE;
 	m_updateEnd = true;
@@ -105,7 +101,7 @@ void GameFramework::Render()
 	// 타이머 시간 갱신 및 프레임 레이트 계산
 	m_timer.Tick();
 
-	m_renderer.FrameAdvance(m_world, m_player, m_camera);
+	m_renderer.FrameAdvance(m_world, m_camera);
 
 	// 윈도우에 프레임 레이트 출력
 	m_timer.GetFrameRate(m_textFrameRate + 12, 37);
@@ -181,7 +177,7 @@ void GameFramework::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageId, WPAR
 		case VK_F1:
 		case VK_F2:
 		case VK_F3:
-			if (m_player) m_camera = m_player->GetComponentWithType<CameraComponent>()->ChangeCamera(wParam - VK_F1 + 1, 0.0f);
+			if (m_world->GetPlayer()) m_camera = m_world->GetPlayer()->GetComponentWithType<CameraComponent>()->ChangeCamera(wParam - VK_F1 + 1, 0.0f);
 			break;
 		case VK_F9:
 			ChangeScreenMode();

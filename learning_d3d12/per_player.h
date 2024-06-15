@@ -3,7 +3,7 @@
 
 class PERPlayer : public PERObject {
 public:
-	PERPlayer();
+	PERPlayer(ObjectFactory& factory, InputComponent* input, AiComponent* ai, PhysicsComponent* physics, GraphicsComponent* graphics);
 	~PERPlayer();
 
 	void Build(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSignature);

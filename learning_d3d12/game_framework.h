@@ -67,8 +67,6 @@ private:
 	D3D12Camera* m_camera = NULL;
 	// 월드
 	PERWorld* m_world = NULL;
-	// 플레이어
-	PERPlayer* m_player = NULL;
 
 	wchar_t m_textFrameRate[50];
 };

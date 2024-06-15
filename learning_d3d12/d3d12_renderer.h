@@ -17,9 +17,9 @@ public:
 	void ChangeSwapChainState();
 	void MoveToNextFrame();
 
-	void BuildObjects(PERWorld* world, PERPlayer* player);
+	void BuildObjects(PERWorld* world);
 
-	void FrameAdvance(PERWorld* world, PERPlayer* player, D3D12Camera* camera);
+	void FrameAdvance(PERWorld* world, D3D12Camera* camera);
 
 	void SetClientSize(int width, int height);
 	void WaitForGpuComplete();

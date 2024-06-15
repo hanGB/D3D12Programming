@@ -8,10 +8,9 @@
 #include "d3d12_mesh.h"
 #include "graphics_components_shader.h"
 
-PERPlayer::PERPlayer()
-	: PERObject(new PlayerInput(), new AiComponent(), new PlayerPhysics(), new PlayerGraphics)
+PERPlayer::PERPlayer(ObjectFactory& factory, InputComponent* input, AiComponent* ai, PhysicsComponent* physics, GraphicsComponent* graphics)
+	: PERObject(factory, input, ai, physics, graphics)
 {
-	AddComponent(new CameraComponent());
 }
 
 PERPlayer::~PERPlayer()

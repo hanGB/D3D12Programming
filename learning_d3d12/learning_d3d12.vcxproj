@@ -149,6 +149,7 @@
     <ClCompile Include="instancing_shader.cpp" />
     <ClCompile Include="key_setting.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="object_factory.cpp" />
     <ClCompile Include="per_controller.cpp" />
     <ClCompile Include="per_log.cpp" />
     <ClCompile Include="per_object.cpp" />
@@ -193,6 +194,7 @@
     <ClInclude Include="null_logger.h" />
     <ClInclude Include="d3d12_camera.h" />
     <ClInclude Include="graphics_components_shader.h" />
+    <ClInclude Include="object_factory.h" />
     <ClInclude Include="per_component.h" />
     <ClInclude Include="per_controller.h" />
     <ClInclude Include="per_log.h" />

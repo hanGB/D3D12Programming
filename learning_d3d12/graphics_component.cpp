@@ -32,7 +32,7 @@ void GraphicsComponent::Update(float dTime)
 
 void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances)
 {
-	UpdateShaderVariables(commandList);
+	if (numInstances == 1) UpdateShaderVariables(commandList);
 
 	if (m_shader) m_shader->Render(commandList, camera);
 
