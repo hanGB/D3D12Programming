@@ -150,6 +150,7 @@
     <ClCompile Include="key_setting.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="object_factory.cpp" />
+    <ClCompile Include="object_storage.cpp" />
     <ClCompile Include="per_controller.cpp" />
     <ClCompile Include="per_log.cpp" />
     <ClCompile Include="per_object.cpp" />
@@ -160,6 +161,7 @@
     <ClCompile Include="player_graphics.cpp" />
     <ClCompile Include="player_input.cpp" />
     <ClCompile Include="player_physics.cpp" />
+    <ClCompile Include="resource_storage.cpp" />
     <ClCompile Include="rotating_ai.cpp" />
     <ClCompile Include="simple_timer.cpp" />
     <ClCompile Include="space_ship_camera.cpp" />
@@ -195,6 +197,8 @@
     <ClInclude Include="d3d12_camera.h" />
     <ClInclude Include="graphics_components_shader.h" />
     <ClInclude Include="object_factory.h" />
+    <ClInclude Include="object_storage.h" />
+    <ClInclude Include="object_type.h" />
     <ClInclude Include="per_component.h" />
     <ClInclude Include="per_controller.h" />
     <ClInclude Include="per_log.h" />
@@ -208,6 +212,8 @@
     <ClInclude Include="player_graphics.h" />
     <ClInclude Include="player_input.h" />
     <ClInclude Include="player_physics.h" />
+    <ClInclude Include="resource_storage.h" />
+    <ClInclude Include="resource_type.h" />
     <ClInclude Include="rotating_ai.h" />
     <ClInclude Include="simple_timer.h" />
     <ClInclude Include="space_ship_camera.h" />

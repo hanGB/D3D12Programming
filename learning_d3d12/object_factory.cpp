@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "object_type.h"
 #include "object_factory.h"
 // input
 #include "input_component.h"
@@ -15,16 +16,20 @@
 // other
 #include "camera_component.h"
 
-ObjectFactory::ObjectFactory(int input, int ai, int physics, int graphics)
+ObjectFactory::ObjectFactory(int objectType, int input, int ai, int physics, int graphics)
 {
+	m_objectType = objectType;
+
 	m_componentVectors.inputs.push_back(input);
 	m_componentVectors.ais.push_back(ai);
 	m_componentVectors.physicses.push_back(physics);
 	m_componentVectors.graphicses.push_back(graphics);
 }
 
-ObjectFactory::ObjectFactory(std::vector<int> inputs, std::vector<int> ais, std::vector<int> physicses, std::vector<int> graphicses)
+ObjectFactory::ObjectFactory(int objectType, std::vector<int> inputs, std::vector<int> ais, std::vector<int> physicses, std::vector<int> graphicses)
 {
+	m_objectType = objectType;
+
 	m_componentVectors.inputs = inputs;
 	m_componentVectors.ais = ais;
 	m_componentVectors.physicses = physicses;
@@ -56,9 +61,14 @@ void ObjectFactory::SetShader(d3d12_shader::Shader* shader)
 	m_shader = shader;
 }
 
-void ObjectFactory::SetMesh(d3d12_mesh::Mesh* mesh)
+void ObjectFactory::SetMeshType(int meshType)
 {
-	m_mesh = mesh;
+	m_meshType = meshType;
+}
+
+int ObjectFactory::GetObjectType() const
+{
+	return m_objectType;
 }
 
 InputComponent* ObjectFactory::CreateInputs()

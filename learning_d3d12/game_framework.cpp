@@ -55,7 +55,7 @@ void GameFramework::ChangeScreenMode()
 
 void GameFramework::CreateObjectsWithRenderer()
 {
-	m_world = new PERWorld();
+	m_world = new PERWorld(m_objectStorage, m_resourceStorage);
 	m_renderer.BuildObjects(m_world);
 	m_camera = m_world->GetPlayer()->GetComponentWithType<CameraComponent>()->GetCamera();
 }

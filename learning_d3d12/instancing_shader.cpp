@@ -18,15 +18,15 @@ void InstancingShader::CreatePipelineState(ID3D12Device* device, ID3D12RootSigna
 	m_pipelineStates[0] = BuildPipelineState(device, rootSignature);
 }
 
-void InstancingShader::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
+void InstancingShader::Render(ResourceStorage& resourceStorage, ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
 {
 	// 렌더링
-	d3d12_shader::Shader::Render(commandList, camera);
+	d3d12_shader::Shader::Render(resourceStorage, commandList, camera);
 	
 	// 인스턴싱 데이터를 버퍼에 저장
 	UpdateShaderVariables(commandList);
 
-	m_graphicsComponents[0]->Render(commandList, camera, m_numComponents);
+	m_graphicsComponents[0]->Render(resourceStorage, commandList, camera, m_numComponents);
 }
 
 void InstancingShader::CreateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)

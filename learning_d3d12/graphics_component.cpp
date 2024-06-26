@@ -2,6 +2,7 @@
 #include "graphics_component.h"
 #include "per_object.h"
 #include "camera_component.h"
+#include "resource_storage.h"
 
 GraphicsComponent::GraphicsComponent()
 {
@@ -10,7 +11,6 @@ GraphicsComponent::GraphicsComponent()
 GraphicsComponent::~GraphicsComponent()
 {
 	if (m_shader) m_shader->Release();
-	if (m_mesh) m_mesh->Release();
 
 	PERComponent* next = GetNext();
 	if (next) delete next;
@@ -30,22 +30,22 @@ void GraphicsComponent::Update(float dTime)
 	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Update(dTime);
 }
 
-void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances)
+void GraphicsComponent::Render(ResourceStorage& resourceStorage, ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances)
 {
-	if (numInstances == 1) UpdateShaderVariables(commandList);
+	d3d12_mesh::Mesh* mesh = resourceStorage.GetMesh(m_meshType);
 
-	if (m_shader) m_shader->Render(commandList, camera);
+	if (numInstances == 1) UpdateShaderVariables(mesh, commandList);
 
-	if (m_mesh) m_mesh->Render(commandList, numInstances);
+	if (m_shader) m_shader->Render(resourceStorage, commandList, camera);
 
-	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Render(commandList, camera, numInstances);
+	if (mesh) mesh->Render(commandList, numInstances);
+
+	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Render(resourceStorage, commandList, camera, numInstances);
 }
 
-void GraphicsComponent::SetMesh(d3d12_mesh::Mesh* mesh)
+void GraphicsComponent::SetMeshType(int meshType)
 {
-	if (m_mesh) m_mesh->Release();
-	m_mesh = mesh;
-	if (m_mesh) m_mesh->AddRef();
+	m_meshType = meshType;
 }
 
 void GraphicsComponent::SetShader(d3d12_shader::Shader* shader)
@@ -53,6 +53,11 @@ void GraphicsComponent::SetShader(d3d12_shader::Shader* shader)
 	if (m_shader) m_shader->Release();
 	m_shader = shader;
 	if (m_shader) m_shader->AddRef();
+}
+
+int GraphicsComponent::GetMeshType() const
+{
+	return m_meshType;
 }
 
 void GraphicsComponent::ReleaseUploadBuffers()
@@ -66,13 +71,13 @@ void GraphicsComponent::CreateShaderVariables(ID3D12Device* device, ID3D12Graphi
 	if (camera) camera->CreateShaderVariables(device, commandList);
 }
 
-void GraphicsComponent::UpdateShaderVariables(ID3D12GraphicsCommandList* commandList)
+void GraphicsComponent::UpdateShaderVariables(d3d12_mesh::Mesh* mesh, ID3D12GraphicsCommandList* commandList)
 {
 	XMFLOAT4X4 transposedModel;
 	XMStoreFloat4x4(&transposedModel, XMMatrixTranspose(XMLoadFloat4x4(&m_worldTransform)));
 
-	if (m_mesh && m_mesh->IsHaveToRotate()) {
-		transposedModel = Matrix4x4::Multiply(transposedModel, m_mesh->GetDefaultRotation());
+	if (mesh && mesh->IsHaveToRotate()) {
+		transposedModel = Matrix4x4::Multiply(transposedModel, mesh->GetDefaultRotation());
 	}
 	commandList->SetGraphicsRoot32BitConstants(0, 16, &transposedModel, 0);
 }

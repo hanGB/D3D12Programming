@@ -5,10 +5,6 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
@@ -118,6 +114,19 @@
     <Filter Include="01. game\object\factory">
       <UniqueIdentifier>{2ba05bf2-b643-4c6d-bc3c-30fe45e4bc08}</UniqueIdentifier>
     </Filter>
+    <Filter Include="01. game\object\storage">
+      <UniqueIdentifier>{f50cf58e-b83b-4f7a-92d6-0a40d549bb02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. game\object\defined">
+      <UniqueIdentifier>{2e618051-9660-4aa2-a446-1915af125235}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. data\resource">
+      <UniqueIdentifier>{5fe1f76c-7575-46f3-a4d3-0aa840ae5271}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -224,6 +233,12 @@
     </ClCompile>
     <ClCompile Include="object_factory.cpp">
       <Filter>01. game\object\factory</Filter>
+    </ClCompile>
+    <ClCompile Include="object_storage.cpp">
+      <Filter>01. game\object\storage</Filter>
+    </ClCompile>
+    <ClCompile Include="resource_storage.cpp">
+      <Filter>03. data\resource</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -358,6 +373,18 @@
     </ClInclude>
     <ClInclude Include="object_factory.h">
       <Filter>01. game\object\factory</Filter>
+    </ClInclude>
+    <ClInclude Include="object_storage.h">
+      <Filter>01. game\object\storage</Filter>
+    </ClInclude>
+    <ClInclude Include="object_type.h">
+      <Filter>01. game\object\defined</Filter>
+    </ClInclude>
+    <ClInclude Include="resource_storage.h">
+      <Filter>03. data\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="resource_type.h">
+      <Filter>03. data\resource</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

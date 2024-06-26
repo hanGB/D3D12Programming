@@ -24,6 +24,7 @@ public:
 	void AddComponent(PERComponent* component);
 
 	// 기본 정보 getter, setter
+	int GetObjectType() const;
 	XMFLOAT3 GetPosition() const;
 	XMFLOAT3 GetScale() const;
 	XMFLOAT3 GetRotation() const;

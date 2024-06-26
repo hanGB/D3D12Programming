@@ -26,7 +26,6 @@ void PERPlayer::Build(ID3D12Device* device, ID3D12GraphicsCommandList* commandLi
 	GetComponentWithType<CameraComponent>()->ChangeCamera(THIRD_PERSON_CAMERA, 0.0f);
 
 	GetGraphics().CreateShaderVariables(device, commandList);
-	GetGraphics().SetMesh(mesh);
 	GetGraphics().SetShader(shader);
 
 	SetPosition(XMFLOAT3(0.f, 0.f, -50.0f));

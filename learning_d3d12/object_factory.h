@@ -11,8 +11,8 @@ class GraphicsComponent;
 
 class ObjectFactory {
 public:
-	ObjectFactory(int input, int ai, int physics, int graphics);
-	ObjectFactory(std::vector<int> inputs, std::vector<int> ais, 
+	ObjectFactory(int objectType, int input, int ai, int physics, int graphics);
+	ObjectFactory(int objectType, std::vector<int> inputs, std::vector<int> ais,
 		std::vector<int> physicses, std::vector<int> graphicses);
 	virtual ~ObjectFactory();
 
@@ -21,7 +21,9 @@ public:
 
 	void AddOtherComponent(int type);
 	void SetShader(d3d12_shader::Shader* shader);
-	void SetMesh(d3d12_mesh::Mesh* mesh);
+	void SetMeshType(int meshType);
+
+	int GetObjectType() const;
 
 private:
 	InputComponent* CreateInputs();
@@ -49,7 +51,9 @@ private:
 
 	ComponentVectors m_componentVectors;
 	d3d12_shader::Shader* m_shader = nullptr;
-	d3d12_mesh::Mesh* m_mesh = nullptr;
+
+	int m_meshType;
+	int m_objectType;
 };
 
 template<class T>
@@ -58,7 +62,7 @@ inline T* ObjectFactory::CreateObject()
 	T* object = new T(*this, CreateInputs(), CreateAis(), CreatePhysicses(), CreateGraphicses());
 	object->AddComponent(CreateOthers());
 	object->GetGraphics().SetShader(m_shader);
-	object->GetGraphics().SetMesh(m_mesh);
+	object->GetGraphics().SetMeshType(m_meshType);
 
 	return object;
 }

@@ -5,6 +5,8 @@
 #include "per_world.h"
 #include "per_controller.h"
 #include "per_player.h"
+#include "object_storage.h"
+#include "resource_storage.h"
 
 class GameFramework {
 public: 
@@ -62,6 +64,8 @@ private:
 	D3D12Renderer m_renderer;
 	PERTimer m_timer;
 	PERController m_controller;
+	ObjectStorage m_objectStorage;
+	ResourceStorage m_resourceStorage;
 
 	// 카메라
 	D3D12Camera* m_camera = NULL;

@@ -7,10 +7,12 @@ class PERPlayer;
 class D3D12Camera;
 class PERController;
 class ObjectFactory;
+class ObjectStorage;
+class ResourceStorage;
 
 class PERWorld {
 public:
-	PERWorld();
+	PERWorld(ObjectStorage& objectStorage, ResourceStorage& resourceStorage);
 	~PERWorld();
 
 	void BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
@@ -30,6 +32,8 @@ public:
 	PERPlayer* GetPlayer();
 
 protected:
+	void BuildResources(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
+
 	static const int c_MAXIMUM_SHADER = 512;
 	static const int c_INITIAL_MAXIMUM_OBJECTS = 1024;
 	
@@ -40,6 +44,10 @@ protected:
 	int m_numObjects = 0;
 	int m_maxObjects = c_INITIAL_MAXIMUM_OBJECTS;
 
+	// 스토리지(프레임워크에서 생성됨)
+	ObjectStorage& m_objectStorage;
+	ResourceStorage& m_resourceStorage;
+
 	// 임시로 월드에 저장
 	ObjectFactory* m_factory;
 	ObjectFactory* m_playerFactory;
@@ -47,9 +55,5 @@ protected:
 private:
 	// 파이프라인
 	ID3D12RootSignature* m_rootSignature;
-
-	// 메쉬
-	d3d12_mesh::Mesh* m_mesh;
-
 	PERPlayer* m_player;
 };

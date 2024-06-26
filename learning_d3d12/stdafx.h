@@ -24,6 +24,8 @@
 #include <string>
 #include <functional>
 #include <vector>
+#include <queue>
+#include <unordered_map>
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -50,6 +52,9 @@ using namespace Microsoft::WRL;
 #define PER_MAXIMUM_UPDATE_LOOP_COUNT 4
 // 최소 프레임 타임(최대 240FPS)
 #define PER_MINIMUM_FRAME_TIME 4000
+
+// 기본 메모리
+#define PER_OBJECT_STORAGE_BASIC_QUEUE_SIZE 1024
 
 // 로그
 #include "per_log.h"

@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "per_object.h"
+#include "object_factory.h"
 
 PERObject::PERObject(ObjectFactory& factory, InputComponent* input, AiComponent* ai, PhysicsComponent* physics, GraphicsComponent* graphics)
 	: m_factory(factory), m_input(input), m_ai(ai), m_physics(physics), m_graphics(graphics)
@@ -75,6 +76,11 @@ void PERObject::AddComponent(PERComponent* component)
 		}
 		next = next->GetNext();
 	}
+}
+
+int PERObject::GetObjectType() const
+{
+	return m_factory.GetObjectType();
 }
 
 XMFLOAT3 PERObject::GetPosition() const

@@ -6,17 +6,20 @@
 #include "d3d12_camera.h"
 #include "instancing_shader.h"
 #include "per_player.h"
+#include "object_type.h"
+#include "resource_type.h"
+#include "object_storage.h"
+#include "resource_storage.h"
 
-PERWorld::PERWorld()
+PERWorld::PERWorld(ObjectStorage& objectStorage, ResourceStorage& resourceStorage)
+	: m_objectStorage(objectStorage), m_resourceStorage(resourceStorage)
 {
 	m_rootSignature = NULL;
 	m_shaders.reserve(c_MAXIMUM_SHADER);
 	m_shaders.resize(c_MAXIMUM_SHADER);
-	
+
 	m_objects.reserve(c_INITIAL_MAXIMUM_OBJECTS);
 	m_objects.resize(c_INITIAL_MAXIMUM_OBJECTS);
-
-	m_mesh = NULL;
 }
 
 PERWorld::~PERWorld()
@@ -37,9 +40,13 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 	// 루트 시그니처 생성
 	m_rootSignature = d3d12_init::CreateRootSignature(device);
 
+	// 리소스 생성
+	BuildResources(device, commandList);
+
 	// 플레이어 설정
-	m_playerFactory = new ObjectFactory(PER_PLAYER_INPUT, PER_BASE_COMPONENT, PER_PLAYER_PHYSICS, PER_PLAYER_GRAPHICS);
+	m_playerFactory = new ObjectFactory(PER_PLAYER, PER_PLAYER_INPUT, PER_BASE_COMPONENT, PER_PLAYER_PHYSICS, PER_PLAYER_GRAPHICS);
 	m_playerFactory->AddOtherComponent(PER_CAMERA_COMPONENT);
+	m_playerFactory->SetMeshType(PER_MESH_AIRPLANE);
 	m_player = m_playerFactory->CreateObject<PERPlayer>();
 	m_player->Build(device, commandList, m_rootSignature);
 
@@ -48,12 +55,8 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 	m_shaders[m_numShaders] = new InstancingShader(L"./shader/instancing_vertex.cso", L"./shader/instancing_pixel.cso");
 	m_shaders[m_numShaders]->CreatePipelineState(device, m_rootSignature);
 	m_numShaders++;
-	
-	m_mesh = new d3d12_mesh::CubeMeshDiffused(device, commandList, 12.0f, 12.0f, 12.0f);			
 
 	m_numObjects = 0;
-	m_factory = new ObjectFactory(PER_BASE_COMPONENT, PER_ROTATING_AI, PER_BASE_COMPONENT, PER_BASE_COMPONENT);
-	m_factory->SetMesh(m_mesh);
 
 	int xObjects = 8;
 	int yObjects = 8;
@@ -72,7 +75,7 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 					m_objects.resize(m_maxObjects);
 				}
 
-				PERObject* object = m_factory->CreateObject<PERObject>();
+				PERObject* object = m_objectStorage.PopObject(PER_FIXED);
 				dynamic_cast<GraphicsComponentsShader*>(m_shaders[0])->AddGraphicsComponent(&object->GetGraphics());
 				object->SetPosition(XMFLOAT3(xPitch * x, yPitch * y, zPitch * z));
 				m_objects[m_numObjects++] = object;
@@ -85,7 +88,6 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 void PERWorld::ReleaseObjects()
 {
 	m_rootSignature->Release();
-	m_mesh->ReleaseUploadBuffers();
 
 	for (int i = 0; i < m_numShaders; ++i)
 	{
@@ -146,12 +148,12 @@ void PERWorld::Render(ID3D12GraphicsCommandList* commandList, ID3D12DescriptorHe
 	camera->UpdateShaderVariables(commandList);
 
 	for (int i = 0; i < m_numShaders; ++i) {
-		m_shaders[i]->Render(commandList, camera);
+		m_shaders[i]->Render(m_resourceStorage, commandList, camera);
 	}
 
 	commandList->ClearDepthStencilView(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, NULL);
-	if (m_player) m_player->GetGraphics().Render(commandList, camera, 1);
+	if (m_player) m_player->GetGraphics().Render(m_resourceStorage, commandList, camera, 1);
 
 }
 
@@ -165,4 +167,18 @@ void PERWorld::ReleaseUploadBuffers()
 PERPlayer* PERWorld::GetPlayer()
 {
 	return m_player;
+}
+
+void PERWorld::BuildResources(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
+{
+	if (!m_resourceStorage.CheckIfMeshExists(PER_MESH_CUBE))
+	{
+		d3d12_mesh::Mesh* cube = new d3d12_mesh::CubeMeshDiffused(device, commandList, 12.0f, 12.0f, 12.0f);
+		m_resourceStorage.AddMesh(PER_MESH_CUBE, cube);
+	}
+	if (!m_resourceStorage.CheckIfMeshExists(PER_MESH_AIRPLANE))
+	{
+		d3d12_mesh::Mesh* airplane = new d3d12_mesh::AirplaneMeshDiffused(device, commandList, 20.f, 20.f, 4.f);
+		m_resourceStorage.AddMesh(PER_MESH_AIRPLANE, airplane);
+	}
 }

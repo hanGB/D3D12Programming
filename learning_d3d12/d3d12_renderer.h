@@ -3,6 +3,7 @@
 class PERWorld;
 class PERPlayer;
 class D3D12Camera;
+class ResourceStorage;
 
 class D3D12Renderer
 {
