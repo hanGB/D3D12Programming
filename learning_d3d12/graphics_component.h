@@ -4,8 +4,6 @@
 #include "d3d12_shader.h"
 #include "d3d12_camera.h"
 
-class ResourceStorage;
-
 class GraphicsComponent : public PERComponent {
 public:
 	GraphicsComponent();
@@ -13,12 +11,14 @@ public:
 	virtual void Initialize();
 
 	virtual void Update(float dTime);
-	virtual void Render(ResourceStorage& resourceStorage, ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances);
+	virtual void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances);
 
-	void SetMeshType(int meshType);
+	void SetResourceType(int resourceType);
+
+	void SetMesh(d3d12_mesh::Mesh* mesh);
 	void SetShader(d3d12_shader::Shader* shader);
 
-	int GetMeshType() const;
+	int GetResourceType() const;
 
 	void ReleaseUploadBuffers();
 
@@ -34,9 +34,10 @@ public:
 protected:
 	XMFLOAT4X4 m_worldTransform;
 
-	int m_meshType;
+	int m_resourceType;
 
 	d3d12_shader::Shader* m_shader;
+	d3d12_mesh::Mesh* m_mesh;
 
 	bool m_isLiving = false;
 };

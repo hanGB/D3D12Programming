@@ -46,8 +46,9 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 	// 플레이어 설정
 	m_playerFactory = new ObjectFactory(PER_PLAYER, PER_PLAYER_INPUT, PER_BASE_COMPONENT, PER_PLAYER_PHYSICS, PER_PLAYER_GRAPHICS);
 	m_playerFactory->AddOtherComponent(PER_CAMERA_COMPONENT);
-	m_playerFactory->SetMeshType(PER_MESH_AIRPLANE);
+	m_playerFactory->SetResourceType(PER_AIRPLANE);
 	m_player = m_playerFactory->CreateObject<PERPlayer>();
+	m_player->GetGraphics().SetMesh(m_resourceStorage.GetMesh(PER_MESH_AIRPLANE));
 	m_player->Build(device, commandList, m_rootSignature);
 
 	// 쉐이더 생성
@@ -66,6 +67,7 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 	float yPitch = 12.f * 2.5f;
 	float zPitch = 12.f * 2.5f;
 
+	d3d12_mesh::Mesh* cubeMesh = m_resourceStorage.GetMesh(PER_MESH_CUBE);
 	for (int x = -xObjects; x <= xObjects; ++x) {
 		for (int y = -xObjects; y <= xObjects; ++y) {
 			for (int z = -xObjects; z <= xObjects; ++z) {
@@ -76,6 +78,7 @@ void PERWorld::BuildObjects(ID3D12Device* device, ID3D12GraphicsCommandList* com
 				}
 
 				PERObject* object = m_objectStorage.PopObject(PER_FIXED);
+				object->GetGraphics().SetMesh(cubeMesh);
 				dynamic_cast<GraphicsComponentsShader*>(m_shaders[0])->AddGraphicsComponent(&object->GetGraphics());
 				object->SetPosition(XMFLOAT3(xPitch * x, yPitch * y, zPitch * z));
 				m_objects[m_numObjects++] = object;
@@ -148,12 +151,12 @@ void PERWorld::Render(ID3D12GraphicsCommandList* commandList, ID3D12DescriptorHe
 	camera->UpdateShaderVariables(commandList);
 
 	for (int i = 0; i < m_numShaders; ++i) {
-		m_shaders[i]->Render(m_resourceStorage, commandList, camera);
+		m_shaders[i]->Render(commandList, camera);
 	}
 
 	commandList->ClearDepthStencilView(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.f, 0, 0, NULL);
-	if (m_player) m_player->GetGraphics().Render(m_resourceStorage, commandList, camera, 1);
+	if (m_player) m_player->GetGraphics().Render(commandList, camera, 1);
 
 }
 

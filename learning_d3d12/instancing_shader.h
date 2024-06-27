@@ -9,7 +9,7 @@ public:
 
 	virtual void CreatePipelineState(ID3D12Device* device, ID3D12RootSignature* rootSignature);
 
-	virtual void Render(ResourceStorage& resourceStorage, ID3D12GraphicsCommandList* commandList, D3D12Camera* camera);
+	virtual void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera);
 
 	virtual void CreateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 	virtual void UpdateShaderVariables(ID3D12GraphicsCommandList* commandList);

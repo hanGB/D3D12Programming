@@ -21,7 +21,7 @@ public:
 
 	void AddOtherComponent(int type);
 	void SetShader(d3d12_shader::Shader* shader);
-	void SetMeshType(int meshType);
+	void SetResourceType(int resourceType);
 
 	int GetObjectType() const;
 
@@ -52,7 +52,7 @@ private:
 	ComponentVectors m_componentVectors;
 	d3d12_shader::Shader* m_shader = nullptr;
 
-	int m_meshType;
+	int m_resourceType;
 	int m_objectType;
 };
 
@@ -62,7 +62,7 @@ inline T* ObjectFactory::CreateObject()
 	T* object = new T(*this, CreateInputs(), CreateAis(), CreatePhysicses(), CreateGraphicses());
 	object->AddComponent(CreateOthers());
 	object->GetGraphics().SetShader(m_shader);
-	object->GetGraphics().SetMeshType(m_meshType);
+	object->GetGraphics().SetResourceType(m_resourceType);
 
 	return object;
 }

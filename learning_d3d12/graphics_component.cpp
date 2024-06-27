@@ -11,6 +11,7 @@ GraphicsComponent::GraphicsComponent()
 GraphicsComponent::~GraphicsComponent()
 {
 	if (m_shader) m_shader->Release();
+	if (m_mesh) m_mesh->Release();
 
 	PERComponent* next = GetNext();
 	if (next) delete next;
@@ -30,22 +31,27 @@ void GraphicsComponent::Update(float dTime)
 	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Update(dTime);
 }
 
-void GraphicsComponent::Render(ResourceStorage& resourceStorage, ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances)
+void GraphicsComponent::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances)
 {
-	d3d12_mesh::Mesh* mesh = resourceStorage.GetMesh(m_meshType);
+	if (m_mesh && numInstances == 1) UpdateShaderVariables(m_mesh, commandList);
 
-	if (numInstances == 1) UpdateShaderVariables(mesh, commandList);
+	if (m_shader) m_shader->Render(commandList, camera);
 
-	if (m_shader) m_shader->Render(resourceStorage, commandList, camera);
+	if (m_mesh) m_mesh->Render(commandList, numInstances);
 
-	if (mesh) mesh->Render(commandList, numInstances);
-
-	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Render(resourceStorage, commandList, camera, numInstances);
+	if (GetNext()) dynamic_cast<GraphicsComponent*>(GetNext())->Render(commandList, camera, numInstances);
 }
 
-void GraphicsComponent::SetMeshType(int meshType)
+void GraphicsComponent::SetResourceType(int resourceType)
 {
-	m_meshType = meshType;
+	m_resourceType = resourceType;
+}
+
+void GraphicsComponent::SetMesh(d3d12_mesh::Mesh* mesh)
+{
+	if (m_mesh) m_mesh->Release();
+	m_mesh = mesh;
+	if (m_mesh) m_mesh->AddRef();
 }
 
 void GraphicsComponent::SetShader(d3d12_shader::Shader* shader)
@@ -55,9 +61,9 @@ void GraphicsComponent::SetShader(d3d12_shader::Shader* shader)
 	if (m_shader) m_shader->AddRef();
 }
 
-int GraphicsComponent::GetMeshType() const
+int GraphicsComponent::GetResourceType() const
 {
-	return m_meshType;
+	return m_resourceType;
 }
 
 void GraphicsComponent::ReleaseUploadBuffers()

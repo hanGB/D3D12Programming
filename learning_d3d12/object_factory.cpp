@@ -61,9 +61,9 @@ void ObjectFactory::SetShader(d3d12_shader::Shader* shader)
 	m_shader = shader;
 }
 
-void ObjectFactory::SetMeshType(int meshType)
+void ObjectFactory::SetResourceType(int resourceType)
 {
-	m_meshType = meshType;
+	m_resourceType = resourceType;
 }
 
 int ObjectFactory::GetObjectType() const

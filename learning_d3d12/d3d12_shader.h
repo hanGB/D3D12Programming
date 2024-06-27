@@ -1,7 +1,6 @@
 #pragma once
 
 class D3D12Camera;
-class ResourceStorage;
 
 namespace d3d12_shader {
 	struct VS_VB_INSTNACE
@@ -25,7 +24,7 @@ namespace d3d12_shader {
 
 		void OnPrepareRender(ID3D12GraphicsCommandList* commandList);
 
-		virtual void Render(ResourceStorage& resourceStorage, ID3D12GraphicsCommandList* commandList, D3D12Camera* camera);
+		virtual void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera);
 
 		virtual void CreateShaderVariables(ID3D12Device* device, ID3D12GraphicsCommandList* commandList);
 		virtual void UpdateShaderVariables(ID3D12GraphicsCommandList* commandList);

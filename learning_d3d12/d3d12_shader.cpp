@@ -47,7 +47,7 @@ void d3d12_shader::Shader::OnPrepareRender(ID3D12GraphicsCommandList* commandLis
 	commandList->SetPipelineState(m_pipelineStates[0]);
 }
 
-void d3d12_shader::Shader::Render(ResourceStorage& resourceStorage, ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
+void d3d12_shader::Shader::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
 {
 	OnPrepareRender(commandList);
 }

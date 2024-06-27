@@ -21,15 +21,15 @@ void GraphicsComponentsShader::CreatePipelineState(ID3D12Device* device, ID3D12R
 	m_pipelineStates[0] = BuildPipelineState(device, rootSignature);
 }
 
-void GraphicsComponentsShader::Render(ResourceStorage& resourceStorage, ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
+void GraphicsComponentsShader::Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera)
 {
 	// 렌더링 할 필요없는 죽은 컨포넌트 제거
 	DoGarbegeCollection();
 
-	d3d12_shader::Shader::Render(resourceStorage, commandList, camera);
+	d3d12_shader::Shader::Render(commandList, camera);
 	for (int i = 0; i < m_numComponents; ++i)
 	{
-		m_graphicsComponents[i]->Render(resourceStorage, commandList, camera, 1);
+		m_graphicsComponents[i]->Render(commandList, camera, 1);
 	}
 }
 

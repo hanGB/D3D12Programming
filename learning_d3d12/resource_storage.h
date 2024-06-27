@@ -11,5 +11,7 @@ public:
 	d3d12_mesh::Mesh* GetMesh(int meshType);
 
 private:
+	// 리소스 타입으로 메쉬, 텍스쳐를 얻기 추가
+
 	std::unordered_map<int, d3d12_mesh::Mesh*> m_meshes;
 };

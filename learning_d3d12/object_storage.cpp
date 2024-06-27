@@ -74,7 +74,7 @@ void ObjectStorage::MakeObjectQueuesWithAddedFactories()
 void ObjectStorage::CreateBasicObjectFactories()
 {
 	ObjectFactory* factory = new ObjectFactory(PER_FIXED, PER_BASE_COMPONENT, PER_ROTATING_AI, PER_BASE_COMPONENT, PER_BASE_COMPONENT);
-	factory->SetMeshType(PER_MESH_CUBE);
+	factory->SetResourceType(PER_CUBE);
 	AddObjectFactory(PER_FIXED, factory);
 }
 

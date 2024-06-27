@@ -9,5 +9,5 @@ public:
 	PlayerGraphics();
 	virtual ~PlayerGraphics();
 
-	virtual void Render(ResourceStorage& resourceStorage, ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances);
+	virtual void Render(ID3D12GraphicsCommandList* commandList, D3D12Camera* camera, UINT numInstances);
 };
