@@ -100,7 +100,7 @@ protected:
 
 	UINT m_rtvDescriptorSize = 0;
 	UINT m_dsvDescriptorSize = 0;
-	UINT m_cbvDescriptorSize = 0;
+	UINT m_cbvSrvDescriptorSize = 0;
 	
 	// 설정값
 	std::wstring m_mainWndCaption = L"d3d App";
