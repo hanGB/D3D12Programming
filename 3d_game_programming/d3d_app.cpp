@@ -32,7 +32,39 @@ void D3DApp::Set4xMsaaState(bool value)
 
 int D3DApp::Run()
 {
-    return 0;
+    MSG msg = { 0 };
+
+    // 타이머 리셋
+    m_timer.Reset();
+
+    // 윈도우 종료 메시지가 올 때까지 루프
+    while (msg.message != WM_QUIT) 
+    {
+        // 메세지가 있으면 처리
+        if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+        // 없으면 게임 루프 실행
+        else
+        {
+            m_timer.Tick();
+
+            if (!m_appPause)
+            {
+                CalculateFrameStats();
+                Update(m_timer);
+                Draw(m_timer);
+            }
+            else
+            {
+                Sleep(100);
+            }
+        }
+    }
+
+    return (int)msg.wParam;
 }
 
 bool D3DApp::Initialize()

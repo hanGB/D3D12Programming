@@ -38,5 +38,8 @@
     <ClCompile Include="d3d_util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="game_timer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
