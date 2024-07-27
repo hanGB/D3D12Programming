@@ -138,10 +138,36 @@ void D3DApp::CreateCommandObjects()
     // 커맨드 리스트 생성
     ThrowIfFailed(m_d3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, 
         m_commandListAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
+
+    // 닫힌 상태로 시작(Rest 호출 시 커맨드 리스트가 닫혀 있어야 함)
+    m_commandList->Close();
 }
 
 void D3DApp::CreateSwapChain()
 {
+    // 새 스왑체인을 생성하기 전 기존 스왑체인 해제
+    m_swapChain.Reset();
+
+    // 스왑체인 서술
+    DXGI_SWAP_CHAIN_DESC swapChainDesc;
+    swapChainDesc.BufferDesc.Width = m_clientWidth;
+    swapChainDesc.BufferDesc.Height = m_clientHeight;
+    swapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
+    swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+    swapChainDesc.BufferDesc.Format = m_backBufferFormat;
+    swapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+    swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+    swapChainDesc.SampleDesc.Count = m_4xMsaaState ? 4 : 1;
+    swapChainDesc.SampleDesc.Quality = m_4xMsaaState ? (m_4xMsaaQuality - 1) : 0;
+    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapChainDesc.BufferCount = c_SWAP_CHAIN_BUFFER_COUNT;
+    swapChainDesc.OutputWindow = m_hMainWnd;
+    swapChainDesc.Windowed = true;
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+    swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+    // 스왑체인 생성
+    ThrowIfFailed(m_dxgiFactory->CreateSwapChain(m_commandQueue.Get(), &swapChainDesc, m_swapChain.GetAddressOf()));
 }
 
 void D3DApp::FlushCommandQueue()
