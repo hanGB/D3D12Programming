@@ -126,6 +126,18 @@ bool D3DApp::InitDrect3D()
 
 void D3DApp::CreateCommandObjects()
 {
+    // 커맨드 큐 생성
+    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    ThrowIfFailed(m_d3dDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
+
+    // 커맨드 할당자 생성
+    ThrowIfFailed(m_d3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandListAllocator)));
+
+    // 커맨드 리스트 생성
+    ThrowIfFailed(m_d3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, 
+        m_commandListAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
 }
 
 void D3DApp::CreateSwapChain()
