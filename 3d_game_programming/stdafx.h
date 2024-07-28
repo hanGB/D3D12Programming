@@ -14,6 +14,7 @@
 #include <DirectXCollision.h>
 #include <dxgidebug.h>
 #include <mmsystem.h>
+#include "d3dx12.h"
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;

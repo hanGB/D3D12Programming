@@ -5,6 +5,13 @@
 
 class D3DApp
 {
+protected:
+	// 생성자, 소멸자
+	D3DApp(HINSTANCE hInstance);
+	D3DApp(const D3DApp& rhs) = delete;
+	D3DApp& operator=(const D3DApp& rhs) = delete;
+	virtual ~D3DApp();
+
 public:
 	static D3DApp* GetApp();
 
@@ -22,12 +29,6 @@ public:
 	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 protected:
-	// 생성자, 소멸자
-	D3DApp(HINSTANCE hInstance);
-	D3DApp(const D3DApp& rhs) = delete;
-	D3DApp& operator=(const D3DApp& rhs) = delete;
-	virtual ~D3DApp();
-
 	// 렌더, 깊이 스텐실 
 	virtual void CreateRtvAndDsvDescriptorHeaps();
 	virtual void OnResize();

@@ -1,33 +1,64 @@
 #include "stdafx.h"
 #include "d3d_app.h"
 
+LRESULT CALLBACK
+MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    return D3DApp::GetApp()->MsgProc(hwnd, msg, wParam, lParam);
+}
+
+D3DApp* D3DApp::m_app = nullptr;
+
+D3DApp::D3DApp(HINSTANCE hInstance)
+    : m_hAppInst(hInstance)
+{
+    assert(m_app == nullptr);
+    m_app = this;
+}
+
+D3DApp::~D3DApp()
+{
+    if (m_d3dDevice != nullptr)
+    {
+        FlushCommandQueue();
+    }
+}
+
 D3DApp* D3DApp::GetApp()
 {
-    return nullptr;
+    return m_app;
 }
 
 HINSTANCE D3DApp::AppInst() const
 {
-    return HINSTANCE();
+    return m_hAppInst;
 }
 
 HWND D3DApp::MainWnd() const
 {
-    return HWND();
+    return m_hMainWnd;
 }
 
 float D3DApp::AspectRatio() const
 {
-    return 0.0f;
+    return (float)m_clientWidth / (float)m_clientHeight;
 }
 
 bool D3DApp::Get4xMsaaState() const
 {
-    return false;
+    return m_4xMsaaState;
 }
 
 void D3DApp::Set4xMsaaState(bool value)
 {
+    if (m_4xMsaaState != value)
+    {
+        m_4xMsaaState = value;
+
+        // 변경된 MSAA 상태에 맞게 스왑체인 재생성
+        CreateSwapChain();
+        OnResize();
+    }
 }
 
 int D3DApp::Run()
@@ -69,20 +100,137 @@ int D3DApp::Run()
 
 bool D3DApp::Initialize()
 {
-    return false;
+    if (!InitMainWindow()) return false;
+
+    if (!InitDrect3D()) return false;
+
+    OnResize();
+
+    return true;
 }
 
 LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    return LRESULT();
-}
+    switch (msg)
+    {
+        // 응용 프로그램 활성화/비활성화
+    case WM_ACTIVATE:
+        if (LOWORD(wParam) == WA_INACTIVE)
+        {
+            m_appPause = true;
+            m_timer.Stop();
+        }
+        else
+        {
+            m_appPause = false;
+            m_timer.Start();
+        }
+        return 0;
 
-D3DApp::D3DApp(HINSTANCE hInstance)
-{
-}
+        // 윈도우 사이즈 변경
+    case WM_SIZE:
+        // 새로운 해상도 저장
+        m_clientWidth = LOWORD(lParam);
+        m_clientHeight = HIWORD(lParam);
 
-D3DApp::~D3DApp()
-{
+        if (m_d3dDevice)
+        {
+            // 최소화
+            if (wParam == SIZE_MINIMIZED)
+            {
+                m_appPause = true;
+                m_minimized = true;
+                m_maximized = false;
+            }
+            // 최대화
+            else if (wParam == SIZE_MAXIMIZED)
+            {
+                m_appPause = false;
+                m_minimized = false;
+                m_maximized = true;
+                OnResize();
+            }
+            // 이전 사이즈로 복귀
+            else if (wParam == SIZE_RESTORED)
+            {
+                if (m_minimized)
+                {
+                    m_appPause = false;
+                    m_minimized = false;
+                    OnResize();
+                }
+                else if (m_maximized)
+                {
+                    m_appPause = false;
+                    m_maximized = false;
+                    OnResize();
+                }
+                else if (m_resizing)
+                {
+
+                }
+                else
+                {
+                    OnResize();
+                }
+            }
+        }
+        return 0;
+
+        // 사용자가 크기 변경 테두리를 잡았을 때
+    case WM_ENTERSIZEMOVE:
+        m_appPause = true;
+        m_resizing = true;
+        m_timer.Stop();
+        return 0;
+
+        // 사용자가 크기 변경 테두리를 놓았을 때
+    case WM_EXITSIZEMOVE:
+        m_appPause = false;
+        m_resizing = false;
+        m_timer.Start();
+        OnResize();
+        return 0;
+
+        // 창이 파괴되려 할 때
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+
+        // 메뉴가 활성화되어서 사용자가 키를 눌렀지만 그 키가 어디에도 해당되지 않을 경우
+    case WM_MENUCHAR:
+        // Alt-Enter를 눌렸을 때 소리가 나지 않게 설정
+        return MAKELRESULT(0, MNC_CLOSE);
+
+    // 창이 너무 작아지지 않게 하기 위해 설정
+    case WM_GETMINMAXINFO:
+        ((MINMAXINFO*)lParam)->ptMinTrackSize.x = 200;
+        ((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
+        return 0;
+
+    // 마우스 입력 처리
+    case WM_LBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+        OnMouseDown(wParam, LOWORD(lParam), HIWORD(lParam));
+        return 0;
+    case WM_LBUTTONUP:
+    case WM_MBUTTONUP:
+    case WM_RBUTTONUP:
+        OnMouseUp(wParam, LOWORD(lParam), HIWORD(lParam));
+        return 0;
+    case WM_MOUSEMOVE:
+        OnMouseMove(wParam, LOWORD(lParam), HIWORD(lParam));
+        return 0;
+
+    case WM_KEYUP:
+        if (wParam == VK_ESCAPE) PostQuitMessage(0);
+        else if (wParam == VK_F2) Set4xMsaaState(!m_4xMsaaState);
+
+        return 0;
+    }
+
+    return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
 void D3DApp::CreateRtvAndDsvDescriptorHeaps()
@@ -110,7 +258,44 @@ void D3DApp::OnResize()
 
 bool D3DApp::InitMainWindow()
 {
-    return false;
+    WNDCLASS wc;
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = MainWndProc;
+    wc.cbClsExtra = 0;
+    wc.cbWndExtra = 0;
+    wc.hInstance = m_hAppInst;
+    wc.hIcon = LoadIcon(0, IDI_APPLICATION);
+    wc.hCursor = LoadCursor(0, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+    wc.lpszMenuName = 0;
+    wc.lpszClassName = L"MainWnd";
+
+    if (!RegisterClass(&wc))
+    {
+        MessageBox(0, L"RegisterClass failed.", 0, 0);
+        return false;
+    }
+
+    // 클라이언트 해상도에 맞추어 윈도우 사각형 계산
+    RECT R = { 0, 0, m_clientWidth, m_clientHeight };
+    AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
+    int width = R.right - R.left;
+    int height = R.bottom - R.top;
+
+    m_hMainWnd = CreateWindow(
+        L"MainWnd", 
+        m_mainWndCaption.c_str(), 
+        WS_OVERLAPPEDWINDOW, 
+        CW_USEDEFAULT, CW_USEDEFAULT, width, height, 
+        0, 
+        0, 
+        m_hAppInst, 
+        0);
+
+    ShowWindow(m_hMainWnd, SW_SHOW);
+    UpdateWindow(m_hMainWnd);
+
+    return true;
 }
 
 bool D3DApp::InitDrect3D()
@@ -223,17 +408,17 @@ void D3DApp::FlushCommandQueue()
 
 ID3D12Resource* D3DApp::CurrentBackBuffer() const
 {
-    return nullptr;
+    return m_swapChainBuffer[m_currentBackBuffer].Get();
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3DApp::CurrentBackBufferView() const
 {
-    return D3D12_CPU_DESCRIPTOR_HANDLE();
+    return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_currentBackBuffer, m_rtvDescriptorSize);
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3DApp::DepthStencilView() const
 {
-    return D3D12_CPU_DESCRIPTOR_HANDLE();
+    return m_dsvHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
 void D3DApp::CalculateFrameStats()
