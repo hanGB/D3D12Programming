@@ -55,9 +55,7 @@ void D3DApp::Set4xMsaaState(bool value)
     {
         m_4xMsaaState = value;
 
-        // 변경된 MSAA 상태에 맞게 스왑체인 재생성
-        CreateSwapChain();
-        OnResize();
+        // 새로운 방식으로 설정 필요
     }
 }
 
@@ -297,8 +295,8 @@ void D3DApp::OnResize()
 
     deapthStansilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
 
-    deapthStansilDesc.SampleDesc.Count = m_4xMsaaState ? 4 : 1;
-    deapthStansilDesc.SampleDesc.Quality = m_4xMsaaState ? (m_4xMsaaQuality - 1) : 0;
+    deapthStansilDesc.SampleDesc.Count = 1;
+    deapthStansilDesc.SampleDesc.Quality = 0;
     deapthStansilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
     deapthStansilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
@@ -481,8 +479,9 @@ void D3DApp::CreateSwapChain()
     swapChainDesc.BufferDesc.Format = m_backBufferFormat;
     swapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
     swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-    swapChainDesc.SampleDesc.Count = m_4xMsaaState ? 4 : 1;
-    swapChainDesc.SampleDesc.Quality = m_4xMsaaState ? (m_4xMsaaQuality - 1) : 0;
+    // DirectX12에서는 더이상 스왑체인에서 MSAA가 지원이 되지 않음(렌더 타겟 버퍼에서 구현해야 함)
+    swapChainDesc.SampleDesc.Count = 1;
+    swapChainDesc.SampleDesc.Quality = 0;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapChainDesc.BufferCount = c_SWAP_CHAIN_BUFFER_COUNT;
     swapChainDesc.OutputWindow = m_hMainWnd;
