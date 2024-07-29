@@ -243,7 +243,7 @@ void D3DApp::CreateRtvAndDsvDescriptorHeaps()
     rtvHeapDesc.NodeMask = 0;
     ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
 
-    // 깊이 스탠실 힙 생성
+    // 깊이 스텐실 힙 생성
     D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
     dsvHeapDesc.NumDescriptors = 1;
     dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
@@ -254,6 +254,95 @@ void D3DApp::CreateRtvAndDsvDescriptorHeaps()
 
 void D3DApp::OnResize()
 {
+    assert(m_d3dDevice);
+    assert(m_swapChain);
+    assert(m_commandListAllocator);
+
+    // 어떤 리소스를 변경하기 전 플러쉬
+    FlushCommandQueue();
+
+    // 커맨드 리스트 리셋
+    ThrowIfFailed(m_commandList->Reset(m_commandListAllocator.Get(), nullptr));
+
+    // 이전 리소스 릴리즈
+    for (int i = 0; i < c_SWAP_CHAIN_BUFFER_COUNT; ++i)
+        m_swapChainBuffer[i].Reset();
+    m_depthStencilBuffer.Reset();
+
+    // 스왑체인 사이즈 변경
+    ThrowIfFailed(m_swapChain->ResizeBuffers(
+        c_SWAP_CHAIN_BUFFER_COUNT, 
+        m_clientWidth, m_clientHeight, 
+        m_backBufferFormat, 
+        DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+
+    m_currentBackBuffer = 0;
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
+    for (UINT i = 0; i < c_SWAP_CHAIN_BUFFER_COUNT; ++i)
+    {
+        ThrowIfFailed(m_swapChain->GetBuffer(i, IID_PPV_ARGS(&m_swapChainBuffer[i])));
+        m_d3dDevice->CreateRenderTargetView(m_swapChainBuffer[i].Get(), nullptr, rtvHeapHandle);
+        rtvHeapHandle.Offset(1, m_rtvDescriptorSize);
+    }
+
+    // 깊이 스텐실 버퍼, 뷰 생성
+    D3D12_RESOURCE_DESC deapthStansilDesc;
+    deapthStansilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    deapthStansilDesc.Alignment = 0;
+    deapthStansilDesc.Width = m_clientWidth;
+    deapthStansilDesc.Height = m_clientHeight;
+    deapthStansilDesc.DepthOrArraySize = 1;
+    deapthStansilDesc.MipLevels = 1;
+
+    deapthStansilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+
+    deapthStansilDesc.SampleDesc.Count = m_4xMsaaState ? 4 : 1;
+    deapthStansilDesc.SampleDesc.Quality = m_4xMsaaState ? (m_4xMsaaQuality - 1) : 0;
+    deapthStansilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    deapthStansilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+    D3D12_CLEAR_VALUE optClear;
+    optClear.Format = m_depthStencilFormat;
+    optClear.DepthStencil.Depth = 1.0f;
+    optClear.DepthStencil.Stencil = 0;
+    ThrowIfFailed(m_d3dDevice->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        D3D12_HEAP_FLAG_NONE,
+        &deapthStansilDesc,
+        D3D12_RESOURCE_STATE_COMMON,
+        &optClear,
+        IID_PPV_ARGS(&m_depthStencilBuffer)));
+
+    // 깊이 스텐실 디스크립터 생성
+    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+    dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+    dsvDesc.Format = m_depthStencilFormat;
+    dsvDesc.Texture2D.MipSlice = 0;
+    m_d3dDevice->CreateDepthStencilView(m_depthStencilBuffer.Get(), &dsvDesc, DepthStencilView());
+
+    // 리소스를 초기 상태에서 깊이 버퍼로 사용할 수 있는 상태로 전이
+    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+            m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+
+    // 크기 변경 명령 실행
+    ThrowIfFailed(m_commandList->Close());
+    ID3D12CommandList* cmdLists[] = { m_commandList.Get() };
+    m_commandQueue->ExecuteCommandLists(_countof(cmdLists), cmdLists);
+
+    // 크기 변경이 완료될 때까지 대기
+    FlushCommandQueue();
+
+    // 뷰포트가 클라이언트 영역을 커버할 수 있도록 업데이트
+    m_screenViewport.TopLeftX   = 0;
+    m_screenViewport.TopLeftY   = 0;
+    m_screenViewport.Width      = (float)m_clientWidth;
+    m_screenViewport.Height     = (float)m_clientHeight;
+    m_screenViewport.MinDepth   = 0.0f;
+    m_screenViewport.MaxDepth   = 1.0f;
+
+    m_scissorRect = { 0, 0, m_clientWidth, m_clientHeight };
 }
 
 bool D3DApp::InitMainWindow()
@@ -404,6 +493,24 @@ void D3DApp::CreateSwapChain()
 
 void D3DApp::FlushCommandQueue()
 {
+    // 현재 팬스 지점까지의 명령들을 표시하도록 팬스 값 증가
+    m_currentFence++;
+
+    // 새 팬스 지점을 설정하는 명령을 커맨드 큐에 추가
+    ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFence));
+
+    // GPU가 이 팬스 지점까지의 명령들을 완료할 때까지 대기
+    if (m_fence->GetCompletedValue() < m_currentFence)
+    {
+        HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+    
+        // GPU가 현재 팬스 지점까지 도달했으면 이벤트 발동
+        ThrowIfFailed(m_fence->SetEventOnCompletion(m_currentFence, eventHandle));
+
+        // GPU가 현재 팬스 지점에 도달했음을 뜻하는 이벤트가 올 때까지 대기
+        WaitForSingleObject(eventHandle, INFINITE);
+        CloseHandle(eventHandle);
+    }
 }
 
 ID3D12Resource* D3DApp::CurrentBackBuffer() const

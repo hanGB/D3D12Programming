@@ -102,6 +102,9 @@ protected:
 	UINT m_rtvDescriptorSize = 0;
 	UINT m_dsvDescriptorSize = 0;
 	UINT m_cbvSrvDescriptorSize = 0;
+
+	D3D12_VIEWPORT m_screenViewport;
+	D3D12_RECT m_scissorRect;
 	
 	// 설정값
 	std::wstring m_mainWndCaption = L"d3d App";
