@@ -13,19 +13,28 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{3a0520db-df31-4fdc-abb6-00b1f1c9ce26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Init Direct3D">
+      <UniqueIdentifier>{38ecb3c2-02d9-415b-8095-16dd217d8c3c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="d3d_app.h">
+    <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="d3d_util.h">
-      <Filter>Header Files</Filter>
+      <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="game_timer.h">
-      <Filter>Header Files</Filter>
+      <Filter>Common</Filter>
     </ClInclude>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="d3d_app.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="init_direct3d_app.h">
+      <Filter>Init Direct3D</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -33,12 +42,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="d3d_app.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Common</Filter>
     </ClCompile>
     <ClCompile Include="d3d_util.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Common</Filter>
     </ClCompile>
     <ClCompile Include="game_timer.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="init_direct3d_app.cpp">
+      <Filter>Init Direct3D</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

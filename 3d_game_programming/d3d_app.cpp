@@ -365,6 +365,9 @@ bool D3DApp::InitMainWindow()
         return false;
     }
 
+    // 윈도우 dpi 설정 무시
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
+
     // 클라이언트 해상도에 맞추어 윈도우 사각형 계산
     RECT R = { 0, 0, m_clientWidth, m_clientHeight };
     AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
@@ -473,7 +476,7 @@ void D3DApp::CreateSwapChain()
     DXGI_SWAP_CHAIN_DESC swapChainDesc;
     swapChainDesc.BufferDesc.Width = m_clientWidth;
     swapChainDesc.BufferDesc.Height = m_clientHeight;
-    swapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
+    swapChainDesc.BufferDesc.RefreshRate.Numerator = 120;
     swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
     swapChainDesc.BufferDesc.Format = m_backBufferFormat;
     swapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
@@ -484,7 +487,7 @@ void D3DApp::CreateSwapChain()
     swapChainDesc.BufferCount = c_SWAP_CHAIN_BUFFER_COUNT;
     swapChainDesc.OutputWindow = m_hMainWnd;
     swapChainDesc.Windowed = true;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
     // 스왑체인 생성
