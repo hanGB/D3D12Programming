@@ -530,6 +530,29 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3DApp::DepthStencilView() const
 
 void D3DApp::CalculateFrameStats()
 {
+    static int frameCount = 0;
+    static float timeElapsed = 0.0f;
+
+    frameCount++;
+
+    // 1초 동안의 평균 프레임 수 계산
+    if (m_timer.TotalTime() - timeElapsed >= 1.0f)
+    {
+        float fps = (float)frameCount;
+        float msPerFrame = 1000.0f / fps;
+
+        std::wstring fpsText = std::to_wstring(fps);
+        std::wstring msPerFrameText = std::to_wstring(msPerFrame);
+
+        std::wstring windowText = m_mainWndCaption +
+            L"  fps: " + fpsText + L"   mspf: " + msPerFrameText;
+
+        SetWindowText(m_hMainWnd, windowText.c_str());
+
+        // 다음 번 평균을 위해 수치 초기화
+        frameCount = 0;
+        timeElapsed += 1.0f;
+    }
 }
 
 void D3DApp::LogAdapters()
