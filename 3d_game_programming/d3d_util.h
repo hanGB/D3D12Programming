@@ -16,6 +16,8 @@ public:
 	    // 가장 가까운 256의 배수로 만듦(255를 더하고 하위 2비트값을 0으로 처리함)
 		return (byteSize + 255) & ~255; // 255는 16비트로 0x00ff
 	}
+
+	static ComPtr<ID3DBlob> LoadBinary(const std::wstring& filename);
 };
 
 class DxException

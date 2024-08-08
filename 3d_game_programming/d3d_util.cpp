@@ -17,3 +17,20 @@ std::wstring DxException::ToString() const
 
     return m_functionName + L" failed in " + m_filename + L"; line " + std::to_wstring(m_lineNumber) + L"; error: " + msg;
 }
+
+ComPtr<ID3DBlob> D3DUtil::LoadBinary(const std::wstring& filename)
+{
+    std::ifstream in(filename, std::ios::binary);
+
+    in.seekg(0, std::ios_base::end);
+    std::ifstream::pos_type size = (int)in.tellg();
+    in.seekg(0, std::ios_base::beg);
+
+    ComPtr<ID3DBlob> blob;
+    ThrowIfFailed(D3DCreateBlob(size, blob.GetAddressOf()));
+
+    in.read((char*)blob->GetBufferPointer(), size);
+    in.close();
+
+    return blob;
+}
