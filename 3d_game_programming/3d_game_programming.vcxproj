@@ -135,6 +135,7 @@
     <ClInclude Include="game_timer.h" />
     <ClInclude Include="init_direct3d_app.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="upload_buffer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="d3d_app.cpp" />

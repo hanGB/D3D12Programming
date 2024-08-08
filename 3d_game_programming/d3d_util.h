@@ -7,6 +7,17 @@ inline std::wstring AnsiToWString(const std::string& str)
 	return std::wstring(buffer);
 }
 
+class D3DUtil
+{
+public:
+	static UINT CalculateConstantBufferByteSize(UINT byteSize)
+	{
+		// 상수 버퍼는 최소 하드웨어 할당 크기의 배수여야 함(일반적으로 최소 하드웨어 할당 크기는 256)
+	    // 가장 가까운 256의 배수로 만듦(255를 더하고 하위 2비트값을 0으로 처리함)
+		return (byteSize + 255) & ~255; // 255는 16비트로 0x00ff
+	}
+};
+
 class DxException
 {
 public:
