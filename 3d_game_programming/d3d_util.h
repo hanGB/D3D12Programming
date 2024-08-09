@@ -41,7 +41,7 @@ struct SubmeshGeometry
 	UINT startIndexLocation = 0;
 	INT  baseVertexLocation = 0;
 
-	DirectX::BoundingBox boundingBox;
+	BoundingBox boundingBox;
 };
 
 struct MeshGeometry

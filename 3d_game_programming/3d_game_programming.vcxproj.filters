@@ -16,8 +16,14 @@
     <Filter Include="Common">
       <UniqueIdentifier>{3a0520db-df31-4fdc-abb6-00b1f1c9ce26}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Init Direct3D">
+    <Filter Include="Example App">
+      <UniqueIdentifier>{66a338af-7177-42d4-945e-c843d41e9c3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Example App\Init Direct3D">
       <UniqueIdentifier>{38ecb3c2-02d9-415b-8095-16dd217d8c3c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Example App\Box">
+      <UniqueIdentifier>{30a25350-abb6-4aa1-b6ed-f648e6623200}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -34,9 +40,15 @@
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="init_direct3d_app.h">
-      <Filter>Init Direct3D</Filter>
+      <Filter>Example App\Init Direct3D</Filter>
     </ClInclude>
     <ClInclude Include="upload_buffer.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="box_app.h">
+      <Filter>Example App\Box</Filter>
+    </ClInclude>
+    <ClInclude Include="math_helper.h">
       <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
@@ -54,10 +66,19 @@
       <Filter>Common</Filter>
     </ClCompile>
     <ClCompile Include="init_direct3d_app.cpp">
-      <Filter>Init Direct3D</Filter>
+      <Filter>Example App\Init Direct3D</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="box_app.cpp">
+      <Filter>Example App\Box</Filter>
+    </ClCompile>
+    <ClCompile Include="upload_buffer.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="math_helper.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
