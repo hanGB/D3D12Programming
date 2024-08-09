@@ -34,3 +34,45 @@ ComPtr<ID3DBlob> D3DUtil::LoadBinary(const std::wstring& filename)
 
     return blob;
 }
+
+ComPtr<ID3D12Resource> D3DUtil::CreateDefaultBuffer(
+    ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, const void* initData, UINT64 byteSize, ComPtr<ID3D12Resource>& uploadBuffer)
+{
+    ComPtr<ID3D12Resource> defaultBuffer;
+
+    // 실제 기본 버퍼 리소스 생성
+    ThrowIfFailed(device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(byteSize),
+        D3D12_RESOURCE_STATE_COMMON,
+        nullptr,
+        IID_PPV_ARGS(&defaultBuffer)));
+
+    // CPU 메모리 데이터를 기본 버퍼에 복사하기 위해 새로운 중간 업로드 버퍼 생성
+    ThrowIfFailed(device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(byteSize),
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&uploadBuffer)));
+
+
+    // 기본 버퍼로 복사할 데이터 서술
+    D3D12_SUBRESOURCE_DATA subResourceData = {};
+    subResourceData.pData = initData;
+    subResourceData.RowPitch = byteSize;
+    subResourceData.SlicePitch = subResourceData.RowPitch;
+
+    // 데이터를 기본 버퍼 리소스로 복사하기 위해 상태 전이를 통지
+    cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(),
+        D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
+    UpdateSubresources<1>(cmdList, defaultBuffer.Get(), uploadBuffer.Get(), 0, 0, 1, &subResourceData);
+    cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(),
+        D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
+
+    // 아직 실제로 복사가 이루어지지 않았으므로 업로드 버퍼를 삭제하지 않음
+
+    return defaultBuffer;
+}

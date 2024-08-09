@@ -40,7 +40,7 @@ public:
 		m_mappedData = nullptr;
 	}
 
-	ID3D12Resource& Resource() const
+	ID3D12Resource* Resource() const
 	{
 		return m_uploadBuffer.Get();
 	}

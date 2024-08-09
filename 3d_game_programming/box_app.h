@@ -34,10 +34,11 @@ private:
 	virtual void OnMouseUp(WPARAM btnState, int x, int y) override;
 	virtual void OnMouseMove(WPARAM btnState, int x, int y) override;
 
-	void BuildDescriptorHeap();
-	void BuildConstantHeap();
+	void BuildDescriptorHeaps();
+	void BuildConstantBuffers();
 	void BuildRootSignature();
 	void BuildshadersAndInputLayout();
+	void BuildBoxGeometry();
 	void BuildPSO();
 
 	ComPtr<ID3D12RootSignature> m_rootSignature = nullptr;
@@ -55,8 +56,8 @@ private:
 	ComPtr<ID3D12PipelineState> m_pso = nullptr;
 
 	XMFLOAT4X4 m_worldTransform = MathHelper::Identity4x4();
-	XMFLOAT4X4 m_viewTransform = MathHelper::Identity4x4();
-	XMFLOAT4X4 m_projectionTransform = MathHelper::Identity4x4();
+	XMFLOAT4X4 m_viewMatrix = MathHelper::Identity4x4();
+	XMFLOAT4X4 m_projectionMatrix = MathHelper::Identity4x4();
 
 	float m_theta = 1.5f * XM_PI;
 	float m_phi = XM_PIDIV4;

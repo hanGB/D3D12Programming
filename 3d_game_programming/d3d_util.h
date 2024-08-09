@@ -18,6 +18,13 @@ public:
 	}
 
 	static ComPtr<ID3DBlob> LoadBinary(const std::wstring& filename);
+
+	static ComPtr<ID3D12Resource> CreateDefaultBuffer(
+		ID3D12Device* device,
+		ID3D12GraphicsCommandList* cmdList,
+		const void* initData,
+		UINT64 byteSize,
+		ComPtr<ID3D12Resource>& uploadBuffer);
 };
 
 class DxException
@@ -73,6 +80,8 @@ struct MeshGeometry
 		vbv.BufferLocation	= vertexBufferGPU->GetGPUVirtualAddress();
 		vbv.StrideInBytes	= vertexByteStride;
 		vbv.SizeInBytes		= vertexBufferByteSize;
+
+		return vbv;
 	}
 
 	D3D12_INDEX_BUFFER_VIEW IndexBufferView() const
@@ -81,6 +90,8 @@ struct MeshGeometry
 		ibv.BufferLocation	= indexBufferGPU->GetGPUVirtualAddress();
 		ibv.Format			= indexFormat;
 		ibv.SizeInBytes		= indexBufferByteSize;
+
+		return ibv;
 	}
 
 	// 리소스를 GPU에 모두 올린 후 메모리 해제 가능
