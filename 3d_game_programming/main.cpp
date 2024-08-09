@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "init_direct3d_app.h"
+#include "box_app.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd)
 {
@@ -10,7 +10,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 
 	try
 	{
-		InitDirect3DApp app(hInstance);
+		BoxApp app(hInstance);
 
 		if (!app.Initialize()) return 0;
 

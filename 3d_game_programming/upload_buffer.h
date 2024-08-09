@@ -50,7 +50,7 @@ public:
 	}
 
 private:
-	ComPtr<ID3D12RTesource> m_uploadBuffer;
+	ComPtr<ID3D12Resource> m_uploadBuffer;
 	BYTE* m_mappedData = nullptr;
 
 	UINT m_elementByteSize = 0;
