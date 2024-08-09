@@ -34,6 +34,63 @@ public:
 	int m_lineNumber = -1;
 };
 
+// 부분 메시
+struct SubmeshGeometry
+{
+	UINT indexCount = 0;
+	UINT startIndexLocation = 0;
+	INT  baseVertexLocation = 0;
+
+	DirectX::BoundingBox boundingBox;
+};
+
+struct MeshGeometry
+{
+	std::string name;
+
+	// 시스템 메모리 복사본
+	ComPtr<ID3DBlob> vertexBufferCPU = nullptr;
+	ComPtr<ID3DBlob> indexBufferCPU = nullptr;
+
+	ComPtr<ID3D12Resource> vertexBufferGPU = nullptr;
+	ComPtr<ID3D12Resource> indexBufferGPU = nullptr;
+
+	ComPtr<ID3D12Resource> vertexBufferUploader = nullptr;
+	ComPtr<ID3D12Resource> indexBufferUploader = nullptr;
+
+	// 버퍼 관련 자료
+	UINT vertexByteStride = 0;
+	UINT vertexBufferByteSize = 0;
+	DXGI_FORMAT indexFormat = DXGI_FORMAT_R16_UINT;
+	UINT indexBufferByteSize = 0;
+
+	// 부분 메시들을 개별적으로 그릴 수 있도록 컨테이너에 보관
+	std::unordered_map<std::string, SubmeshGeometry> drawArgs;
+
+	D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const
+	{
+		D3D12_VERTEX_BUFFER_VIEW vbv;
+		vbv.BufferLocation	= vertexBufferGPU->GetGPUVirtualAddress();
+		vbv.StrideInBytes	= vertexByteStride;
+		vbv.SizeInBytes		= vertexBufferByteSize;
+	}
+
+	D3D12_INDEX_BUFFER_VIEW IndexBufferView() const
+	{
+		D3D12_INDEX_BUFFER_VIEW ibv;
+		ibv.BufferLocation	= indexBufferGPU->GetGPUVirtualAddress();
+		ibv.Format			= indexFormat;
+		ibv.SizeInBytes		= indexBufferByteSize;
+	}
+
+	// 리소스를 GPU에 모두 올린 후 메모리 해제 가능
+	void DisposeUploaders()
+	{
+		vertexBufferUploader = nullptr;
+		indexBufferUploader = nullptr;
+	}
+};
+
 #ifndef ThrowIfFailed
 #define ThrowIfFailed(x) \
 { \

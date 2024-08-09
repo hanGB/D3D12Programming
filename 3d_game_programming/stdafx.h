@@ -30,3 +30,4 @@ using namespace Microsoft::WRL;
 // std
 #include <string>
 #include <vector>
+#include <unordered_map>
