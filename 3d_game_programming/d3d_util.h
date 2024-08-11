@@ -41,6 +41,25 @@ public:
 	int m_lineNumber = -1;
 };
 
+struct VertexBuffer
+{
+	ComPtr<ID3DBlob> cpu = nullptr;
+	ComPtr<ID3D12Resource> gpu = nullptr;
+	ComPtr<ID3D12Resource> uploader = nullptr;
+
+	UINT byteStride = 0;
+	UINT byteSize = 0;
+};
+struct IndexBuffer
+{
+	ComPtr<ID3DBlob> cpu = nullptr;
+	ComPtr<ID3D12Resource> gpu = nullptr;
+	ComPtr<ID3D12Resource> uploader = nullptr;
+
+	DXGI_FORMAT format = DXGI_FORMAT_R16_UINT;
+	UINT byteSize = 0;
+};
+
 // 부분 메시
 struct SubmeshGeometry
 {
@@ -55,21 +74,11 @@ struct MeshGeometry
 {
 	std::string name;
 
-	// 시스템 메모리 복사본
-	std::array<ComPtr<ID3DBlob>, 2> vertexBuffersCPU = {nullptr, nullptr};
-	ComPtr<ID3DBlob> indexBufferCPU = nullptr;
-
-	std::array<ComPtr<ID3D12Resource>, 2> vertexBuffersGPU = { nullptr, nullptr };
-	ComPtr<ID3D12Resource> indexBufferGPU = nullptr;
-
-	std::array<ComPtr<ID3D12Resource>, 2> vertexBuffersUploader = { nullptr, nullptr };
-	ComPtr<ID3D12Resource> indexBufferUploader = nullptr;
-
-	// 버퍼 관련 자료
-	std::array <UINT, 2> vertexByteStrides = { 0, 0 };
-	std::array <UINT, 2> vertexBufferByteSizes = { 0, 0 };
-	DXGI_FORMAT indexFormat = DXGI_FORMAT_R16_UINT;
-	UINT indexBufferByteSize = 0;
+	std::array<VertexBuffer, 2> vertexBuffers = { 
+		VertexBuffer({ nullptr, nullptr, nullptr, 0, 0 }), 
+		VertexBuffer({ nullptr, nullptr, nullptr, 0, 0 }) 
+	};
+	IndexBuffer indexBuffer = { nullptr, nullptr, nullptr, DXGI_FORMAT_R16_UINT, 0};
 
 	// 부분 메시들을 개별적으로 그릴 수 있도록 컨테이너에 보관
 	std::unordered_map<std::string, SubmeshGeometry> drawArgs;
@@ -77,9 +86,9 @@ struct MeshGeometry
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView(int index) const
 	{
 		D3D12_VERTEX_BUFFER_VIEW vbv;
-		vbv.BufferLocation	= vertexBuffersGPU[index]->GetGPUVirtualAddress();
-		vbv.StrideInBytes	= vertexByteStrides[index];
-		vbv.SizeInBytes		= vertexBufferByteSizes[index];
+		vbv.BufferLocation	= vertexBuffers[index].gpu->GetGPUVirtualAddress();
+		vbv.StrideInBytes	= vertexBuffers[index].byteStride;
+		vbv.SizeInBytes		= vertexBuffers[index].byteSize;
 
 		return vbv;
 	}
@@ -87,21 +96,21 @@ struct MeshGeometry
 	D3D12_INDEX_BUFFER_VIEW IndexBufferView() const
 	{
 		D3D12_INDEX_BUFFER_VIEW ibv;
-		ibv.BufferLocation	= indexBufferGPU->GetGPUVirtualAddress();
-		ibv.Format			= indexFormat;
-		ibv.SizeInBytes		= indexBufferByteSize;
+		ibv.BufferLocation	= indexBuffer.gpu->GetGPUVirtualAddress();
+		ibv.Format			= indexBuffer.format;
+		ibv.SizeInBytes		= indexBuffer.byteSize;
 
 		return ibv;
 	}
 
-	// 리소스를 GPU에 모두 올린 후 메모리 해제 가능
+	// 리소스를 GPU에 모두 올린 후 업로드 버퍼 메모리 해제 가능
 	void DisposeUploaders()
 	{
-		for (int i = 0; i < vertexBuffersUploader.size(); ++i)
+		for (int i = 0; i < vertexBuffers.size(); ++i)
 		{
-			vertexBuffersUploader[i] = nullptr;
+			vertexBuffers[i].uploader = nullptr;
 		}
-		indexBufferUploader = nullptr;
+		indexBuffer.uploader = nullptr;
 	}
 };
 

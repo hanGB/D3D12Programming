@@ -327,26 +327,26 @@ void BoxApp::BuildBoxGeometry()
 	m_boxGeometry = std::make_unique<MeshGeometry>();
 	m_boxGeometry->name = "boxGeometry";
 
-	ThrowIfFailed(D3DCreateBlob(posVBByteSize, &m_boxGeometry->vertexBuffersCPU[0]));
-	CopyMemory(m_boxGeometry->vertexBuffersCPU[0]->GetBufferPointer(), posDatas.data(), posVBByteSize);
-	ThrowIfFailed(D3DCreateBlob(colorVBByteSize, &m_boxGeometry->vertexBuffersCPU[1]));
-	CopyMemory(m_boxGeometry->vertexBuffersCPU[1]->GetBufferPointer(), colorDatas.data(), colorVBByteSize);
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &m_boxGeometry->indexBufferCPU));
-	CopyMemory(m_boxGeometry->indexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+	ThrowIfFailed(D3DCreateBlob(posVBByteSize, &m_boxGeometry->vertexBuffers[0].cpu));
+	CopyMemory(m_boxGeometry->vertexBuffers[0].cpu->GetBufferPointer(), posDatas.data(), posVBByteSize);
+	ThrowIfFailed(D3DCreateBlob(colorVBByteSize, &m_boxGeometry->vertexBuffers[1].cpu));
+	CopyMemory(m_boxGeometry->vertexBuffers[1].cpu->GetBufferPointer(), colorDatas.data(), colorVBByteSize);
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &m_boxGeometry->indexBuffer.cpu));
+	CopyMemory(m_boxGeometry->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
 
-	m_boxGeometry->vertexBuffersGPU[0] = D3DUtil::CreateDefaultBuffer(
-		m_d3dDevice.Get(), m_commandList.Get(), posDatas.data(), posVBByteSize, m_boxGeometry->vertexBuffersUploader[0]);
-	m_boxGeometry->vertexBuffersGPU[1] = D3DUtil::CreateDefaultBuffer(
-		m_d3dDevice.Get(), m_commandList.Get(), colorDatas.data(), colorVBByteSize, m_boxGeometry->vertexBuffersUploader[1]);
-	m_boxGeometry->indexBufferGPU = D3DUtil::CreateDefaultBuffer(
-		m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, m_boxGeometry->indexBufferUploader);
+	m_boxGeometry->vertexBuffers[0].gpu = D3DUtil::CreateDefaultBuffer(
+		m_d3dDevice.Get(), m_commandList.Get(), posDatas.data(), posVBByteSize, m_boxGeometry->vertexBuffers[0].uploader);
+	m_boxGeometry->vertexBuffers[1].gpu = D3DUtil::CreateDefaultBuffer(
+		m_d3dDevice.Get(), m_commandList.Get(), colorDatas.data(), colorVBByteSize, m_boxGeometry->vertexBuffers[1].uploader);
+	m_boxGeometry->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(
+		m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, m_boxGeometry->indexBuffer.uploader);
 
-	m_boxGeometry->vertexByteStrides[0] = sizeof(VPosData);
-	m_boxGeometry->vertexBufferByteSizes[0] = posVBByteSize;
-	m_boxGeometry->vertexByteStrides[1] = sizeof(VColorData);
-	m_boxGeometry->vertexBufferByteSizes[1] = colorVBByteSize;
-	m_boxGeometry->indexFormat = DXGI_FORMAT_R16_UINT;
-	m_boxGeometry->indexBufferByteSize = ibByteSize;
+	m_boxGeometry->vertexBuffers[0].byteStride = sizeof(VPosData);
+	m_boxGeometry->vertexBuffers[0].byteSize = posVBByteSize;
+	m_boxGeometry->vertexBuffers[1].byteStride = sizeof(VColorData);
+	m_boxGeometry->vertexBuffers[1].byteSize = colorVBByteSize;
+	m_boxGeometry->indexBuffer.format = DXGI_FORMAT_R16_UINT;
+	m_boxGeometry->indexBuffer.byteSize = ibByteSize;
 
 	SubmeshGeometry submesh;
 	submesh.indexCount = (UINT)indices.size();
