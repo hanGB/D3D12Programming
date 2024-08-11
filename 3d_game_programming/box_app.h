@@ -4,11 +4,21 @@
 #include "math_helper.h"
 #include "upload_buffer.h"
 
-struct Vertex
+//struct Vertex
+//{
+//	XMFLOAT3 pos;
+//	XMFLOAT4 color;
+//};
+
+struct VPosData
 {
 	XMFLOAT3 pos;
+};
+struct VColorData
+{
 	XMFLOAT4 color;
 };
+
 
 struct ObjectConstants
 {

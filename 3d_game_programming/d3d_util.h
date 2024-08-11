@@ -56,30 +56,30 @@ struct MeshGeometry
 	std::string name;
 
 	// 시스템 메모리 복사본
-	ComPtr<ID3DBlob> vertexBufferCPU = nullptr;
+	std::array<ComPtr<ID3DBlob>, 2> vertexBuffersCPU = {nullptr, nullptr};
 	ComPtr<ID3DBlob> indexBufferCPU = nullptr;
 
-	ComPtr<ID3D12Resource> vertexBufferGPU = nullptr;
+	std::array<ComPtr<ID3D12Resource>, 2> vertexBuffersGPU = { nullptr, nullptr };
 	ComPtr<ID3D12Resource> indexBufferGPU = nullptr;
 
-	ComPtr<ID3D12Resource> vertexBufferUploader = nullptr;
+	std::array<ComPtr<ID3D12Resource>, 2> vertexBuffersUploader = { nullptr, nullptr };
 	ComPtr<ID3D12Resource> indexBufferUploader = nullptr;
 
 	// 버퍼 관련 자료
-	UINT vertexByteStride = 0;
-	UINT vertexBufferByteSize = 0;
+	std::array <UINT, 2> vertexByteStrides = { 0, 0 };
+	std::array <UINT, 2> vertexBufferByteSizes = { 0, 0 };
 	DXGI_FORMAT indexFormat = DXGI_FORMAT_R16_UINT;
 	UINT indexBufferByteSize = 0;
 
 	// 부분 메시들을 개별적으로 그릴 수 있도록 컨테이너에 보관
 	std::unordered_map<std::string, SubmeshGeometry> drawArgs;
 
-	D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const
+	D3D12_VERTEX_BUFFER_VIEW VertexBufferView(int index) const
 	{
 		D3D12_VERTEX_BUFFER_VIEW vbv;
-		vbv.BufferLocation	= vertexBufferGPU->GetGPUVirtualAddress();
-		vbv.StrideInBytes	= vertexByteStride;
-		vbv.SizeInBytes		= vertexBufferByteSize;
+		vbv.BufferLocation	= vertexBuffersGPU[index]->GetGPUVirtualAddress();
+		vbv.StrideInBytes	= vertexByteStrides[index];
+		vbv.SizeInBytes		= vertexBufferByteSizes[index];
 
 		return vbv;
 	}
@@ -97,7 +97,10 @@ struct MeshGeometry
 	// 리소스를 GPU에 모두 올린 후 메모리 해제 가능
 	void DisposeUploaders()
 	{
-		vertexBufferUploader = nullptr;
+		for (int i = 0; i < vertexBuffersUploader.size(); ++i)
+		{
+			vertexBuffersUploader[i] = nullptr;
+		}
 		indexBufferUploader = nullptr;
 	}
 };
