@@ -22,7 +22,7 @@ bool BoxApp::Initialize()
 	BuildConstantBuffers();
 	BuildRootSignature();
 	BuildshadersAndInputLayout();
-	//BuildBoxGeometry();
+	BuildBoxGeometry();
 	BuildPyramidGeometry();
 	BuildPSO();
 
@@ -68,6 +68,7 @@ void BoxApp::Update(const GameTimer& gt)
 	// 최신의 worldViewProjection 행렬로 상수 버퍼 갱신
 	ObjectConstants objConstants;
 	XMStoreFloat4x4(&objConstants.worldViewProjection, XMMatrixTranspose(worldViewProjection));
+	objConstants.time = gt.TotalTime();
 	m_objectCB->CopyData(0, objConstants);
 }
 
@@ -105,15 +106,16 @@ void BoxApp::Draw(const GameTimer& gt)
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	// 버텍스 버퍼, 인덱스 버퍼, 토폴로지 설정
-	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[] = { m_pyramidGeometry->VertexBufferView(0), m_pyramidGeometry->VertexBufferView(1) };
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[] = { m_boxGeometry->VertexBufferView(0), m_boxGeometry->VertexBufferView(1) };
 	m_commandList->IASetVertexBuffers(0, 2, &vertexBuffers[0]);
-	m_commandList->IASetIndexBuffer(&m_pyramidGeometry->IndexBufferView());
+	m_commandList->IASetIndexBuffer(&m_boxGeometry->IndexBufferView());
 	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// 쉐이더의 b0에 상수 버퍼 힙 연결
+	// 쉐이더의 b0에 상수 버퍼 연결
 	m_commandList->SetGraphicsRootDescriptorTable(0, m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+
 	// 그리기 커맨드
-	m_commandList->DrawIndexedInstanced(m_pyramidGeometry->drawArgs["pyramid"].indexCount, 1, 0, 0, 0);
+	m_commandList->DrawIndexedInstanced(m_boxGeometry->drawArgs["box"].indexCount, 1, 0, 0, 0);
 
 	// 리소스 용도에 관련된 상태 전이를 통지
 	m_commandList->ResourceBarrier(1,
@@ -185,7 +187,7 @@ void BoxApp::OnMouseMove(WPARAM btnState, int x, int y)
 void BoxApp::BuildDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = 1;
+	cbvHeapDesc.NumDescriptors = 2;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;
@@ -194,6 +196,7 @@ void BoxApp::BuildDescriptorHeaps()
 
 void BoxApp::BuildConstantBuffers()
 {
+	// 오브젝트 상수 버퍼
 	m_objectCB = std::make_unique<UploadBuffer<ObjectConstants>>(m_d3dDevice.Get(), 1, true);
 	UINT objCBByteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(ObjectConstants));
 
@@ -204,8 +207,7 @@ void BoxApp::BuildConstantBuffers()
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
 	cbvDesc.BufferLocation = cbAddress;
-	cbvDesc.SizeInBytes = D3DUtil::CalculateConstantBufferByteSize(sizeof(ObjectConstants));
-
+	cbvDesc.SizeInBytes = objCBByteSize;
 	m_d3dDevice->CreateConstantBufferView(&cbvDesc, m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
@@ -213,16 +215,20 @@ void BoxApp::BuildRootSignature()
 {
 	// 루트 시그니쳐가 세이더 프로그램이 기대하는 리소스들을 정의함
 	// 루트 매개변수는 디스크립터 테이블이거나 루트 디스크립터 또는 루트 상수
-	CD3DX12_ROOT_PARAMETER slotRootParameter[1];
+	CD3DX12_ROOT_PARAMETER slotRootParameters[2];
 
 	// CBV 하나를 담는 디스크립터 테이블 생성
-	CD3DX12_DESCRIPTOR_RANGE cbvTable;
-	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable);
+	CD3DX12_DESCRIPTOR_RANGE cbvTable0;
+	cbvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
+	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+
+	slotRootParameters[0].InitAsDescriptorTable(1, &cbvTable0);
+	slotRootParameters[1].InitAsDescriptorTable(1, &cbvTable1);
 
 	// 루트 시그니쳐는 루트 매개변수들의 배열
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(
-		1, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		2, slotRootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// 상수 버퍼 하나로 구성된 디스크립터 구간을 가리키는 슬롯 하나로 이루어진 루트 시그니쳐 생성
 	ComPtr<ID3DBlob> serializedRootSignature = nullptr;

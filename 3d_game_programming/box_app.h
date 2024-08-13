@@ -23,6 +23,7 @@ struct VColorData
 struct ObjectConstants
 {
 	XMFLOAT4X4 worldViewProjection = MathHelper::Identity4x4();
+	float time = 0.0f;
 };
 
 class BoxApp : public D3DApp
