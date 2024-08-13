@@ -22,7 +22,8 @@ bool BoxApp::Initialize()
 	BuildConstantBuffers();
 	BuildRootSignature();
 	BuildshadersAndInputLayout();
-	BuildBoxGeometry();
+	//BuildBoxGeometry();
+	BuildPyramidGeometry();
 	BuildPSO();
 
 	// 초기화 커맨드 실행
@@ -104,15 +105,15 @@ void BoxApp::Draw(const GameTimer& gt)
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	// 버텍스 버퍼, 인덱스 버퍼, 토폴로지 설정
-	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[] = { m_boxGeometry->VertexBufferView(0), m_boxGeometry->VertexBufferView(1) };
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[] = { m_pyramidGeometry->VertexBufferView(0), m_pyramidGeometry->VertexBufferView(1) };
 	m_commandList->IASetVertexBuffers(0, 2, &vertexBuffers[0]);
-	m_commandList->IASetIndexBuffer(&m_boxGeometry->IndexBufferView());
+	m_commandList->IASetIndexBuffer(&m_pyramidGeometry->IndexBufferView());
 	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// 쉐이더의 b0에 상수 버퍼 힙 연결
 	m_commandList->SetGraphicsRootDescriptorTable(0, m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
 	// 그리기 커맨드
-	m_commandList->DrawIndexedInstanced(m_boxGeometry->drawArgs["box"].indexCount, 1, 0, 0, 0);
+	m_commandList->DrawIndexedInstanced(m_pyramidGeometry->drawArgs["pyramid"].indexCount, 1, 0, 0, 0);
 
 	// 리소스 용도에 관련된 상태 전이를 통지
 	m_commandList->ResourceBarrier(1,
@@ -354,6 +355,71 @@ void BoxApp::BuildBoxGeometry()
 	submesh.baseVertexLocation = 0;
 
 	m_boxGeometry->drawArgs["box"] = submesh;
+}
+
+void BoxApp::BuildPyramidGeometry()
+{
+	std::array<VPosData, 5> posDatas =
+	{
+		VPosData({ XMFLOAT3(+0.0f, +1.0f, +0.0f) }),
+		VPosData({ XMFLOAT3(-1.0f, -1.0f, -1.0f) }),
+		VPosData({ XMFLOAT3(+1.0f, -1.0f, -1.0f) }),
+		VPosData({ XMFLOAT3(-1.0f, -1.0f, +1.0f) }),
+		VPosData({ XMFLOAT3(+1.0f, -1.0f, +1.0f) })
+	};
+	std::array<VColorData, 5> colorDatas =
+	{
+		VColorData({ XMFLOAT4(Colors::Red) }),
+		VColorData({ XMFLOAT4(Colors::Green) }),
+		VColorData({ XMFLOAT4(Colors::Green) }),
+		VColorData({ XMFLOAT4(Colors::Green) }),
+		VColorData({ XMFLOAT4(Colors::Green) }),
+	};
+	std::array<std::uint16_t, 18> indices =
+	{
+		0, 2, 1,
+		0, 1, 3,
+		0, 3, 4,
+		0, 4, 2,
+		1, 2, 4,
+		1, 4, 3
+	};
+
+	//const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT posVBByteSize = (UINT)posDatas.size() * sizeof(VPosData);
+	const UINT colorVBByteSize = (UINT)colorDatas.size() * sizeof(VColorData);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	m_pyramidGeometry = std::make_unique<MeshGeometry>();
+	m_pyramidGeometry->name = "pyramidGeometry";
+
+	ThrowIfFailed(D3DCreateBlob(posVBByteSize, &m_pyramidGeometry->vertexBuffers[0].cpu));
+	CopyMemory(m_pyramidGeometry->vertexBuffers[0].cpu->GetBufferPointer(), posDatas.data(), posVBByteSize);
+	ThrowIfFailed(D3DCreateBlob(colorVBByteSize, &m_pyramidGeometry->vertexBuffers[1].cpu));
+	CopyMemory(m_pyramidGeometry->vertexBuffers[1].cpu->GetBufferPointer(), colorDatas.data(), colorVBByteSize);
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &m_pyramidGeometry->indexBuffer.cpu));
+	CopyMemory(m_pyramidGeometry->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
+
+	m_pyramidGeometry->vertexBuffers[0].gpu = D3DUtil::CreateDefaultBuffer(
+		m_d3dDevice.Get(), m_commandList.Get(), posDatas.data(), posVBByteSize, m_pyramidGeometry->vertexBuffers[0].uploader);
+	m_pyramidGeometry->vertexBuffers[1].gpu = D3DUtil::CreateDefaultBuffer(
+		m_d3dDevice.Get(), m_commandList.Get(), colorDatas.data(), colorVBByteSize, m_pyramidGeometry->vertexBuffers[1].uploader);
+	m_pyramidGeometry->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(
+		m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, m_pyramidGeometry->indexBuffer.uploader);
+
+	m_pyramidGeometry->vertexBuffers[0].byteStride = sizeof(VPosData);
+	m_pyramidGeometry->vertexBuffers[0].byteSize = posVBByteSize;
+	m_pyramidGeometry->vertexBuffers[1].byteStride = sizeof(VColorData);
+	m_pyramidGeometry->vertexBuffers[1].byteSize = colorVBByteSize;
+	m_pyramidGeometry->indexBuffer.format = DXGI_FORMAT_R16_UINT;
+	m_pyramidGeometry->indexBuffer.byteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.indexCount = (UINT)indices.size();
+	submesh.startIndexLocation = 0;
+	submesh.baseVertexLocation = 0;
+
+	m_pyramidGeometry->drawArgs["pyramid"] = submesh;
 }
 
 void BoxApp::BuildPSO()
