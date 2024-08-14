@@ -51,15 +51,18 @@ private:
 	void BuildshadersAndInputLayout();
 	void BuildBoxGeometry();
 	void BuildPyramidGeometry();
+	void BuildShapesGeometry();
 	void BuildPSO();
 
 	ComPtr<ID3D12RootSignature> m_rootSignature = nullptr;
 	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
 
 	std::unique_ptr<UploadBuffer<ObjectConstants>> m_objectCB = nullptr;
+	std::unique_ptr<UploadBuffer<ObjectConstants>> m_objectCB2 = nullptr;
 
 	std::unique_ptr<MeshGeometry> m_boxGeometry = nullptr;
 	std::unique_ptr<MeshGeometry> m_pyramidGeometry = nullptr;
+	std::unique_ptr<MeshGeometry> m_shapesGeometry = nullptr;
 
 	ComPtr<ID3DBlob> m_vsByteCode = nullptr;
 	ComPtr<ID3DBlob> m_psByteCode = nullptr;

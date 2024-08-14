@@ -24,6 +24,7 @@ bool BoxApp::Initialize()
 	BuildshadersAndInputLayout();
 	BuildBoxGeometry();
 	BuildPyramidGeometry();
+	BuildShapesGeometry();
 	BuildPSO();
 
 	// 초기화 커맨드 실행
@@ -61,15 +62,22 @@ void BoxApp::Update(const GameTimer& gt)
 	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
 	XMStoreFloat4x4(&m_viewMatrix, view);
 
+	XMMATRIX translate = XMMatrixTranslation(-2.0f, 0.0f, 0.0f);
+
 	XMMATRIX world = XMLoadFloat4x4(&m_worldTransform);
 	XMMATRIX projection = XMLoadFloat4x4(&m_projectionMatrix);
-	XMMATRIX worldViewProjection = world * view * projection;
+	XMMATRIX worldViewProjection = world * translate * view * projection;
 
 	// 최신의 worldViewProjection 행렬로 상수 버퍼 갱신
 	ObjectConstants objConstants;
 	XMStoreFloat4x4(&objConstants.worldViewProjection, XMMatrixTranspose(worldViewProjection));
 	objConstants.time = gt.TotalTime();
 	m_objectCB->CopyData(0, objConstants);
+
+	translate = XMMatrixTranslation(2.0f, 0.0f, 0.0f);
+	worldViewProjection = world * translate * view * projection;
+	XMStoreFloat4x4(&objConstants.worldViewProjection, XMMatrixTranspose(worldViewProjection));
+	m_objectCB2->CopyData(0, objConstants);
 }
 
 void BoxApp::Draw(const GameTimer& gt)
@@ -106,16 +114,32 @@ void BoxApp::Draw(const GameTimer& gt)
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	// 버텍스 버퍼, 인덱스 버퍼, 토폴로지 설정
-	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[] = { m_boxGeometry->VertexBufferView(0), m_boxGeometry->VertexBufferView(1) };
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[] = { m_shapesGeometry->VertexBufferView(0), m_shapesGeometry->VertexBufferView(1) };
 	m_commandList->IASetVertexBuffers(0, 2, &vertexBuffers[0]);
-	m_commandList->IASetIndexBuffer(&m_boxGeometry->IndexBufferView());
+	m_commandList->IASetIndexBuffer(&m_shapesGeometry->IndexBufferView());
 	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+	CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
 	// 쉐이더의 b0에 상수 버퍼 연결
-	m_commandList->SetGraphicsRootDescriptorTable(0, m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+	m_commandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
 
 	// 그리기 커맨드
-	m_commandList->DrawIndexedInstanced(m_boxGeometry->drawArgs["box"].indexCount, 1, 0, 0, 0);
+	m_commandList->DrawIndexedInstanced(
+		m_shapesGeometry->drawArgs["box"].indexCount,
+		1,
+		m_shapesGeometry->drawArgs["box"].startIndexLocation,
+		m_shapesGeometry->drawArgs["box"].baseVertexLocation,
+		0);
+
+	gpuHandle.Offset(m_d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+	m_commandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
+
+	m_commandList->DrawIndexedInstanced(
+		m_shapesGeometry->drawArgs["pyramid"].indexCount,
+		1, 
+		m_shapesGeometry->drawArgs["pyramid"].startIndexLocation, 
+		m_shapesGeometry->drawArgs["pyramid"].baseVertexLocation, 
+		0);
 
 	// 리소스 용도에 관련된 상태 전이를 통지
 	m_commandList->ResourceBarrier(1,
@@ -202,33 +226,45 @@ void BoxApp::BuildConstantBuffers()
 
 	D3D12_GPU_VIRTUAL_ADDRESS cbAddress = m_objectCB->Resource()->GetGPUVirtualAddress();
 	// 버퍼에서 i번째 물체의 상수 버퍼의 오프셋을 얻음(현재 i = 0)
-	int boxCBIndex = 0;
-	cbAddress += boxCBIndex * objCBByteSize;
+
+	cbAddress += +0 * objCBByteSize;
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
 	cbvDesc.BufferLocation = cbAddress;
 	cbvDesc.SizeInBytes = objCBByteSize;
-	m_d3dDevice->CreateConstantBufferView(&cbvDesc, m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
+	m_d3dDevice->CreateConstantBufferView(&cbvDesc, cpuHandle);
+
+	// 오브젝트 상수 버퍼2
+	m_objectCB2 = std::make_unique<UploadBuffer<ObjectConstants>>(m_d3dDevice.Get(), 1, true);
+	
+	cbAddress = m_objectCB2->Resource()->GetGPUVirtualAddress();
+	// 버퍼에서 i번째 물체의 상수 버퍼의 오프셋을 얻음(현재 i = 0)
+
+	cbAddress += + 0 * objCBByteSize;
+
+	cbvDesc;
+	cbvDesc.BufferLocation = cbAddress;
+	cbvDesc.SizeInBytes = objCBByteSize;
+	cpuHandle.Offset(m_d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+
+	m_d3dDevice->CreateConstantBufferView(&cbvDesc, cpuHandle);
 }
 
 void BoxApp::BuildRootSignature()
 {
 	// 루트 시그니쳐가 세이더 프로그램이 기대하는 리소스들을 정의함
 	// 루트 매개변수는 디스크립터 테이블이거나 루트 디스크립터 또는 루트 상수
-	CD3DX12_ROOT_PARAMETER slotRootParameters[2];
+	CD3DX12_ROOT_PARAMETER slotRootParameters[1];
 
 	// CBV 하나를 담는 디스크립터 테이블 생성
-	CD3DX12_DESCRIPTOR_RANGE cbvTable0;
-	cbvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
-	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
-
-	slotRootParameters[0].InitAsDescriptorTable(1, &cbvTable0);
-	slotRootParameters[1].InitAsDescriptorTable(1, &cbvTable1);
+	CD3DX12_DESCRIPTOR_RANGE cbvTable;
+	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+	slotRootParameters[0].InitAsDescriptorTable(1, &cbvTable);
 
 	// 루트 시그니쳐는 루트 매개변수들의 배열
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(
-		2, slotRootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		1, slotRootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	// 상수 버퍼 하나로 구성된 디스크립터 구간을 가리키는 슬롯 하나로 이루어진 루트 시그니쳐 생성
 	ComPtr<ID3DBlob> serializedRootSignature = nullptr;
@@ -379,7 +415,7 @@ void BoxApp::BuildPyramidGeometry()
 		VColorData({ XMFLOAT4(Colors::Green) }),
 		VColorData({ XMFLOAT4(Colors::Green) }),
 		VColorData({ XMFLOAT4(Colors::Green) }),
-		VColorData({ XMFLOAT4(Colors::Green) }),
+		VColorData({ XMFLOAT4(Colors::Green) })
 	};
 	std::array<std::uint16_t, 18> indices =
 	{
@@ -426,6 +462,104 @@ void BoxApp::BuildPyramidGeometry()
 	submesh.baseVertexLocation = 0;
 
 	m_pyramidGeometry->drawArgs["pyramid"] = submesh;
+}
+
+void BoxApp::BuildShapesGeometry()
+{
+	std::array<VPosData, 13> posDatas =
+	{
+		VPosData({ XMFLOAT3(-1.0f, -1.0f, -1.0f) }),
+		VPosData({ XMFLOAT3(-1.0f, +1.0f, -1.0f) }),
+		VPosData({ XMFLOAT3(+1.0f, +1.0f, -1.0f) }),
+		VPosData({ XMFLOAT3(+1.0f, -1.0f, -1.0f) }),
+		VPosData({ XMFLOAT3(-1.0f, -1.0f, +1.0f) }),
+		VPosData({ XMFLOAT3(-1.0f, +1.0f, +1.0f) }),
+		VPosData({ XMFLOAT3(+1.0f, +1.0f, +1.0f) }),
+		VPosData({ XMFLOAT3(+1.0f, -1.0f, +1.0f) }),
+		VPosData({ XMFLOAT3(+0.0f, +1.0f, +0.0f) }),
+		VPosData({ XMFLOAT3(-1.0f, -1.0f, -1.0f) }),
+		VPosData({ XMFLOAT3(+1.0f, -1.0f, -1.0f) }),
+		VPosData({ XMFLOAT3(-1.0f, -1.0f, +1.0f) }),
+		VPosData({ XMFLOAT3(+1.0f, -1.0f, +1.0f) })
+	};
+	std::array<VColorData, 13> colorDatas =
+	{
+		VColorData({ XMFLOAT4(Colors::White) }),
+		VColorData({ XMFLOAT4(Colors::Black) }),
+		VColorData({ XMFLOAT4(Colors::Red) }),
+		VColorData({ XMFLOAT4(Colors::Green) }),
+		VColorData({ XMFLOAT4(Colors::Blue) }),
+		VColorData({ XMFLOAT4(Colors::Yellow) }),
+		VColorData({ XMFLOAT4(Colors::Cyan) }),
+		VColorData({ XMFLOAT4(Colors::Magenta) }),
+		VColorData({ XMFLOAT4(Colors::Red) }),
+		VColorData({ XMFLOAT4(Colors::Green) }),
+		VColorData({ XMFLOAT4(Colors::Green) }),
+		VColorData({ XMFLOAT4(Colors::Green) }),
+		VColorData({ XMFLOAT4(Colors::Green) })
+
+	};
+	std::array<std::uint16_t, 54> indices =
+	{
+		0, 1, 2,
+		0, 2, 3,
+		4, 6, 5,
+		4, 7, 6,
+		4, 5, 1,
+		4, 1, 0,
+		3, 2, 6,
+		3, 6, 7,
+		1, 5, 6,
+		1, 6, 2,
+		4, 0, 3,
+		4, 3, 7,
+		0, 2, 1,
+		0, 1, 3,
+		0, 3, 4,
+		0, 4, 2,
+		1, 2, 4,
+		1, 4, 3
+	};
+
+	const UINT posVBByteSize = (UINT)posDatas.size() * sizeof(VPosData);
+	const UINT colorVBByteSize = (UINT)colorDatas.size() * sizeof(VColorData);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	m_shapesGeometry = std::make_unique<MeshGeometry>();
+	m_shapesGeometry->name = "pyramidGeometry";
+
+	ThrowIfFailed(D3DCreateBlob(posVBByteSize, &m_shapesGeometry->vertexBuffers[0].cpu));
+	CopyMemory(m_shapesGeometry->vertexBuffers[0].cpu->GetBufferPointer(), posDatas.data(), posVBByteSize);
+	ThrowIfFailed(D3DCreateBlob(colorVBByteSize, &m_shapesGeometry->vertexBuffers[1].cpu));
+	CopyMemory(m_shapesGeometry->vertexBuffers[1].cpu->GetBufferPointer(), colorDatas.data(), colorVBByteSize);
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &m_shapesGeometry->indexBuffer.cpu));
+	CopyMemory(m_shapesGeometry->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
+
+	m_shapesGeometry->vertexBuffers[0].gpu = D3DUtil::CreateDefaultBuffer(
+		m_d3dDevice.Get(), m_commandList.Get(), posDatas.data(), posVBByteSize, m_shapesGeometry->vertexBuffers[0].uploader);
+	m_shapesGeometry->vertexBuffers[1].gpu = D3DUtil::CreateDefaultBuffer(
+		m_d3dDevice.Get(), m_commandList.Get(), colorDatas.data(), colorVBByteSize, m_shapesGeometry->vertexBuffers[1].uploader);
+	m_shapesGeometry->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(
+		m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, m_shapesGeometry->indexBuffer.uploader);
+
+	m_shapesGeometry->vertexBuffers[0].byteStride = sizeof(VPosData);
+	m_shapesGeometry->vertexBuffers[0].byteSize = posVBByteSize;
+	m_shapesGeometry->vertexBuffers[1].byteStride = sizeof(VColorData);
+	m_shapesGeometry->vertexBuffers[1].byteSize = colorVBByteSize;
+	m_shapesGeometry->indexBuffer.format = DXGI_FORMAT_R16_UINT;
+	m_shapesGeometry->indexBuffer.byteSize = ibByteSize;
+
+	SubmeshGeometry box;
+	box.indexCount = 36;
+	box.startIndexLocation = 0;
+	box.baseVertexLocation = 0;
+	SubmeshGeometry pyramid;
+	pyramid.indexCount = 18;
+	pyramid.startIndexLocation = 36;
+	pyramid.baseVertexLocation = 8;
+
+	m_shapesGeometry->drawArgs["box"] = box;
+	m_shapesGeometry->drawArgs["pyramid"] = pyramid;
 }
 
 void BoxApp::BuildPSO()
