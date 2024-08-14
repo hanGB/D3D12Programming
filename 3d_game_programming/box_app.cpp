@@ -305,7 +305,7 @@ void BoxApp::BuildshadersAndInputLayout()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
 		  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0,
+		{ "COLOR", 0, DXGI_FORMAT_B8G8R8A8_UNORM, 1, 0,
 		  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
@@ -315,14 +315,14 @@ void BoxApp::BuildBoxGeometry()
 	// 버텍스, 인덱스 데이터
 	/*std::array<Vertex, 8> vertices = 
 	{
-		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::White) }),
-		Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Black) }),
-		Vertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(Colors::Red) }),
-		Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(Colors::Green) }),
-		Vertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Blue) }),
-		Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Yellow) }),
-		Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(Colors::Cyan) }),
-		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(Colors::Magenta) })
+		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMCOLOR(Colors::White) }),
+		Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMCOLOR(Colors::Black) }),
+		Vertex({ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMCOLOR(Colors::Red) }),
+		Vertex({ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMCOLOR(Colors::Green) }),
+		Vertex({ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMCOLOR(Colors::Blue) }),
+		Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMCOLOR(Colors::Yellow) }),
+		Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMCOLOR(Colors::Cyan) }),
+		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMCOLOR(Colors::Magenta) })
 	};*/
 	std::array<VPosData, 8> posDatas =
 	{
@@ -337,14 +337,14 @@ void BoxApp::BuildBoxGeometry()
 	};
 	std::array<VColorData, 8> colorDatas =
 	{
-		VColorData({ XMFLOAT4(Colors::White) }),
-		VColorData({ XMFLOAT4(Colors::Black) }),
-		VColorData({ XMFLOAT4(Colors::Red) }),
-		VColorData({ XMFLOAT4(Colors::Green) }),
-		VColorData({ XMFLOAT4(Colors::Blue) }),
-		VColorData({ XMFLOAT4(Colors::Yellow) }),
-		VColorData({ XMFLOAT4(Colors::Cyan) }),
-		VColorData({ XMFLOAT4(Colors::Magenta) })
+		VColorData({ XMCOLOR(Colors::White) }),
+		VColorData({ XMCOLOR(Colors::Black) }),
+		VColorData({ XMCOLOR(Colors::Red) }),
+		VColorData({ XMCOLOR(Colors::Green) }),
+		VColorData({ XMCOLOR(Colors::Blue) }),
+		VColorData({ XMCOLOR(Colors::Yellow) }),
+		VColorData({ XMCOLOR(Colors::Cyan) }),
+		VColorData({ XMCOLOR(Colors::Magenta) })
 	};
 	std::array<std::uint16_t, 36> indices =
 	{
@@ -411,11 +411,11 @@ void BoxApp::BuildPyramidGeometry()
 	};
 	std::array<VColorData, 5> colorDatas =
 	{
-		VColorData({ XMFLOAT4(Colors::Red) }),
-		VColorData({ XMFLOAT4(Colors::Green) }),
-		VColorData({ XMFLOAT4(Colors::Green) }),
-		VColorData({ XMFLOAT4(Colors::Green) }),
-		VColorData({ XMFLOAT4(Colors::Green) })
+		VColorData({ XMCOLOR(Colors::Red) }),
+		VColorData({ XMCOLOR(Colors::Green) }),
+		VColorData({ XMCOLOR(Colors::Green) }),
+		VColorData({ XMCOLOR(Colors::Green) }),
+		VColorData({ XMCOLOR(Colors::Green) })
 	};
 	std::array<std::uint16_t, 18> indices =
 	{
@@ -484,19 +484,19 @@ void BoxApp::BuildShapesGeometry()
 	};
 	std::array<VColorData, 13> colorDatas =
 	{
-		VColorData({ XMFLOAT4(Colors::White) }),
-		VColorData({ XMFLOAT4(Colors::Black) }),
-		VColorData({ XMFLOAT4(Colors::Red) }),
-		VColorData({ XMFLOAT4(Colors::Green) }),
-		VColorData({ XMFLOAT4(Colors::Blue) }),
-		VColorData({ XMFLOAT4(Colors::Yellow) }),
-		VColorData({ XMFLOAT4(Colors::Cyan) }),
-		VColorData({ XMFLOAT4(Colors::Magenta) }),
-		VColorData({ XMFLOAT4(Colors::Red) }),
-		VColorData({ XMFLOAT4(Colors::Green) }),
-		VColorData({ XMFLOAT4(Colors::Green) }),
-		VColorData({ XMFLOAT4(Colors::Green) }),
-		VColorData({ XMFLOAT4(Colors::Green) })
+		VColorData({ XMCOLOR(Colors::White) }),
+		VColorData({ XMCOLOR(Colors::Black) }),
+		VColorData({ XMCOLOR(Colors::Red) }),
+		VColorData({ XMCOLOR(Colors::Green) }),
+		VColorData({ XMCOLOR(Colors::Blue) }),
+		VColorData({ XMCOLOR(Colors::Yellow) }),
+		VColorData({ XMCOLOR(Colors::Cyan) }),
+		VColorData({ XMCOLOR(Colors::Magenta) }),
+		VColorData({ XMCOLOR(Colors::Red) }),
+		VColorData({ XMCOLOR(Colors::Green) }),
+		VColorData({ XMCOLOR(Colors::Green) }),
+		VColorData({ XMCOLOR(Colors::Green) }),
+		VColorData({ XMCOLOR(Colors::Green) })
 
 	};
 	std::array<std::uint16_t, 54> indices =
@@ -579,8 +579,6 @@ void BoxApp::BuildPSO()
 		m_psByteCode->GetBufferSize()
 	};
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;

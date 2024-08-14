@@ -16,7 +16,7 @@ struct VPosData
 };
 struct VColorData
 {
-	XMFLOAT4 color;
+	XMCOLOR color;
 };
 
 
