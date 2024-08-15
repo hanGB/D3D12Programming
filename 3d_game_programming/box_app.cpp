@@ -23,8 +23,8 @@ bool BoxApp::Initialize()
 	BuildRootSignature();
 	BuildshadersAndInputLayout();
 	BuildBoxGeometry();
-	BuildPyramidGeometry();
-	BuildShapesGeometry();
+	//BuildPyramidGeometry();
+	//BuildShapesGeometry();
 	BuildPSO();
 
 	// 초기화 커맨드 실행
@@ -62,22 +62,16 @@ void BoxApp::Update(const GameTimer& gt)
 	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
 	XMStoreFloat4x4(&m_viewMatrix, view);
 
-	XMMATRIX translate = XMMatrixTranslation(-2.0f, 0.0f, 0.0f);
-
 	XMMATRIX world = XMLoadFloat4x4(&m_worldTransform);
 	XMMATRIX projection = XMLoadFloat4x4(&m_projectionMatrix);
-	XMMATRIX worldViewProjection = world * translate * view * projection;
+	XMMATRIX worldViewProjection = world * view * projection;
 
 	// 최신의 worldViewProjection 행렬로 상수 버퍼 갱신
 	ObjectConstants objConstants;
 	XMStoreFloat4x4(&objConstants.worldViewProjection, XMMatrixTranspose(worldViewProjection));
 	objConstants.time = gt.TotalTime();
+	objConstants.animationTime = CalculateAnimationTime(objConstants.time);
 	m_objectCB->CopyData(0, objConstants);
-
-	translate = XMMatrixTranslation(2.0f, 0.0f, 0.0f);
-	worldViewProjection = world * translate * view * projection;
-	XMStoreFloat4x4(&objConstants.worldViewProjection, XMMatrixTranspose(worldViewProjection));
-	m_objectCB2->CopyData(0, objConstants);
 }
 
 void BoxApp::Draw(const GameTimer& gt)
@@ -114,9 +108,9 @@ void BoxApp::Draw(const GameTimer& gt)
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	// 버텍스 버퍼, 인덱스 버퍼, 토폴로지 설정
-	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[] = { m_shapesGeometry->VertexBufferView(0), m_shapesGeometry->VertexBufferView(1) };
-	m_commandList->IASetVertexBuffers(0, 2, &vertexBuffers[0]);
-	m_commandList->IASetIndexBuffer(&m_shapesGeometry->IndexBufferView());
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[] = { m_boxGeometry->VertexBufferView(0) };
+	m_commandList->IASetVertexBuffers(0, 1, &vertexBuffers[0]);
+	m_commandList->IASetIndexBuffer(&m_boxGeometry->IndexBufferView());
 	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
@@ -125,20 +119,10 @@ void BoxApp::Draw(const GameTimer& gt)
 
 	// 그리기 커맨드
 	m_commandList->DrawIndexedInstanced(
-		m_shapesGeometry->drawArgs["box"].indexCount,
+		m_boxGeometry->drawArgs["box"].indexCount,
 		1,
-		m_shapesGeometry->drawArgs["box"].startIndexLocation,
-		m_shapesGeometry->drawArgs["box"].baseVertexLocation,
-		0);
-
-	gpuHandle.Offset(m_d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
-	m_commandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
-
-	m_commandList->DrawIndexedInstanced(
-		m_shapesGeometry->drawArgs["pyramid"].indexCount,
-		1, 
-		m_shapesGeometry->drawArgs["pyramid"].startIndexLocation, 
-		m_shapesGeometry->drawArgs["pyramid"].baseVertexLocation, 
+		m_boxGeometry->drawArgs["box"].startIndexLocation,
+		m_boxGeometry->drawArgs["box"].baseVertexLocation,
 		0);
 
 	// 리소스 용도에 관련된 상태 전이를 통지
@@ -211,7 +195,7 @@ void BoxApp::OnMouseMove(WPARAM btnState, int x, int y)
 void BoxApp::BuildDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = 2;
+	cbvHeapDesc.NumDescriptors = 1;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;
@@ -233,21 +217,6 @@ void BoxApp::BuildConstantBuffers()
 	cbvDesc.BufferLocation = cbAddress;
 	cbvDesc.SizeInBytes = objCBByteSize;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
-	m_d3dDevice->CreateConstantBufferView(&cbvDesc, cpuHandle);
-
-	// 오브젝트 상수 버퍼2
-	m_objectCB2 = std::make_unique<UploadBuffer<ObjectConstants>>(m_d3dDevice.Get(), 1, true);
-	
-	cbAddress = m_objectCB2->Resource()->GetGPUVirtualAddress();
-	// 버퍼에서 i번째 물체의 상수 버퍼의 오프셋을 얻음(현재 i = 0)
-
-	cbAddress += + 0 * objCBByteSize;
-
-	cbvDesc;
-	cbvDesc.BufferLocation = cbAddress;
-	cbvDesc.SizeInBytes = objCBByteSize;
-	cpuHandle.Offset(m_d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
-
 	m_d3dDevice->CreateConstantBufferView(&cbvDesc, cpuHandle);
 }
 
@@ -294,26 +263,27 @@ void BoxApp::BuildshadersAndInputLayout()
 	m_vsByteCode = D3DUtil::LoadBinary(L"./shader/box_vertex.cso");
 	m_psByteCode = D3DUtil::LoadBinary(L"./shader/box_pixel.cso");
 
-	/*m_inputLayout =
+	m_inputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
 		  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12,
+		{ "COLOR", 0, DXGI_FORMAT_B8G8R8A8_UNORM, 0, 12,
 		  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};*/
-	m_inputLayout =
+		
+	};
+	/*m_inputLayout =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
 		  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "COLOR", 0, DXGI_FORMAT_B8G8R8A8_UNORM, 1, 0,
 		  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
+	};*/
 }
 
 void BoxApp::BuildBoxGeometry()
 {
 	// 버텍스, 인덱스 데이터
-	/*std::array<Vertex, 8> vertices = 
+	std::array<Vertex, 8> vertices = 
 	{
 		Vertex({ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMCOLOR(Colors::White) }),
 		Vertex({ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMCOLOR(Colors::Black) }),
@@ -323,28 +293,6 @@ void BoxApp::BuildBoxGeometry()
 		Vertex({ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMCOLOR(Colors::Yellow) }),
 		Vertex({ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMCOLOR(Colors::Cyan) }),
 		Vertex({ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMCOLOR(Colors::Magenta) })
-	};*/
-	std::array<VPosData, 8> posDatas =
-	{
-		VPosData({ XMFLOAT3(-1.0f, -1.0f, -1.0f) }),
-		VPosData({ XMFLOAT3(-1.0f, +1.0f, -1.0f) }),
-		VPosData({ XMFLOAT3(+1.0f, +1.0f, -1.0f) }),
-		VPosData({ XMFLOAT3(+1.0f, -1.0f, -1.0f) }),
-		VPosData({ XMFLOAT3(-1.0f, -1.0f, +1.0f) }),
-		VPosData({ XMFLOAT3(-1.0f, +1.0f, +1.0f) }),
-		VPosData({ XMFLOAT3(+1.0f, +1.0f, +1.0f) }),
-		VPosData({ XMFLOAT3(+1.0f, -1.0f, +1.0f) })
-	};
-	std::array<VColorData, 8> colorDatas =
-	{
-		VColorData({ XMCOLOR(Colors::White) }),
-		VColorData({ XMCOLOR(Colors::Black) }),
-		VColorData({ XMCOLOR(Colors::Red) }),
-		VColorData({ XMCOLOR(Colors::Green) }),
-		VColorData({ XMCOLOR(Colors::Blue) }),
-		VColorData({ XMCOLOR(Colors::Yellow) }),
-		VColorData({ XMCOLOR(Colors::Cyan) }),
-		VColorData({ XMCOLOR(Colors::Magenta) })
 	};
 	std::array<std::uint16_t, 36> indices =
 	{
@@ -362,32 +310,24 @@ void BoxApp::BuildBoxGeometry()
 		4, 3, 7
 	};
 
-	//const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT posVBByteSize = (UINT)posDatas.size() * sizeof(VPosData);
-	const UINT colorVBByteSize = (UINT)colorDatas.size() * sizeof(VColorData);
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	m_boxGeometry = std::make_unique<MeshGeometry>();
 	m_boxGeometry->name = "boxGeometry";
 
-	ThrowIfFailed(D3DCreateBlob(posVBByteSize, &m_boxGeometry->vertexBuffers[0].cpu));
-	CopyMemory(m_boxGeometry->vertexBuffers[0].cpu->GetBufferPointer(), posDatas.data(), posVBByteSize);
-	ThrowIfFailed(D3DCreateBlob(colorVBByteSize, &m_boxGeometry->vertexBuffers[1].cpu));
-	CopyMemory(m_boxGeometry->vertexBuffers[1].cpu->GetBufferPointer(), colorDatas.data(), colorVBByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &m_boxGeometry->vertexBuffers[0].cpu));
+	CopyMemory(m_boxGeometry->vertexBuffers[0].cpu->GetBufferPointer(), vertices.data(), vbByteSize);
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &m_boxGeometry->indexBuffer.cpu));
 	CopyMemory(m_boxGeometry->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
 
 	m_boxGeometry->vertexBuffers[0].gpu = D3DUtil::CreateDefaultBuffer(
-		m_d3dDevice.Get(), m_commandList.Get(), posDatas.data(), posVBByteSize, m_boxGeometry->vertexBuffers[0].uploader);
-	m_boxGeometry->vertexBuffers[1].gpu = D3DUtil::CreateDefaultBuffer(
-		m_d3dDevice.Get(), m_commandList.Get(), colorDatas.data(), colorVBByteSize, m_boxGeometry->vertexBuffers[1].uploader);
+		m_d3dDevice.Get(), m_commandList.Get(), vertices.data(), vbByteSize, m_boxGeometry->vertexBuffers[0].uploader);
 	m_boxGeometry->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(
 		m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, m_boxGeometry->indexBuffer.uploader);
 
-	m_boxGeometry->vertexBuffers[0].byteStride = sizeof(VPosData);
-	m_boxGeometry->vertexBuffers[0].byteSize = posVBByteSize;
-	m_boxGeometry->vertexBuffers[1].byteStride = sizeof(VColorData);
-	m_boxGeometry->vertexBuffers[1].byteSize = colorVBByteSize;
+	m_boxGeometry->vertexBuffers[0].byteStride = sizeof(Vertex);
+	m_boxGeometry->vertexBuffers[0].byteSize = vbByteSize;
 	m_boxGeometry->indexBuffer.format = DXGI_FORMAT_R16_UINT;
 	m_boxGeometry->indexBuffer.byteSize = ibByteSize;
 
@@ -590,4 +530,18 @@ void BoxApp::BuildPSO()
 	psoDesc.DSVFormat = m_depthStencilFormat;
 
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pso)));
+}
+
+float BoxApp::CalculateAnimationTime(float currentTime)
+{
+	float time = fmod(currentTime, c_MAX_TIME * 2.0f);
+
+	if (time > c_MAX_TIME)
+	{
+		return c_MAX_TIME - (time - c_MAX_TIME);
+	}
+	else
+	{
+		return time;
+	}
 }

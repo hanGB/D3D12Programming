@@ -4,11 +4,11 @@
 #include "math_helper.h"
 #include "upload_buffer.h"
 
-//struct Vertex
-//{
-//	XMFLOAT3 pos;
-//	XMFLOAT4 color;
-//};
+struct Vertex
+{
+	XMFLOAT3 pos;
+	XMCOLOR color;
+};
 
 struct VPosData
 {
@@ -24,6 +24,7 @@ struct ObjectConstants
 {
 	XMFLOAT4X4 worldViewProjection = MathHelper::Identity4x4();
 	float time = 0.0f;
+	float animationTime = 0.0f;
 };
 
 class BoxApp : public D3DApp
@@ -54,11 +55,14 @@ private:
 	void BuildShapesGeometry();
 	void BuildPSO();
 
+	float CalculateAnimationTime(float currentTime);
+
+	const float c_MAX_TIME = 2.0f;
+
 	ComPtr<ID3D12RootSignature> m_rootSignature = nullptr;
 	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
 
 	std::unique_ptr<UploadBuffer<ObjectConstants>> m_objectCB = nullptr;
-	std::unique_ptr<UploadBuffer<ObjectConstants>> m_objectCB2 = nullptr;
 
 	std::unique_ptr<MeshGeometry> m_boxGeometry = nullptr;
 	std::unique_ptr<MeshGeometry> m_pyramidGeometry = nullptr;
