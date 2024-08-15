@@ -23,8 +23,8 @@ struct VColorData
 struct ObjectConstants
 {
 	XMFLOAT4X4 worldViewProjection = MathHelper::Identity4x4();
+	XMFLOAT4 pulseColor;
 	float time = 0.0f;
-	float animationTime = 0.0f;
 };
 
 class BoxApp : public D3DApp
@@ -54,10 +54,6 @@ private:
 	void BuildPyramidGeometry();
 	void BuildShapesGeometry();
 	void BuildPSO();
-
-	float CalculateAnimationTime(float currentTime);
-
-	const float c_MAX_TIME = 2.0f;
 
 	ComPtr<ID3D12RootSignature> m_rootSignature = nullptr;
 	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;

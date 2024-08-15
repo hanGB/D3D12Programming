@@ -69,8 +69,8 @@ void BoxApp::Update(const GameTimer& gt)
 	// 최신의 worldViewProjection 행렬로 상수 버퍼 갱신
 	ObjectConstants objConstants;
 	XMStoreFloat4x4(&objConstants.worldViewProjection, XMMatrixTranspose(worldViewProjection));
+	objConstants.pulseColor = XMFLOAT4(Colors::Aqua);
 	objConstants.time = gt.TotalTime();
-	objConstants.animationTime = CalculateAnimationTime(objConstants.time);
 	m_objectCB->CopyData(0, objConstants);
 }
 
@@ -530,18 +530,4 @@ void BoxApp::BuildPSO()
 	psoDesc.DSVFormat = m_depthStencilFormat;
 
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pso)));
-}
-
-float BoxApp::CalculateAnimationTime(float currentTime)
-{
-	float time = fmod(currentTime, c_MAX_TIME * 2.0f);
-
-	if (time > c_MAX_TIME)
-	{
-		return c_MAX_TIME - (time - c_MAX_TIME);
-	}
-	else
-	{
-		return time;
-	}
 }
