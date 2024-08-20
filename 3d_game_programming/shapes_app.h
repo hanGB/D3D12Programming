@@ -43,13 +43,34 @@ private:
 	virtual void OnResize() override;
 	virtual void Update(const GameTimer& gt) override;
 	virtual void Draw(const GameTimer& gt) override;
+	
+	// 상수 버퍼 업데이트
+	void UpdateObjectCBs(const GameTimer& gt);
+	void UpdateMainPassCB(const GameTimer& gt);
 
+	void BuildDescriptorHeaps();
 	void BuildFrameResources();
+	void BuildConstantBuffers();
+	void BuildRootSignature();
+	void BuildShadersAndInputLayout();
+	void BuildPSO();
+
+	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
 
 	// 프레임 리소스
 	std::vector<std::unique_ptr<ShapesFrameResource>> m_frameResource;
 	ShapesFrameResource* m_currentFrameResource = nullptr;
 	int m_currentFrameResourceIndex = 0;
+
+	PassConstants m_mainPassCB;
+
+	ComPtr<ID3D12RootSignature> m_rootSignature = nullptr;
+
+	// 파이프라인 관련
+	ComPtr<ID3DBlob> m_vsByteCode = nullptr;
+	ComPtr<ID3DBlob> m_psByteCode = nullptr;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> m_inputLayout;
+	ComPtr<ID3D12PipelineState> m_pso = nullptr;
 
 	// 렌더 아이템
 	// 모든 렌더 아이템의 목록
@@ -57,4 +78,9 @@ private:
 	// PSO별 렌더 아이템
 	std::vector<RenderItem*> m_opqaueRederItems;
 	std::vector<RenderItem*> m_transparentRenderItems;
+
+	// 뷰, 투영 변환
+	XMFLOAT4X4 m_viewTransform = MathHelper::Identity4x4();
+	XMFLOAT4X4 m_projectionTransform = MathHelper::Identity4x4();
+	XMFLOAT3 m_eyePosition;
  };

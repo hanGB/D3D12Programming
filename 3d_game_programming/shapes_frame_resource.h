@@ -4,12 +4,25 @@
 
 struct PassConstants
 {
-
+	XMFLOAT4X4 view;
+	XMFLOAT4X4 invView;
+	XMFLOAT4X4 projection;
+	XMFLOAT4X4 invProjection;
+	XMFLOAT4X4 viewProjection;
+	XMFLOAT4X4 invViewProjection;
+	XMFLOAT3 eyePosW;
+	float cbPerObjectPad1;
+	XMFLOAT2 renderTargetSize;
+	XMFLOAT2 invRenderTargetSize;
+	float nearZ;
+	float farZ;
+	float totalTime;
+	float deltaTime;
 };
 
 struct ObjectConstants
 {
-
+	XMFLOAT4X4 world;
 };
 
 struct ShapesFrameResource
