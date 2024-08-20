@@ -25,6 +25,9 @@
     <Filter Include="Example App\Box">
       <UniqueIdentifier>{30a25350-abb6-4aa1-b6ed-f648e6623200}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Example App\Shapes">
+      <UniqueIdentifier>{44ed5750-8e30-41c0-ad3f-b904c3735c75}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -50,6 +53,12 @@
     </ClInclude>
     <ClInclude Include="math_helper.h">
       <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="shapes_app.h">
+      <Filter>Example App\Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="shapes_frame_resource.h">
+      <Filter>Example App\Shapes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -79,6 +88,12 @@
     </ClCompile>
     <ClCompile Include="math_helper.cpp">
       <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="shapes_app.cpp">
+      <Filter>Example App\Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="shapes_frame_resource.cpp">
+      <Filter>Example App\Shapes</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

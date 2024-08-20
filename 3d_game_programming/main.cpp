@@ -10,7 +10,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 
 	try
 	{
-		BoxApp app(hInstance);
+		BoxApp app(hInstance)
 
 		if (!app.Initialize()) return 0;
 
