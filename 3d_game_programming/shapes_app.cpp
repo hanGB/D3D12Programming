@@ -24,7 +24,7 @@ void ShapesApp::OnResize()
 void ShapesApp::Update(const GameTimer& gt)
 {
 	// 다음 프레임 리소스로 설정
-	m_currentFrameResourceIndex = (m_currentFrameResourceIndex + 1) % c_NUM_FRAME_RESOURCES;
+	m_currentFrameResourceIndex = (m_currentFrameResourceIndex + 1) % NUM_FRAME_RESOURCES;
 
 	// GPU가 현재 프레임 리소스의 커맨드들을 다 처리했는지 확인
 	if (m_currentFrameResource->fence != 0 && m_fence->GetCompletedValue() < m_currentFrameResource->fence)
@@ -55,8 +55,8 @@ void ShapesApp::Draw(const GameTimer& gt)
 
 void ShapesApp::BuildFrameResources()
 {
-	for (int i = 0; i < c_NUM_FRAME_RESOURCES; ++i)
+	for (int i = 0; i < NUM_FRAME_RESOURCES; ++i)
 	{
-		// m_frameResource.push_back(std::make_unique<ShapesFrameResource>(m_d3dDevice, 1, (UINT)m_allRenderItems.size()));
+		m_frameResource.push_back(std::make_unique<ShapesFrameResource>(m_d3dDevice, 1, (UINT)m_allRenderItems.size()));
 	}
 }
