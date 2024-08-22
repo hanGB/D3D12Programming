@@ -60,6 +60,9 @@
     <ClInclude Include="shapes_frame_resource.h">
       <Filter>Example App\Shapes</Filter>
     </ClInclude>
+    <ClInclude Include="geometry_generator.h">
+      <Filter>Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -94,6 +97,9 @@
     </ClCompile>
     <ClCompile Include="shapes_frame_resource.cpp">
       <Filter>Example App\Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="geometry_generator.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

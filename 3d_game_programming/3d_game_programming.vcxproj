@@ -133,6 +133,7 @@
     <ClInclude Include="box_app.h" />
     <ClInclude Include="d3d_app.h" />
     <ClInclude Include="d3d_util.h" />
+    <ClInclude Include="geometry_generator.h" />
     <ClInclude Include="shapes_frame_resource.h" />
     <ClInclude Include="game_timer.h" />
     <ClInclude Include="init_direct3d_app.h" />
@@ -145,6 +146,7 @@
     <ClCompile Include="box_app.cpp" />
     <ClCompile Include="d3d_app.cpp" />
     <ClCompile Include="d3d_util.cpp" />
+    <ClCompile Include="geometry_generator.cpp" />
     <ClCompile Include="shapes_frame_resource.cpp" />
     <ClCompile Include="game_timer.cpp" />
     <ClCompile Include="init_direct3d_app.cpp" />
