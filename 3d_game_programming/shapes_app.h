@@ -57,6 +57,7 @@ private:
 	void BuildDescriptorHeaps();
 	void BuildFrameResources();
 	void BuildShapeGeometry();
+	void BuildRenderItems();
 	void BuildConstantBuffers();
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();

@@ -197,6 +197,44 @@ void ShapesApp::BuildShapeGeometry()
 	m_geometries[geometry->name] = std::move(geometry);
 }
 
+void ShapesApp::BuildRenderItems()
+{
+	UINT objCBIndex = 0;
+	for (int i = 0; i < 5; ++i)
+	{
+		std::unique_ptr<RenderItem> leftCylinderRederItem = std::make_unique<RenderItem>();
+		std::unique_ptr<RenderItem> rightCylinderRederItem = std::make_unique<RenderItem>();
+
+		XMMATRIX leftCylinderworld = XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i * 5.0f);
+		XMMATRIX rightCylinderworld = XMMatrixTranslation(5.0f, 1.5f, -10.0f + i * 5.0f);
+
+		XMStoreFloat4x4(&leftCylinderRederItem->world, leftCylinderworld);
+		leftCylinderRederItem->objectCBIndex = objCBIndex++;
+		leftCylinderRederItem->geometry = m_geometries["shape geometry"].get();
+		leftCylinderRederItem->primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		leftCylinderRederItem->indexCount = leftCylinderRederItem->geometry->drawArgs["cylinder"].indexCount;
+		leftCylinderRederItem->startIndexLocation = leftCylinderRederItem->geometry->drawArgs["cylinder"].startIndexLocation;
+		leftCylinderRederItem->baseVertexLocation = leftCylinderRederItem->geometry->drawArgs["cylinder"].baseVertexLocation;
+
+		XMStoreFloat4x4(&rightCylinderRederItem->world, rightCylinderworld);
+		rightCylinderRederItem->objectCBIndex = objCBIndex++;
+		rightCylinderRederItem->geometry = m_geometries["shape geometry"].get();
+		rightCylinderRederItem->primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rightCylinderRederItem->indexCount = rightCylinderRederItem->geometry->drawArgs["cylinder"].indexCount;
+		rightCylinderRederItem->startIndexLocation = rightCylinderRederItem->geometry->drawArgs["cylinder"].startIndexLocation;
+		rightCylinderRederItem->baseVertexLocation = rightCylinderRederItem->geometry->drawArgs["cylinder"].baseVertexLocation;
+
+		m_allRenderItems.push_back(std::move(leftCylinderRederItem));
+		m_allRenderItems.push_back(std::move(rightCylinderRederItem));
+	}
+
+	// 이 예제의 모든 렌더 항목은 불투명함
+	for (auto& e : m_allRenderItems)
+	{
+		m_opqaueRederItems.push_back(e.get());
+	}
+}
+
 void ShapesApp::BuildConstantBuffers()
 {
 
