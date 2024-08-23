@@ -114,17 +114,6 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 	currentPassCB->CopyData(0, m_mainPassCB);
 }
 
-void ShapesApp::BuildDescriptorHeaps()
-{
-	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = 1;
-	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	cbvHeapDesc.NodeMask = 0;
-	
-	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
-}
-
 void ShapesApp::BuildFrameResources()
 {
 	for (int i = 0; i < NUM_FRAME_RESOURCES; ++i)
@@ -235,9 +224,75 @@ void ShapesApp::BuildRenderItems()
 	}
 }
 
-void ShapesApp::BuildConstantBuffers()
+void ShapesApp::BuildDescriptorHeaps()
 {
+	UINT objectCount = (UINT)m_opqaueRederItems.size();
 
+	// 각 프레임 리소스의 오브젝트마다 하나의 서술자 필요 + 각 프레임 리소스의 패스별 CBV 하나 필요
+	UINT numDescriptors = (objectCount + 1) * NUM_FRAME_RESOURCES;
+
+	// 패스별 CBV의 시작 오프셋 저장
+	m_passCbvOffset = objectCount * NUM_FRAME_RESOURCES;
+
+	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
+	cbvHeapDesc.NumDescriptors = numDescriptors;
+	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	cbvHeapDesc.NodeMask = 0;
+
+	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
+}
+
+void ShapesApp::BuildConstantBufferViews()
+{
+	UINT objectCBByteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT objectCount = (UINT)m_opqaueRederItems.size();
+	
+	// 각 프레임 리소스에 오브젝트 수 만큼의 CBV 생성
+	for (int frameIndex = 0; frameIndex < NUM_FRAME_RESOURCES; ++frameIndex)
+	{
+		ID3D12Resource* objectCB = m_frameResource[frameIndex]->objectCB->Resource();
+		for (UINT i = 0; i < objectCount; ++i)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
+
+			// 현재 버퍼에서 i번째 물체별 상수 버퍼의 오프셋을 가상 주소에 더함
+			cbAddress += i * objectCBByteSize;
+
+			// 서술자 힙에서 i번째 물체별 CBV의 오브셋
+			int heapIndex = frameIndex * objectCount + i;
+			CD3DX12_CPU_DESCRIPTOR_HANDLE handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
+			handle.Offset(heapIndex, m_cbvSrvDescriptorSize);
+
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+			cbvDesc.BufferLocation = cbAddress;
+			cbvDesc.SizeInBytes = objectCBByteSize;
+
+			m_d3dDevice->CreateConstantBufferView(&cbvDesc, handle);
+		}
+	}
+
+	UINT passCBByteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(PassConstants));
+
+	// 마지막 세 서술자는 각 프레임 자원의 패스별 CBV
+	for (int frameIndex = 0; frameIndex < NUM_FRAME_RESOURCES; ++frameIndex)
+	{
+		ID3D12Resource* passCB = m_frameResource[frameIndex]->passCB->Resource();
+
+		// 패스별 버퍼는 프레임 리소스당 하나의 상수 버퍼만 저장
+		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = passCB->GetGPUVirtualAddress();
+
+		// 서술자 힙 안에서 패스별 CBV의 오프셋
+		int heapIndex = m_passCbvOffset + frameIndex;
+		CD3DX12_CPU_DESCRIPTOR_HANDLE handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
+		handle.Offset(heapIndex, m_cbvSrvDescriptorSize);
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+		cbvDesc.BufferLocation = cbAddress;
+		cbvDesc.SizeInBytes = passCBByteSize;
+
+		m_d3dDevice->CreateConstantBufferView(&cbvDesc, handle);
+	}
 }
 
 void ShapesApp::BuildRootSignature()

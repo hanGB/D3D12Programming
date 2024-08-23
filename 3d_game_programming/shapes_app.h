@@ -54,11 +54,11 @@ private:
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 
-	void BuildDescriptorHeaps();
 	void BuildFrameResources();
 	void BuildShapeGeometry();
 	void BuildRenderItems();
-	void BuildConstantBuffers();
+	void BuildDescriptorHeaps();
+	void BuildConstantBufferViews();
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
 	void BuildPSO();
@@ -71,6 +71,7 @@ private:
 	int m_currentFrameResourceIndex = 0;
 
 	PassConstants m_mainPassCB;
+	UINT m_passCbvOffset = 0;
 
 	ComPtr<ID3D12RootSignature> m_rootSignature = nullptr;
 
