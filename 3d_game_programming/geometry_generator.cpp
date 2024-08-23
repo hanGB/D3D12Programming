@@ -140,3 +140,4 @@ void GeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadi
         meshData.indices32.push_back(baseIndex + i + 1);
     }
 }
+0

@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "shapes_app.h"
+#include "geometry_generator.h"
 
 ShapesApp::ShapesApp(HINSTANCE hInstance)
 	: D3DApp(hInstance)
@@ -16,6 +17,7 @@ bool ShapesApp::Initialize()
 
 	BuildDescriptorHeaps();
 	BuildFrameResources();
+	BuildShapeGeometry();
 	BuildConstantBuffers();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
@@ -129,6 +131,70 @@ void ShapesApp::BuildFrameResources()
 	{
 		m_frameResource.push_back(std::make_unique<ShapesFrameResource>(m_d3dDevice, 1, (UINT)m_allRenderItems.size()));
 	}
+}
+
+void ShapesApp::BuildShapeGeometry()
+{
+	GeometryGenerator geoGenerator;
+	GeometryGenerator::MeshData cylinder = geoGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
+
+	// 일단 실린더만 만들 수 있기 때문에 offset은 0으로 설정
+	UINT cylinderVertexOffset = 0;
+	UINT cylinderIndexOffset = 0;
+
+	// 정점/색인 버퍼에서 각 물체가 차지하는 영역을 나타내는 SubmeshGeometry 객체 정의
+	SubmeshGeometry cylinderSubmesh; 
+	cylinderSubmesh.indexCount = (UINT)cylinder.indices32.size();
+	cylinderSubmesh.startIndexLocation = cylinderIndexOffset;
+	cylinderSubmesh.baseVertexLocation = cylinderVertexOffset;
+
+	// 필요한 정점 성분을 추출하고 모든 메시의 정점을 하나의 정점 버퍼에 넣음
+	size_t totalVertexCount = cylinder.vertices.size();
+
+	std::vector<Vertex> vertices(totalVertexCount);
+
+	UINT k = 0;
+	for (size_t i = 0; i < cylinder.vertices.size(); ++i, ++k)
+	{
+		vertices[k].pos = cylinder.vertices[i].position;
+		vertices[k].color = XMFLOAT4(Colors::SteelBlue);
+	}
+
+	std::vector<std::uint16_t> indices;
+	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	std::unique_ptr<MeshGeometry> geometry = std::make_unique<MeshGeometry>();
+	geometry->name = "shape geometry";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geometry->vertexBuffers[0].cpu));
+	CopyMemory(geometry->vertexBuffers[0].cpu->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geometry->indexBuffer.cpu));
+	CopyMemory(geometry->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geometry->vertexBuffers[0].gpu = D3DUtil::CreateDefaultBuffer(
+			m_d3dDevice.Get(), 
+			m_commandList.Get(), 
+			vertices.data(), vbByteSize, 
+			geometry->vertexBuffers[0].uploader);
+
+	geometry->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(
+		m_d3dDevice.Get(),
+		m_commandList.Get(),
+		indices.data(), ibByteSize,
+		geometry->indexBuffer.uploader);
+
+	geometry->vertexBuffers[0].byteStride = sizeof(Vertex);
+	geometry->vertexBuffers[0].byteSize = vbByteSize;
+	geometry->indexBuffer.format = DXGI_FORMAT_R8_UINT;
+	geometry->indexBuffer.byteSize = ibByteSize;
+
+	geometry->drawArgs["cylinder"] = cylinderSubmesh;
+
+	m_geometries[geometry->name] = std::move(geometry);
 }
 
 void ShapesApp::BuildConstantBuffers()

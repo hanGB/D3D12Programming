@@ -5,6 +5,12 @@
 
 static const int NUM_FRAME_RESOURCES = 3;
 
+struct Vertex
+{
+	XMFLOAT3 pos;
+	XMFLOAT4 color;
+};
+
 struct RenderItem 
 {
 	RenderItem() = default;
@@ -50,6 +56,7 @@ private:
 
 	void BuildDescriptorHeaps();
 	void BuildFrameResources();
+	void BuildShapeGeometry();
 	void BuildConstantBuffers();
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
@@ -83,4 +90,7 @@ private:
 	XMFLOAT4X4 m_viewTransform = MathHelper::Identity4x4();
 	XMFLOAT4X4 m_projectionTransform = MathHelper::Identity4x4();
 	XMFLOAT3 m_eyePosition;
+
+	// 지오메트리
+	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_geometries;
  };
