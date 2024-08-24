@@ -113,7 +113,7 @@ void BoxApp::Draw(const GameTimer& gt)
 	m_commandList->IASetIndexBuffer(&m_boxGeometry->IndexBufferView());
 	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+	auto gpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
 	// 쉐이더의 b0에 상수 버퍼 연결
 	m_commandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
 

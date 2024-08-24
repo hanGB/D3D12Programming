@@ -3,22 +3,17 @@
 class GeometryGenerator {
 public:
 	struct Vertex {
-		Vertex();
+		Vertex() { }
 		Vertex(const XMFLOAT3& p, const XMFLOAT3& n, const XMFLOAT3& t, const XMFLOAT2& uv)
-			: position(p), normal(n), tangent(t), texCoord(uv)
-		{
+			: position(p), normal(n), tangent(t), texCoord(uv) { }
 
-		}
 		Vertex(
 			float px, float py, float pz, float nx, float ny, float nz,
 			float tx, float ty, float tz, float u, float v) :
 			position(px, py, pz),
 			normal(nx, ny, nz),
 			tangent(tx, ty, tz),
-			texCoord(u, v)
-		{
-
-		}
+			texCoord(u, v) { }
 
 		XMFLOAT3 position;
 		XMFLOAT3 normal;

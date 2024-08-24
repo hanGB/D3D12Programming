@@ -50,13 +50,17 @@ private:
 	virtual void Update(const GameTimer& gt) override;
 	virtual void Draw(const GameTimer& gt) override;
 	
+	// 렌더 아이템 그리기
+	void DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems);
+
 	// 상수 버퍼 업데이트
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 
-	void BuildFrameResources();
+	// 초기화시의 빌드
 	void BuildShapeGeometry();
 	void BuildRenderItems();
+	void BuildFrameResources();
 	void BuildDescriptorHeaps();
 	void BuildConstantBufferViews();
 	void BuildRootSignature();
@@ -66,7 +70,7 @@ private:
 	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
 
 	// 프레임 리소스
-	std::vector<std::unique_ptr<ShapesFrameResource>> m_frameResource;
+	std::vector<std::unique_ptr<ShapesFrameResource>> m_frameResources;
 	ShapesFrameResource* m_currentFrameResource = nullptr;
 	int m_currentFrameResourceIndex = 0;
 

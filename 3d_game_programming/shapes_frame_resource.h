@@ -1,28 +1,29 @@
 #pragma once
 #include "d3d_util.h"
 #include "upload_buffer.h"
+#include "math_helper.h"
 
 struct PassConstants
 {
-	XMFLOAT4X4 view;
-	XMFLOAT4X4 invView;
-	XMFLOAT4X4 projection;
-	XMFLOAT4X4 invProjection;
-	XMFLOAT4X4 viewProjection;
-	XMFLOAT4X4 invViewProjection;
-	XMFLOAT3 eyePosW;
-	float cbPerObjectPad1;
-	XMFLOAT2 renderTargetSize;
-	XMFLOAT2 invRenderTargetSize;
-	float nearZ;
-	float farZ;
-	float totalTime;
-	float deltaTime;
+	XMFLOAT4X4 view = MathHelper::Identity4x4();
+	XMFLOAT4X4 invView = MathHelper::Identity4x4();
+	XMFLOAT4X4 projection = MathHelper::Identity4x4();
+	XMFLOAT4X4 invProjection = MathHelper::Identity4x4();
+	XMFLOAT4X4 viewProjection = MathHelper::Identity4x4();
+	XMFLOAT4X4 invViewProjection = MathHelper::Identity4x4();
+	XMFLOAT3 eyePosW = { 0.0f, 0.0f, 0.0f };
+	float cbPerObjectPad1 = 0.0f;
+	XMFLOAT2 renderTargetSize = { 0.0f, 0.0f };
+	XMFLOAT2 invRenderTargetSize = { 0.0f, 0.0f };
+	float nearZ = 0.0f;
+	float farZ = 0.0f;
+	float totalTime = 0.0f;
+	float deltaTime = 0.0f;
 };
 
 struct ObjectConstants
 {
-	XMFLOAT4X4 world;
+	XMFLOAT4X4 world = MathHelper::Identity4x4();
 };
 
 struct ShapesFrameResource
@@ -42,5 +43,5 @@ struct ShapesFrameResource
 	std::unique_ptr<UploadBuffer<ObjectConstants>> objectCB = nullptr;
 
 	// GPU가 아직 이 프레임 자원들을 사용하고 있는지 판정하는 값
-	UINT64 fence;
+	UINT64 fence = 0;
 };

@@ -3,7 +3,6 @@
 
 GeometryGenerator::MeshData GeometryGenerator::CreateCylinder(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount)
 {
-
     MeshData meshData;
 
     // 더미 생성
@@ -107,7 +106,7 @@ void GeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius,
     }
 }
 
-void GeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount, MeshData& meshData)
+void GeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount, GeometryGenerator::MeshData& meshData)
 {
     uint32_t baseIndex = (uint32_t)meshData.vertices.size();
 
@@ -140,4 +139,3 @@ void GeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadi
         meshData.indices32.push_back(baseIndex + i + 1);
     }
 }
-0
