@@ -43,6 +43,7 @@ public:
 	};
 
 	MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount);
+	MeshData CreateSphere(float radius, uint32_t sliceCount, uint32_t stackCount);
 
 private:
 	void BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount, MeshData& meshData);

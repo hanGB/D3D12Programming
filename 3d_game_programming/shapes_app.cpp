@@ -303,20 +303,30 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 void ShapesApp::BuildShapeGeometry()
 {
 	GeometryGenerator geoGenerator;
+
 	GeometryGenerator::MeshData cylinder = geoGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
+	GeometryGenerator::MeshData sphere = geoGenerator.CreateSphere(0.5f, 20, 20);
 
-	// 일단 실린더만 만들 수 있기 때문에 offset은 0으로 설정
+	// 각 메시 별 오프셋 설정
 	UINT cylinderVertexOffset = 0;
-	UINT cylinderIndexOffset = 0;
+	UINT sphereVertexOffset = cylinderVertexOffset + (UINT)cylinder.vertices.size();
 
-	// 정점/색인 버퍼에서 각 물체가 차지하는 영역을 나타내는 SubmeshGeometry 객체 정의
-	SubmeshGeometry cylinderSubmesh; 
+	UINT cylinderIndexOffset = 0;
+	UINT sphereIndexOffset = cylinderIndexOffset + (UINT)cylinder.indices32.size();
+
+	// 정점/색인 버퍼에서 각 메시가 차지하는 영역을 나타내는 SubmeshGeometry 객체 정의
+	SubmeshGeometry cylinderSubmesh;
 	cylinderSubmesh.indexCount = (UINT)cylinder.indices32.size();
 	cylinderSubmesh.startIndexLocation = cylinderIndexOffset;
 	cylinderSubmesh.baseVertexLocation = cylinderVertexOffset;
 
+	SubmeshGeometry sphereSubmesh;
+	sphereSubmesh.indexCount = (UINT)sphere.indices32.size();
+	sphereSubmesh.startIndexLocation = sphereIndexOffset;
+	sphereSubmesh.baseVertexLocation = sphereVertexOffset;
+
 	// 필요한 정점 성분을 추출하고 모든 메시의 정점을 하나의 정점 버퍼에 넣음
-	size_t totalVertexCount = cylinder.vertices.size();
+	size_t totalVertexCount = cylinder.vertices.size() + sphere.vertices.size();
 
 	std::vector<Vertex> vertices(totalVertexCount);
 
@@ -326,9 +336,15 @@ void ShapesApp::BuildShapeGeometry()
 		vertices[k].pos = cylinder.vertices[i].position;
 		vertices[k].color = XMFLOAT4(Colors::SteelBlue);
 	}
+	for (size_t i = 0; i < sphere.vertices.size(); ++i, ++k)
+	{
+		vertices[k].pos = sphere.vertices[i].position;
+		vertices[k].color = XMFLOAT4(Colors::Crimson);
+	}
 
 	std::vector<std::uint16_t> indices;
 	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
+	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
@@ -356,10 +372,11 @@ void ShapesApp::BuildShapeGeometry()
 
 	geometry->vertexBuffers[0].byteStride = sizeof(Vertex);
 	geometry->vertexBuffers[0].byteSize = vbByteSize;
-	geometry->indexBuffer.format = DXGI_FORMAT_R8_UINT;
+	geometry->indexBuffer.format = DXGI_FORMAT_R16_UINT; // D3D12에서는 오직 DXGI_FORMAT_R16_UINT와 DXGI_FORMAT_R32_UINT만 유효함
 	geometry->indexBuffer.byteSize = ibByteSize;
 
 	geometry->drawArgs["cylinder"] = cylinderSubmesh;
+	geometry->drawArgs["sphere"] = sphereSubmesh;
 
 	m_geometries[geometry->name] = std::move(geometry);
 }
@@ -371,9 +388,13 @@ void ShapesApp::BuildRenderItems()
 	{
 		std::unique_ptr<RenderItem> leftCylinderRederItem = std::make_unique<RenderItem>();
 		std::unique_ptr<RenderItem> rightCylinderRederItem = std::make_unique<RenderItem>();
+		std::unique_ptr<RenderItem> leftSphereRederItem = std::make_unique<RenderItem>();
+		std::unique_ptr<RenderItem> rightSphereRederItem = std::make_unique<RenderItem>();
 
 		XMMATRIX leftCylinderworld = XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i * 5.0f);
 		XMMATRIX rightCylinderworld = XMMatrixTranslation(5.0f, 1.5f, -10.0f + i * 5.0f);
+		XMMATRIX leftSphereworld = XMMatrixTranslation(-5.0f, 3.5f, -10.0f + i * 5.0f);
+		XMMATRIX rightSphereworld = XMMatrixTranslation(5.0f, 3.5f, -10.0f + i * 5.0f);
 
 		XMStoreFloat4x4(&leftCylinderRederItem->world, leftCylinderworld);
 		leftCylinderRederItem->objectCBIndex = objCBIndex++;
@@ -391,8 +412,27 @@ void ShapesApp::BuildRenderItems()
 		rightCylinderRederItem->startIndexLocation = rightCylinderRederItem->geometry->drawArgs["cylinder"].startIndexLocation;
 		rightCylinderRederItem->baseVertexLocation = rightCylinderRederItem->geometry->drawArgs["cylinder"].baseVertexLocation;
 
+
+		XMStoreFloat4x4(&leftSphereRederItem->world, leftSphereworld);
+		leftSphereRederItem->objectCBIndex = objCBIndex++;
+		leftSphereRederItem->geometry = m_geometries["shape_geometry"].get();
+		leftSphereRederItem->primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		leftSphereRederItem->indexCount = leftSphereRederItem->geometry->drawArgs["sphere"].indexCount;
+		leftSphereRederItem->startIndexLocation = leftSphereRederItem->geometry->drawArgs["sphere"].startIndexLocation;
+		leftSphereRederItem->baseVertexLocation = leftSphereRederItem->geometry->drawArgs["sphere"].baseVertexLocation;
+
+		XMStoreFloat4x4(&rightSphereRederItem->world, rightSphereworld);
+		rightSphereRederItem->objectCBIndex = objCBIndex++;
+		rightSphereRederItem->geometry = m_geometries["shape_geometry"].get();
+		rightSphereRederItem->primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		rightSphereRederItem->indexCount = rightSphereRederItem->geometry->drawArgs["sphere"].indexCount;
+		rightSphereRederItem->startIndexLocation = rightSphereRederItem->geometry->drawArgs["sphere"].startIndexLocation;
+		rightSphereRederItem->baseVertexLocation = rightSphereRederItem->geometry->drawArgs["sphere"].baseVertexLocation;
+
 		m_allRenderItems.push_back(std::move(leftCylinderRederItem));
 		m_allRenderItems.push_back(std::move(rightCylinderRederItem));
+		m_allRenderItems.push_back(std::move(leftSphereRederItem));
+		m_allRenderItems.push_back(std::move(rightSphereRederItem));
 	}
 
 	// 이 예제의 모든 렌더 항목은 불투명함

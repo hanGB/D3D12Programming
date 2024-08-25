@@ -72,6 +72,102 @@ GeometryGenerator::MeshData GeometryGenerator::CreateCylinder(float bottomRadius
     return meshData;
 }
 
+GeometryGenerator::MeshData GeometryGenerator::CreateSphere(float radius, uint32_t sliceCount, uint32_t stackCount)
+{
+    MeshData meshData;
+
+    // 꼭대기, 바닥 정점
+    Vertex topVertex(0.0f, +radius, 0.0f, 0.0f, +1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    Vertex bottomVertex(0.0f, -radius, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+
+    meshData.vertices.push_back(topVertex);
+
+    // 더미 생성
+    // 각 스텝
+    float phiStep = XM_PI / stackCount;
+    float thetaStep = 2.0f * XM_PI / sliceCount;
+
+    // 꼭대기 정점 바로 밑 원에서 바닥 정점 바로 위 원으로 내려가며 각 원의 정점 계산
+    for (uint32_t i = 0; i < stackCount - 1; ++i)
+    {
+        float phi = i * phiStep;
+        
+        // 고리의 정점
+        for (uint32_t j = 0; j <= sliceCount; ++j)
+        {
+            float theta = j * thetaStep;
+
+            Vertex vertex;
+
+            // 구의 매개변수 방정식으로 정점 위치 계산
+            vertex.position.x = radius * sinf(phi) * cosf(theta);
+            vertex.position.z = radius * sinf(phi) * sinf(theta);
+            vertex.position.y = radius * cosf(phi);
+
+            // 세타에 대한 편도 함수
+            vertex.tangent.x = -radius * sinf(phi) * sinf(theta);
+            vertex.tangent.z = +radius * sinf(phi) * cosf(theta);
+            vertex.tangent.y = 0.0f;
+
+            // 탄젠트 정규화
+            XMVECTOR t = XMLoadFloat3(&vertex.tangent);
+            XMStoreFloat3(&vertex.tangent, XMVector3Normalize(t));
+            
+            // 구는 정규화된 위치가 노멀 벡터임
+            XMVECTOR p = XMLoadFloat3(&vertex.position);
+            XMStoreFloat3(&vertex.normal, XMVector3Normalize(p));
+
+            vertex.texCoord.x = theta / XM_2PI;
+            vertex.texCoord.y = phi / XM_PI;
+
+            meshData.vertices.push_back(vertex);
+        }
+    }
+
+    meshData.vertices.push_back(bottomVertex);
+
+    // 각 더미의 색인 계산
+    
+    // 꼭대기 정점과 바로 밑 원 사이의 삼각형 계산
+    for (uint32_t i = 1; i <= sliceCount; ++i)
+    {
+        meshData.indices32.push_back(0);
+        meshData.indices32.push_back(i + 1);
+        meshData.indices32.push_back(i);
+    }
+
+    // 꼭대기 정점과 바닥 정점을 포함하지 않는 안쪽 정점 사이의 삼각형 계산
+    uint32_t baseIndex = 1;
+    uint32_t ringVertexCount = sliceCount + 1;
+    for (uint32_t i = 0; i < stackCount - 2; ++i)
+    {
+        for (uint32_t j = 0; j < sliceCount; ++j)
+        {
+            meshData.indices32.push_back(baseIndex + i * ringVertexCount + j);
+            meshData.indices32.push_back(baseIndex + i * ringVertexCount + j + 1);
+            meshData.indices32.push_back(baseIndex + (i + 1) * ringVertexCount + j);
+
+            meshData.indices32.push_back(baseIndex + (i + 1) * ringVertexCount + j);
+            meshData.indices32.push_back(baseIndex + i * ringVertexCount + j + 1);
+            meshData.indices32.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
+        }
+    }
+
+
+    // 바닥 정점 인덱스 계산(가장 마지막 정점)
+    uint32_t bottomVertexIndex = (uint32_t)meshData.vertices.size() - 1;
+
+    // 바닥 정점과 바로 위 원 사이의 삼각형 계산
+    for (uint32_t i = 0; i < sliceCount; ++i)
+    {
+        meshData.indices32.push_back(bottomVertexIndex);
+        meshData.indices32.push_back(bottomVertexIndex - ringVertexCount + i);
+        meshData.indices32.push_back(bottomVertexIndex - ringVertexCount + i + 1);
+    }
+
+    return meshData;
+}
+
 void GeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount, MeshData& meshData)
 {
     uint32_t baseIndex = (uint32_t)meshData.vertices.size();
