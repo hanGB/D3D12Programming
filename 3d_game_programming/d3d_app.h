@@ -39,6 +39,8 @@ protected:
 	virtual void OnMouseDown(WPARAM btnState, int x, int y) { }
 	virtual void OnMouseUp(WPARAM btnState, int x, int y) { }
 	virtual void OnMouseMove(WPARAM btnState, int x, int y) { }
+	// 키보드 사용
+	virtual void OnKeyboradUse(WPARAM btnState, bool isPressed) { }
 	
 	// 윈도우, 다이렉트3D 초기화
 	bool InitMainWindow();

@@ -77,7 +77,14 @@ void ShapesApp::Draw(const GameTimer& gt)
 	// 커맨드 할당자 리셋
 	ThrowIfFailed(cmdListAllocator->Reset());
 
-	ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_pso.Get()));
+	if (m_IsWireFrame)
+	{
+		ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque_wirefame"].Get()));
+	}
+	else
+	{
+		ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque"].Get()));
+	}
 
 	m_commandList->RSSetViewports(1, &m_screenViewport);
 	m_commandList->RSSetScissorRects(1, &m_scissorRect);
@@ -135,6 +142,17 @@ void ShapesApp::Draw(const GameTimer& gt)
 	m_commandQueue->Signal(m_fence.Get(), m_currentFence);
 
 	// GPU가 아직 이전 프레임들의 명령을 처리하고 있지만 관련 리소스를 건들지 않기 때문에 문제 없음
+}
+
+void ShapesApp::OnKeyboradUse(WPARAM btnState, bool isPressed)
+{
+	if (btnState == VK_F1)
+	{
+		if (isPressed) 
+		{
+			m_IsWireFrame = !m_IsWireFrame;
+		}
+	}
 }
 
 void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems)
@@ -251,7 +269,7 @@ void ShapesApp::BuildShapeGeometry()
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	std::unique_ptr<MeshGeometry> geometry = std::make_unique<MeshGeometry>();
-	geometry->name = "shape geometry";
+	geometry->name = "shape_geometry";
 
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geometry->vertexBuffers[0].cpu));
 	CopyMemory(geometry->vertexBuffers[0].cpu->GetBufferPointer(), vertices.data(), vbByteSize);
@@ -294,7 +312,7 @@ void ShapesApp::BuildRenderItems()
 
 		XMStoreFloat4x4(&leftCylinderRederItem->world, leftCylinderworld);
 		leftCylinderRederItem->objectCBIndex = objCBIndex++;
-		leftCylinderRederItem->geometry = m_geometries["shape geometry"].get();
+		leftCylinderRederItem->geometry = m_geometries["shape_geometry"].get();
 		leftCylinderRederItem->primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		leftCylinderRederItem->indexCount = leftCylinderRederItem->geometry->drawArgs["cylinder"].indexCount;
 		leftCylinderRederItem->startIndexLocation = leftCylinderRederItem->geometry->drawArgs["cylinder"].startIndexLocation;
@@ -302,7 +320,7 @@ void ShapesApp::BuildRenderItems()
 
 		XMStoreFloat4x4(&rightCylinderRederItem->world, rightCylinderworld);
 		rightCylinderRederItem->objectCBIndex = objCBIndex++;
-		rightCylinderRederItem->geometry = m_geometries["shape geometry"].get();
+		rightCylinderRederItem->geometry = m_geometries["shape_geometry"].get();
 		rightCylinderRederItem->primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		rightCylinderRederItem->indexCount = rightCylinderRederItem->geometry->drawArgs["cylinder"].indexCount;
 		rightCylinderRederItem->startIndexLocation = rightCylinderRederItem->geometry->drawArgs["cylinder"].startIndexLocation;
@@ -432,9 +450,9 @@ void ShapesApp::BuildRootSignature()
 
 void ShapesApp::BuildShadersAndInputLayout()
 {
-	m_vsByteCode = D3DUtil::LoadBinary(L"./shader/shapes_vertex.cso");
-	m_psByteCode = D3DUtil::LoadBinary(L"./shader/shapes_pixel.cso");
-	
+	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"./shader/shapes_vertex.cso");
+	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"./shader/shapes_pixel.cso");
+
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
@@ -449,15 +467,17 @@ void ShapesApp::BuildPSO()
 	psoDesc.pRootSignature = m_rootSignature.Get();
 	psoDesc.VS =
 	{
-		reinterpret_cast<BYTE*>(m_vsByteCode->GetBufferPointer()),
-		m_vsByteCode->GetBufferSize()
+		reinterpret_cast<BYTE*>(m_shaders["standard_vs"]->GetBufferPointer()),
+		m_shaders["standard_vs"]->GetBufferSize()
 	};
 	psoDesc.PS =
 	{
-		reinterpret_cast<BYTE*>(m_psByteCode->GetBufferPointer()),
-		m_psByteCode->GetBufferSize()
+		reinterpret_cast<BYTE*>(m_shaders["opaque_ps"]->GetBufferPointer()),
+		m_shaders["opaque_ps"]->GetBufferSize()
 	};
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
@@ -467,6 +487,9 @@ void ShapesApp::BuildPSO()
 	psoDesc.SampleDesc.Count = m_4xMsaaState ? 4 : 1;
 	psoDesc.SampleDesc.Quality = m_4xMsaaQuality ? (m_4xMsaaQuality - 1) : 0;
 	psoDesc.DSVFormat = m_depthStencilFormat;
-	
-	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pso)));
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque_wirefame"])));
+
+	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque"])));
 }

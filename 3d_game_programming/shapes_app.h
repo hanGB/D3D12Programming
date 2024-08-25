@@ -50,6 +50,8 @@ private:
 	virtual void Update(const GameTimer& gt) override;
 	virtual void Draw(const GameTimer& gt) override;
 	
+	virtual void OnKeyboradUse(WPARAM btnState, bool isPressed) override;
+
 	// 렌더 아이템 그리기
 	void DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems);
 
@@ -80,10 +82,9 @@ private:
 	ComPtr<ID3D12RootSignature> m_rootSignature = nullptr;
 
 	// 파이프라인 관련
-	ComPtr<ID3DBlob> m_vsByteCode = nullptr;
-	ComPtr<ID3DBlob> m_psByteCode = nullptr;
 	std::vector<D3D12_INPUT_ELEMENT_DESC> m_inputLayout;
-	ComPtr<ID3D12PipelineState> m_pso = nullptr;
+	std::unordered_map<std::string, ComPtr<ID3DBlob>> m_shaders;
+	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_psos;
 
 	// 렌더 아이템
 	// 모든 렌더 아이템의 목록
@@ -99,4 +100,7 @@ private:
 
 	// 지오메트리
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_geometries;
+
+	// 와이어 프레임 여부
+	bool m_IsWireFrame = true;
  };
