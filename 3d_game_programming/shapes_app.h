@@ -50,12 +50,17 @@ private:
 	virtual void Update(const GameTimer& gt) override;
 	virtual void Draw(const GameTimer& gt) override;
 	
+	// 마우스, 키보드 사용
+	virtual void OnMouseDown(WPARAM btnState, int x, int y) override;
+	virtual void OnMouseUp(WPARAM btnState, int x, int y) override;
+	virtual void OnMouseMove(WPARAM btnState, int x, int y) override;
 	virtual void OnKeyboradUse(WPARAM btnState, bool isPressed) override;
 
 	// 렌더 아이템 그리기
 	void DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems);
 
 	// 상수 버퍼 업데이트
+	void UpdateCamera(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 
@@ -103,4 +108,12 @@ private:
 
 	// 와이어 프레임 여부
 	bool m_IsWireFrame = true;
+
+	// 마우스 입력
+	POINT m_lastMousePosition;
+
+	// 카메라
+	float m_theta = 1.5f * XM_PI;
+	float m_phi = 0.2f * XM_PI;
+	float m_radius = 15.0f;
  };

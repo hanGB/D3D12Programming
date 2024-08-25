@@ -65,6 +65,9 @@ void ShapesApp::Update(const GameTimer& gt)
 		CloseHandle(eventHandle);
 	}
 
+	// 카메라 업데이트
+	UpdateCamera(gt);
+
 	// 현재 프레임 리소스 갱신
 	UpdateObjectCBs(gt);
 	UpdateMainPassCB(gt);
@@ -144,6 +147,52 @@ void ShapesApp::Draw(const GameTimer& gt)
 	// GPU가 아직 이전 프레임들의 명령을 처리하고 있지만 관련 리소스를 건들지 않기 때문에 문제 없음
 }
 
+void ShapesApp::OnMouseDown(WPARAM btnState, int x, int y)
+{
+	m_lastMousePosition.x = x;
+	m_lastMousePosition.y = y;
+
+	SetCapture(m_hMainWnd);
+}
+
+void ShapesApp::OnMouseUp(WPARAM btnState, int x, int y)
+{
+	ReleaseCapture();
+}
+
+void ShapesApp::OnMouseMove(WPARAM btnState, int x, int y)
+{
+	if ((btnState & MK_LBUTTON) != 0)
+	{
+		// 마우스 한 픽셀 이동을 4분의 1도에 대응
+		float dx = XMConvertToRadians(0.25f * static_cast<float>(x - m_lastMousePosition.x));
+		float dy = XMConvertToRadians(0.25f * static_cast<float>(y - m_lastMousePosition.y));
+
+		// 마우스 입력에 기초에 각도 갱신(카메라가 상자를 중심으로 공전)
+		m_theta += dx;
+		m_phi += dy;
+
+		// m_phi 각도 제한
+		m_phi = MathHelper::Clamp(m_phi, 0.1f, MathHelper::Pi - 0.1f);
+	}
+	else if ((btnState & MK_RBUTTON) != 0)
+	{
+		// 마우스 한 픽셀 이동을 장면의 0.005단위에 대응
+		float dx = XMConvertToRadians(0.05f * static_cast<float>(x - m_lastMousePosition.x));
+		float dy = XMConvertToRadians(0.05f * static_cast<float>(y - m_lastMousePosition.y));
+
+		// 마우스 입력에 기초해서 카메라 반지름 갱신
+		m_radius += dx - dy;
+
+		// 반지름 제한
+		m_radius = MathHelper::Clamp(m_radius, 3.0f, 15.0f);
+	}
+
+
+	m_lastMousePosition.x = x;
+	m_lastMousePosition.y = y;
+}
+
 void ShapesApp::OnKeyboradUse(WPARAM btnState, bool isPressed)
 {
 	if (btnState == VK_F1)
@@ -183,6 +232,22 @@ void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, const st
 			renderItem->baseVertexLocation, 
 			0);
 	}
+}
+
+void ShapesApp::UpdateCamera(const GameTimer& gt)
+{
+	// 구면 좌표를 직교 좌표로 변환
+	m_eyePosition.x = m_radius * sinf(m_phi) * cosf(m_theta);
+	m_eyePosition.z = m_radius * sinf(m_phi) * sinf(m_theta);
+	m_eyePosition.y = m_radius * cosf(m_phi);
+
+	// 시야 행렬 구축
+	XMVECTOR pos = XMVectorSet(m_eyePosition.x, m_eyePosition.y, m_eyePosition.z, 1.0f);
+	XMVECTOR target = XMVectorZero();
+	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
+	XMStoreFloat4x4(&m_viewTransform, view);
 }
 
 void ShapesApp::UpdateObjectCBs(const GameTimer& gt)

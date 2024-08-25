@@ -38,7 +38,7 @@ VertexOut main(VertexIn vin)
     VertexOut vout;
     
     float4 posW = mul(float4(vin.pos, 1.0f), gWorld);
-    vout.posH = mul(posW, gProjection);
+    vout.posH = mul(posW, gViewProjection);
     vout.color = vin.color;
     
     return vout;
