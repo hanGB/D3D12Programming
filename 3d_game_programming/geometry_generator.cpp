@@ -168,6 +168,61 @@ GeometryGenerator::MeshData GeometryGenerator::CreateSphere(float radius, uint32
     return meshData;
 }
 
+GeometryGenerator::MeshData GeometryGenerator::CreateGrid(float width, float depth, uint32_t m, uint32_t n)
+{
+    MeshData meshData;
+
+    uint32_t vertexCount = m * n;
+    uint32_t faceCount = (m - 1) * (n - 1) * 2;
+
+    // 버텍스 계산
+    float halfWidth = 0.5f * width;
+    float halfDepth = 0.5f * depth;
+
+    float dx = width / (n - 1);
+    float dz = depth / (m - 1);
+
+    float du = 1.0f / (n - 1);
+    float dv = 1.0f / (m - 1);
+
+    meshData.vertices.resize(vertexCount);
+
+    for (uint32_t i = 0, k = 0; i < m; ++i)
+    {
+        float z = -halfDepth + i * dz;
+
+        for (uint32_t j = 0; j < n; ++j, ++k)
+        {
+            float x = -halfWidth + j * dx;
+
+            meshData.vertices[k].position = XMFLOAT3(x, 0.0f, z);
+            meshData.vertices[k].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+            meshData.vertices[k].tangent = XMFLOAT3(1.0f, 0.0f, 0.0f);
+
+            meshData.vertices[k].texCoord.x = i * du;
+            meshData.vertices[k].texCoord.x = j * dv;
+        }
+    }
+
+    // 인덱스 계산
+    meshData.indices32.resize(faceCount * 3);
+
+    for (uint32_t i = 0, k = 0; i < m - 1; ++i)
+    {
+        for (uint32_t j = 0; j < n - 1; ++j)
+        {
+            meshData.indices32[k++] = i * n + j;
+            meshData.indices32[k++] = i * n + j + 1;
+            meshData.indices32[k++] = (i + 1) * n + j;
+            meshData.indices32[k++] = (i + 1) * n + j;
+            meshData.indices32[k++] = i * n + j + 1;
+            meshData.indices32[k++] = (i + 1) * n + j + 1;
+        }
+    }
+
+    return meshData;
+}
+
 void GeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount, MeshData& meshData)
 {
     uint32_t baseIndex = (uint32_t)meshData.vertices.size();

@@ -44,6 +44,7 @@ public:
 
 	MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount);
 	MeshData CreateSphere(float radius, uint32_t sliceCount, uint32_t stackCount);
+	MeshData CreateGrid(float width, float depth, uint32_t m, uint32_t n);
 
 private:
 	void BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount, MeshData& meshData);

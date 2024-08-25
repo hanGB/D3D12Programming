@@ -74,6 +74,10 @@ private:
 	void BuildShadersAndInputLayout();
 	void BuildPSO();
 
+	// 
+	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex, 
+		const char* geometry, const char* submesh, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
+
 	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
 
 	// 프레임 리소스
