@@ -304,20 +304,29 @@ void ShapesApp::BuildShapeGeometry()
 {
 	GeometryGenerator geoGenerator;
 
+	GeometryGenerator::MeshData box = geoGenerator.CreateBox(1.5f, 0.5f, 1.5f, 3);
 	GeometryGenerator::MeshData grid = geoGenerator.CreateGrid(20.0f, 30.0f, 30, 20);
 	GeometryGenerator::MeshData cylinder = geoGenerator.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 	GeometryGenerator::MeshData sphere = geoGenerator.CreateSphere(0.5f, 20, 20);
 
 	// 각 메시 별 오프셋 설정
-	UINT gridVertexOffset = 0;
+	UINT boxVertexOffset = 0;
+	UINT gridVertexOffset = boxVertexOffset + (UINT)box.vertices.size();
 	UINT cylinderVertexOffset = gridVertexOffset + (UINT)grid.vertices.size();
 	UINT sphereVertexOffset = cylinderVertexOffset + (UINT)cylinder.vertices.size();
 
-	UINT gridIndexOffset = 0;
+	UINT boxIndexOffset = 0;
+	UINT gridIndexOffset = boxIndexOffset + (UINT)box.indices32.size();
 	UINT cylinderIndexOffset = gridIndexOffset + (UINT)grid.indices32.size();
 	UINT sphereIndexOffset = cylinderIndexOffset + (UINT)cylinder.indices32.size();
 
 	// 정점/색인 버퍼에서 각 메시가 차지하는 영역을 나타내는 SubmeshGeometry 객체 정의
+	SubmeshGeometry boxSubmesh;
+	boxSubmesh.indexCount = (UINT)box.indices32.size();
+	boxSubmesh.startIndexLocation = boxIndexOffset;
+	boxSubmesh.baseVertexLocation = boxVertexOffset;
+
+
 	SubmeshGeometry gridSubmesh;
 	gridSubmesh.indexCount = (UINT)grid.indices32.size();
 	gridSubmesh.startIndexLocation = gridIndexOffset;
@@ -334,11 +343,16 @@ void ShapesApp::BuildShapeGeometry()
 	sphereSubmesh.baseVertexLocation = sphereVertexOffset;
 
 	// 필요한 정점 성분을 추출하고 모든 메시의 정점을 하나의 정점 버퍼에 넣음
-	size_t totalVertexCount = grid.vertices.size() + cylinder.vertices.size() + sphere.vertices.size();
+	size_t totalVertexCount = box.vertices.size() + grid.vertices.size() + cylinder.vertices.size() + sphere.vertices.size();
 
 	std::vector<Vertex> vertices(totalVertexCount);
 
 	UINT k = 0;
+	for (size_t i = 0; i < box.vertices.size(); ++i, ++k)
+	{
+		vertices[k].pos = box.vertices[i].position;
+		vertices[k].color = XMFLOAT4(Colors::DarkGreen);
+	}
 	for (size_t i = 0; i < grid.vertices.size(); ++i, ++k)
 	{
 		vertices[k].pos = grid.vertices[i].position;
@@ -356,6 +370,7 @@ void ShapesApp::BuildShapeGeometry()
 	}
 
 	std::vector<std::uint16_t> indices;
+	indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
 	indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
 	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
 	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
@@ -389,6 +404,7 @@ void ShapesApp::BuildShapeGeometry()
 	geometry->indexBuffer.format = DXGI_FORMAT_R16_UINT; // D3D12에서는 오직 DXGI_FORMAT_R16_UINT와 DXGI_FORMAT_R32_UINT만 유효함
 	geometry->indexBuffer.byteSize = ibByteSize;
 
+	geometry->drawArgs["box"] = boxSubmesh;
 	geometry->drawArgs["grid"] = gridSubmesh;
 	geometry->drawArgs["cylinder"] = cylinderSubmesh;
 	geometry->drawArgs["sphere"] = sphereSubmesh;
@@ -400,6 +416,11 @@ void ShapesApp::BuildRenderItems()
 {
 	UINT objCBIndex = 0;
 	D3D_PRIMITIVE_TOPOLOGY primitiveTopogoly = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	XMMATRIX boxWorld = XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f);
+	std::unique_ptr<RenderItem> boxRederItem
+		= CreateRenderItem(boxWorld, objCBIndex++, "shape_geometry", "box", primitiveTopogoly);
+	m_allRenderItems.push_back(std::move(boxRederItem));
 
 	XMMATRIX gridWorld = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> gridRederItem 
