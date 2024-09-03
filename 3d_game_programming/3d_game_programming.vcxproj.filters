@@ -69,6 +69,12 @@
     <ClInclude Include="land_and_waves_app.h">
       <Filter>Example App\Land and Waves</Filter>
     </ClInclude>
+    <ClInclude Include="waves.h">
+      <Filter>Example App\Land and Waves</Filter>
+    </ClInclude>
+    <ClInclude Include="land_and_waves_frame_resource.h">
+      <Filter>Example App\Land and Waves</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -108,6 +114,12 @@
       <Filter>Common</Filter>
     </ClCompile>
     <ClCompile Include="land_and_waves_app.cpp">
+      <Filter>Example App\Land and Waves</Filter>
+    </ClCompile>
+    <ClCompile Include="waves.cpp">
+      <Filter>Example App\Land and Waves</Filter>
+    </ClCompile>
+    <ClCompile Include="land_and_waves_frame_resource.cpp">
       <Filter>Example App\Land and Waves</Filter>
     </ClCompile>
   </ItemGroup>

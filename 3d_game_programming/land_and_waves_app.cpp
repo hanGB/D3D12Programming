@@ -23,8 +23,11 @@ bool LandAndWavesApp::Initialize()
 	}
 
 	ThrowIfFailed(m_commandList->Reset(m_commandListAllocator.Get(), nullptr));
+	
+	m_waves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
 
 	BuildLandGeometry();
+	BuildWavesGeometry();
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildRootSignature();
@@ -62,6 +65,9 @@ void LandAndWavesApp::Update(const GameTimer& gt)
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
 	}
+
+	// 파도 업데이트
+	UpdateWaves(gt);
 
 	// 카메라 업데이트
 	UpdateCamera(gt);
@@ -226,6 +232,41 @@ void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, co
 	}
 }
 
+void LandAndWavesApp::UpdateWaves(const GameTimer& gt)
+{
+	// 4분의 1초마다 무작위로 파도 생성
+	static float timeBase = 0.0f;
+	if (m_timer.TotalTime() - timeBase >= 0.25f)
+	{
+		timeBase += 0.25f;
+
+		int i = MathHelper::Rand(4, m_waves->RowCount() - 5);
+		int j = MathHelper::Rand(4, m_waves->ColumnCount() - 5);
+
+		float r = MathHelper::RandF(0.2f, 0.5f);
+
+		m_waves->Disturb(i, j, r);
+	}
+
+	// 파도 시뮬레이션 갱신
+	m_waves->Update(gt.DeltaTime());
+
+	// 새 정점들로 파도 정점 버퍼 갱신
+	auto currentWavesVB = m_currentFrameResource->wavesVB.get();
+	for (int i = 0; i < m_waves->VertexCount(); ++i)
+	{
+		Vertex v;
+
+		v.pos = m_waves->Position(i);
+		v.color = XMFLOAT4(Colors::Blue);
+
+		currentWavesVB->CopyData(i, v);
+	}
+
+	// 파도 렌더 항목의 동적 VB를 현재 프레임의 VB로 설정
+	m_wavesRenderItem->geometry->vertexBuffers[0].gpu = currentWavesVB->Resource();
+}
+
 void LandAndWavesApp::UpdateCamera(const GameTimer& gt)
 {
 	// 구면 좌표를 직교 좌표로 변환
@@ -363,10 +404,72 @@ void LandAndWavesApp::BuildLandGeometry()
 	m_geometries[geo->name] = std::move(geo);
 }
 
+void LandAndWavesApp::BuildWavesGeometry()
+{
+	std::vector<std::uint16_t> indices(3 * m_waves->TriangleCount());
+	assert(m_waves->VertexCount() < 0x0000ffff);
+
+	// 각 쿼드 별로 반복
+	int m = m_waves->RowCount();
+	int n = m_waves->ColumnCount();
+	int k = 0;
+	for (int i = 0; i < m - 1; ++i)
+	{
+		for (int j = 0; j < n - 1; ++j)
+		{
+			indices[k] = i * n + j;
+			indices[k + 1] = i * n + j + 1;
+			indices[k + 2] = (i + 1) * n + j;
+
+			indices[k + 3] = (i + 1) * n + j;
+			indices[k + 4] = i * n + j + 1;
+			indices[k + 5] = (i + 1) * n + j + 1;
+
+			k += 6; // 다음 쿼드
+		}
+	}
+
+	UINT vbByteSize = m_waves->VertexCount() * sizeof(Vertex);
+	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->name = "water_geometry";
+
+	// 동적으로 설정
+	geo->vertexBuffers[0].cpu = nullptr;
+	geo->vertexBuffers[0].gpu = nullptr;
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->indexBuffer.cpu));
+	CopyMemory(geo->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(),
+		m_commandList.Get(), indices.data(), ibByteSize, geo->indexBuffer.uploader);
+
+	geo->vertexBuffers[0].byteStride = sizeof(Vertex);
+	geo->vertexBuffers[0].byteSize = vbByteSize;
+	geo->indexBuffer.format = DXGI_FORMAT_R16_UINT;
+	geo->indexBuffer.byteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.indexCount = (UINT)indices.size();
+	submesh.startIndexLocation = 0;
+	submesh.baseVertexLocation = 0;
+
+	geo->drawArgs["grid"] = submesh;
+
+	m_geometries[geo->name] = std::move(geo);
+}
+
 void LandAndWavesApp::BuildRenderItems()
 {
 	UINT objCBIndex = 0;
 	D3D_PRIMITIVE_TOPOLOGY primitiveTopogoly = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	XMMATRIX wavesWorld = XMMatrixIdentity();
+	std::unique_ptr<RenderItem> wavesRederItem
+		= CreateRenderItem(wavesWorld, objCBIndex++, "water_geometry", "grid", primitiveTopogoly);
+	m_wavesRenderItem = wavesRederItem.get();
+	m_allRenderItems.push_back(std::move(wavesRederItem));
 
 	XMMATRIX gridWorld = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> gridRederItem
@@ -385,7 +488,7 @@ void LandAndWavesApp::BuildFrameResources()
 {
 	for (int i = 0; i < NUM_FRAME_RESOURCES; ++i)
 	{
-		m_frameResources.push_back(std::make_unique<ShapesFrameResource>(m_d3dDevice.Get(), 1, (UINT)m_allRenderItems.size()));
+		m_frameResources.push_back(std::make_unique<LandAndWavesFrameResource>(m_d3dDevice.Get(), 1, (UINT)m_allRenderItems.size(), m_waves->VertexCount()));
 	}
 }
 

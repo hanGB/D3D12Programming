@@ -1,15 +1,10 @@
 #pragma once
 #include "d3d_app.h"
 #include "math_helper.h"
-#include "shapes_frame_resource.h"
+#include "land_and_waves_frame_resource.h"
+#include "waves.h"
 
 static const int NUM_FRAME_RESOURCES = 3;
-
-struct Vertex
-{
-	XMFLOAT3 pos;
-	XMFLOAT4 color;
-};
 
 struct RenderItem
 {
@@ -36,6 +31,7 @@ struct RenderItem
 	int baseVertexLocation = 0;
 
 };
+
 class LandAndWavesApp : public D3DApp {
 public:
 public:
@@ -58,6 +54,8 @@ private:
 	// 렌더 아이템 그리기
 	void DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems);
 
+	// 동적 버퍼 업데이트
+	void UpdateWaves(const GameTimer& gt);
 	// 상수 버퍼 업데이트
 	void UpdateCamera(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
@@ -65,6 +63,7 @@ private:
 
 	// 초기화시의 빌드
 	void BuildLandGeometry();
+	void BuildWavesGeometry();
 	void BuildRenderItems();
 	void BuildFrameResources();
 	void BuildRootSignature();
@@ -79,8 +78,8 @@ private:
 	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
 
 	// 프레임 리소스
-	std::vector<std::unique_ptr<ShapesFrameResource>> m_frameResources;
-	ShapesFrameResource* m_currentFrameResource = nullptr;
+	std::vector<std::unique_ptr<LandAndWavesFrameResource>> m_frameResources;
+	LandAndWavesFrameResource* m_currentFrameResource = nullptr;
 	int m_currentFrameResourceIndex = 0;
 
 	PassConstants m_mainPassCB;
@@ -107,6 +106,9 @@ private:
 
 	// 지오메트리
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_geometries;
+	// 파도
+	std::unique_ptr<Waves> m_waves;
+	RenderItem* m_wavesRenderItem;
 
 	// 와이어 프레임 여부
 	bool m_IsWireFrame = true;
