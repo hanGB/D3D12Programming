@@ -28,6 +28,9 @@
     <Filter Include="Example App\Shapes">
       <UniqueIdentifier>{44ed5750-8e30-41c0-ad3f-b904c3735c75}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Example App\Land and Waves">
+      <UniqueIdentifier>{e10720ed-2990-4ec5-bc4b-1384af71c368}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -62,6 +65,9 @@
     </ClInclude>
     <ClInclude Include="geometry_generator.h">
       <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="land_and_waves_app.h">
+      <Filter>Example App\Land and Waves</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -100,6 +106,9 @@
     </ClCompile>
     <ClCompile Include="geometry_generator.cpp">
       <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="land_and_waves_app.cpp">
+      <Filter>Example App\Land and Waves</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

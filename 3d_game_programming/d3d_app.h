@@ -109,7 +109,7 @@ protected:
 	D3D12_RECT m_scissorRect;
 	
 	// 설정값
-	std::wstring m_mainWndCaption = L"d3d App";
+	std::wstring m_mainWndCaption = L"D3D App";
 	D3D_DRIVER_TYPE m_d3dDriverType = D3D_DRIVER_TYPE_HARDWARE;
 	DXGI_FORMAT m_backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	DXGI_FORMAT m_depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
