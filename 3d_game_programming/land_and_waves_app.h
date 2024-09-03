@@ -67,8 +67,6 @@ private:
 	void BuildLandGeometry();
 	void BuildRenderItems();
 	void BuildFrameResources();
-	void BuildDescriptorHeaps();
-	void BuildConstantBufferViews();
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
 	void BuildPSO();

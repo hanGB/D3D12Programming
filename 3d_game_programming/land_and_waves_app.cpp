@@ -27,8 +27,6 @@ bool LandAndWavesApp::Initialize()
 	BuildLandGeometry();
 	BuildRenderItems();
 	BuildFrameResources();
-	BuildDescriptorHeaps();
-	BuildConstantBufferViews();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
 	BuildPSO();
@@ -106,16 +104,11 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 	// 렌더링 결과가 기록될 렌더 타켓 버퍼 저장
 	m_commandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbvHeap.Get() };
-	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	// 현재 프레임 리소스의 패스 CBV 설정
-	int passCbvIndex = m_passCbvOffset + m_currentFrameResourceIndex;
-	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
-	passCbvHandle.Offset(passCbvIndex, m_cbvSrvDescriptorSize);
-	m_commandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
+	ID3D12Resource* passCB = m_currentFrameResource->passCB->Resource();
+	m_commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 
 	// 렌더 아이템 그리기
 	DrawRenderItems(m_commandList.Get(), m_opqaueRederItems);
@@ -219,12 +212,11 @@ void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, co
 		commandList->IASetIndexBuffer(&renderItem->geometry->IndexBufferView());
 		commandList->IASetPrimitiveTopology(renderItem->primitiveTopology);
 
-		// 현재 프레임 리소스에 대한 서술자 힙에서 이 오브젝트를 위한 CBV 오프셋 계산
-		UINT cbvIndex = m_currentFrameResourceIndex * (UINT)m_opqaueRederItems.size() + renderItem->objectCBIndex;
-		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
-		cbvHandle.Offset(cbvIndex, m_cbvSrvDescriptorSize);
+		// 현재 프레임 리소스에 대한 이 오브젝트를 위한 상수 버퍼 가상 주소 계산
+		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
+		objCBAddress += renderItem->objectCBIndex * objectCBbyteSize;
 
-		commandList->SetGraphicsRootDescriptorTable(0, cbvHandle);
+		commandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
 
 		commandList->DrawIndexedInstanced(
 			renderItem->indexCount, 1,
@@ -397,89 +389,13 @@ void LandAndWavesApp::BuildFrameResources()
 	}
 }
 
-void LandAndWavesApp::BuildDescriptorHeaps()
-{
-	UINT objectCount = (UINT)m_opqaueRederItems.size();
-
-	// 각 프레임 리소스의 오브젝트마다 하나의 서술자 필요 + 각 프레임 리소스의 패스별 CBV 하나 필요
-	UINT numDescriptors = (objectCount + 1) * NUM_FRAME_RESOURCES;
-
-	// 패스별 CBV의 시작 오프셋 저장
-	m_passCbvOffset = objectCount * NUM_FRAME_RESOURCES;
-
-	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = numDescriptors;
-	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	cbvHeapDesc.NodeMask = 0;
-
-	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_cbvHeap)));
-}
-
-void LandAndWavesApp::BuildConstantBufferViews()
-{
-	UINT objectCBByteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(ObjectConstants));
-	UINT objectCount = (UINT)m_opqaueRederItems.size();
-
-	// 각 프레임 리소스에 오브젝트 수 만큼의 CBV 생성
-	for (int frameIndex = 0; frameIndex < NUM_FRAME_RESOURCES; ++frameIndex)
-	{
-		ID3D12Resource* objectCB = m_frameResources[frameIndex]->objectCB->Resource();
-		for (UINT i = 0; i < objectCount; ++i)
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
-
-			// 현재 버퍼에서 i번째 물체별 상수 버퍼의 오프셋을 가상 주소에 더함
-			cbAddress += i * objectCBByteSize;
-
-			// 서술자 힙에서 i번째 물체별 CBV의 오브셋
-			int heapIndex = frameIndex * objectCount + i;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, m_cbvSrvDescriptorSize);
-
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = objectCBByteSize;
-
-			m_d3dDevice->CreateConstantBufferView(&cbvDesc, handle);
-		}
-	}
-
-	UINT passCBByteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(PassConstants));
-
-	// 마지막 세 서술자는 각 프레임 자원의 패스별 CBV
-	for (int frameIndex = 0; frameIndex < NUM_FRAME_RESOURCES; ++frameIndex)
-	{
-		ID3D12Resource* passCB = m_frameResources[frameIndex]->passCB->Resource();
-
-		// 패스별 버퍼는 프레임 리소스당 하나의 상수 버퍼만 저장
-		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = passCB->GetGPUVirtualAddress();
-
-		// 서술자 힙 안에서 패스별 CBV의 오프셋
-		int heapIndex = m_passCbvOffset + frameIndex;
-		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
-		handle.Offset(heapIndex, m_cbvSrvDescriptorSize);
-
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-		cbvDesc.BufferLocation = cbAddress;
-		cbvDesc.SizeInBytes = passCBByteSize;
-
-		m_d3dDevice->CreateConstantBufferView(&cbvDesc, handle);
-	}
-}
-
 void LandAndWavesApp::BuildRootSignature()
 {
-	CD3DX12_DESCRIPTOR_RANGE cbvTable0;
-	cbvTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
-	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
-
 	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
 
 	// 루트 CBV 생성
-	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
+	slotRootParameter[0].InitAsConstantBufferView(0);
+	slotRootParameter[1].InitAsConstantBufferView(1);
 
 	// 루트 시그니쳐는 루트 매개변수들의 배열
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(
