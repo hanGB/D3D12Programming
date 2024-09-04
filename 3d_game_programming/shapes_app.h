@@ -67,6 +67,7 @@ private:
 
 	// 초기화시의 빌드
 	void BuildShapeGeometry();
+	void BuildSkullGeometry();
 	void BuildRenderItems();
 	void BuildFrameResources();
 	void BuildDescriptorHeaps();

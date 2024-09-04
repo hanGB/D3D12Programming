@@ -25,6 +25,7 @@ bool ShapesApp::Initialize()
 	ThrowIfFailed(m_commandList->Reset(m_commandListAllocator.Get(), nullptr));
 
 	BuildShapeGeometry();
+	BuildSkullGeometry();
 	BuildRenderItems();
 	BuildFrameResources();
 	//BuildDescriptorHeaps();
@@ -354,7 +355,6 @@ void ShapesApp::BuildShapeGeometry()
 	boxSubmesh.startIndexLocation = boxIndexOffset;
 	boxSubmesh.baseVertexLocation = boxVertexOffset;
 
-
 	SubmeshGeometry gridSubmesh;
 	gridSubmesh.indexCount = (UINT)grid.indices32.size();
 	gridSubmesh.startIndexLocation = gridIndexOffset;
@@ -440,10 +440,103 @@ void ShapesApp::BuildShapeGeometry()
 	m_geometries[geometry->name] = std::move(geometry);
 }
 
+void ShapesApp::BuildSkullGeometry()
+{
+	std::ifstream in("./resource/skull.txt");
+
+	if (!in)
+	{
+		MessageBox(0, L"./resource/skull.txtt not found.", 0, 0);
+		return;
+	}
+
+	int vertexCount;
+	int triangleCount;
+	std::string ignore;
+
+	// 파일 앞 있는 갯수 읽기
+	in >> ignore >> vertexCount;
+	in >> ignore >> triangleCount;
+
+	// 설명 건너 뛰기(단어 하나씩)
+	in >> ignore >> ignore >> ignore >> ignore;
+
+	// 버텍스 읽기
+	std::vector<Vertex> vertices(vertexCount);
+	for (size_t i = 0; i < vertexCount; ++i)
+	{
+		in >> vertices[i].pos.x >> vertices[i].pos.y >> vertices[i].pos.z;
+		vertices[i].color = XMFLOAT4(Colors::Gray);
+
+		float normal;
+		// 노말값은 당장 쓰이지 않음으로 건너뜀
+		in >> normal >> normal >> normal;
+	}
+
+	in >> ignore >> ignore >> ignore;
+
+	// 인덱스 읽기
+	size_t indexCount = triangleCount * 3;
+	std::vector<uint16_t> indices(indexCount);
+	for (size_t i = 0; i < indexCount; ++i)
+	{
+		in >> indices[i];
+	}
+
+	in.close();
+
+	const UINT vbByteSize = (UINT)vertexCount * sizeof(Vertex);
+	const UINT ibByteSize = (UINT)indexCount * sizeof(uint16_t);
+
+	SubmeshGeometry submesh;
+	submesh.indexCount = (UINT)indexCount;
+	submesh.startIndexLocation = 0;
+	submesh.baseVertexLocation = 0;
+
+	// 지오메트리 생성
+	std::unique_ptr<MeshGeometry> geometry = std::make_unique<MeshGeometry>();
+	geometry->name = "skull_geometry";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geometry->vertexBuffers[0].cpu));
+	CopyMemory(geometry->vertexBuffers[0].cpu->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geometry->indexBuffer.cpu));
+	CopyMemory(geometry->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geometry->vertexBuffers[0].gpu 
+		= D3DUtil::CreateDefaultBuffer(
+			m_d3dDevice.Get(), 
+			m_commandList.Get(), 
+			vertices.data(), 
+			vbByteSize, 
+			geometry->vertexBuffers[0].uploader);
+	geometry->indexBuffer.gpu
+		= D3DUtil::CreateDefaultBuffer(
+			m_d3dDevice.Get(),
+			m_commandList.Get(),
+			indices.data(),
+			ibByteSize,
+			geometry->indexBuffer.uploader);
+
+	geometry->vertexBuffers[0].byteStride = sizeof(Vertex);
+	geometry->vertexBuffers[0].byteSize = vbByteSize;
+	geometry->indexBuffer.byteSize = ibByteSize;
+	geometry->indexBuffer.format = DXGI_FORMAT_R16_UINT;
+
+	geometry->drawArgs["skull"] = submesh;
+
+	m_geometries[geometry->name] = std::move(geometry);
+}
+
 void ShapesApp::BuildRenderItems()
 {
 	UINT objCBIndex = 0;
 	D3D_PRIMITIVE_TOPOLOGY primitiveTopogoly = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	XMMATRIX skullWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(0.0f, 1.0f, 0.0f);
+	std::unique_ptr<RenderItem> skullRederItem
+		= CreateRenderItem(skullWorld, objCBIndex++, "skull_geometry", "skull", primitiveTopogoly);
+	m_allRenderItems.push_back(std::move(skullRederItem));
 
 	XMMATRIX boxWorld = XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f);
 	std::unique_ptr<RenderItem> boxRederItem

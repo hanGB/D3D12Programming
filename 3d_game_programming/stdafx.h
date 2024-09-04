@@ -32,3 +32,4 @@ using namespace Microsoft::WRL;
 #include <vector>
 #include <array>
 #include <unordered_map>
+#include <fstream>
