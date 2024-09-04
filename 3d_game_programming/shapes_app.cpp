@@ -27,9 +27,12 @@ bool ShapesApp::Initialize()
 	BuildShapeGeometry();
 	BuildRenderItems();
 	BuildFrameResources();
-	BuildDescriptorHeaps();
-	BuildConstantBufferViews();
-	BuildRootSignature();
+	//BuildDescriptorHeaps();
+	BuildDescriptorHeapsWithRootConstants();
+	//BuildObjectConstantBufferViews();
+	BuildPassConstantBufferViews();
+	//BuildRootSignature();
+	BuildRootSignatureWithRootConstants();
 	BuildShadersAndInputLayout();
 	BuildPSO();
 
@@ -69,7 +72,7 @@ void ShapesApp::Update(const GameTimer& gt)
 	UpdateCamera(gt);
 
 	// 현재 프레임 리소스 갱신
-	UpdateObjectCBs(gt);
+	//UpdateObjectCBs(gt);
 	UpdateMainPassCB(gt);
 }
 
@@ -118,7 +121,8 @@ void ShapesApp::Draw(const GameTimer& gt)
 	m_commandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
 
 	// 렌더 아이템 그리기
-	DrawRenderItems(m_commandList.Get(), m_opqaueRederItems);
+	//DrawRenderItems(m_commandList.Get(), m_opqaueRederItems);
+	DrawRenderItemsWithRootConstants(m_commandList.Get(), m_opqaueRederItems);
 
 	// 리소스 용도에 관련된 상태 전이 통지
 	m_commandList->ResourceBarrier(1,
@@ -230,6 +234,30 @@ void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, const st
 			renderItem->indexCount, 1, 
 			renderItem->startIndexLocation, 
 			renderItem->baseVertexLocation, 
+			0);
+	}
+}
+
+void ShapesApp::DrawRenderItemsWithRootConstants(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems)
+{
+	// 각 렌더 아이템 그리기
+	for (size_t i = 0; i < renderItems.size(); ++i)
+	{
+		RenderItem* renderItem = renderItems[i];
+
+		commandList->IASetVertexBuffers(0, 1, &renderItem->geometry->VertexBufferView(0));
+		commandList->IASetIndexBuffer(&renderItem->geometry->IndexBufferView());
+		commandList->IASetPrimitiveTopology(renderItem->primitiveTopology);
+
+		XMMATRIX wrold = XMLoadFloat4x4(&renderItem->world);
+		XMFLOAT4X4 transposedWorld;
+		XMStoreFloat4x4(&transposedWorld, XMMatrixTranspose(wrold));
+		commandList->SetGraphicsRoot32BitConstants(0, 16, (void*)&transposedWorld, 0);
+
+		commandList->DrawIndexedInstanced(
+			renderItem->indexCount, 1,
+			renderItem->startIndexLocation,
+			renderItem->baseVertexLocation,
 			0);
 	}
 }
@@ -483,11 +511,28 @@ void ShapesApp::BuildDescriptorHeaps()
 	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_cbvHeap)));
 }
 
-void ShapesApp::BuildConstantBufferViews()
+void ShapesApp::BuildDescriptorHeapsWithRootConstants()
+{
+	// 각 프레임 리소스의 패스별 CBV 하나 필요
+	UINT numDescriptors =  NUM_FRAME_RESOURCES;
+
+	// 패스별 CBV의 시작 오프셋 저장
+	m_passCbvOffset = 0;
+
+	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
+	cbvHeapDesc.NumDescriptors = numDescriptors;
+	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	cbvHeapDesc.NodeMask = 0;
+
+	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_cbvHeap)));
+}
+
+void ShapesApp::BuildObjectConstantBufferViews()
 {
 	UINT objectCBByteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(ObjectConstants));
 	UINT objectCount = (UINT)m_opqaueRederItems.size();
-	
+
 	// 각 프레임 리소스에 오브젝트 수 만큼의 CBV 생성
 	for (int frameIndex = 0; frameIndex < NUM_FRAME_RESOURCES; ++frameIndex)
 	{
@@ -511,7 +556,10 @@ void ShapesApp::BuildConstantBufferViews()
 			m_d3dDevice->CreateConstantBufferView(&cbvDesc, handle);
 		}
 	}
+}
 
+void ShapesApp::BuildPassConstantBufferViews()
+{
 	UINT passCBByteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(PassConstants));
 
 	// 마지막 세 서술자는 각 프레임 자원의 패스별 CBV
@@ -564,6 +612,37 @@ void ShapesApp::BuildRootSignature()
 		0, 
 		serializedRootSignature->GetBufferPointer(), 
 		serializedRootSignature->GetBufferSize(), 
+		IID_PPV_ARGS(&m_rootSignature)));
+}
+
+void ShapesApp::BuildRootSignatureWithRootConstants()
+{
+	CD3DX12_DESCRIPTOR_RANGE cbvTable;
+	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+
+	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+
+	// 루트 CBV 생성
+	slotRootParameter[0].InitAsConstants(16, 0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable);
+
+
+	// 루트 시그니쳐는 루트 매개변수들의 배열
+	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(
+		2, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	ComPtr<ID3DBlob> serializedRootSignature = nullptr;
+	ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(
+		&rootSignatureDesc,
+		D3D_ROOT_SIGNATURE_VERSION_1,
+		serializedRootSignature.GetAddressOf(),
+		errorBlob.GetAddressOf());
+
+	ThrowIfFailed(m_d3dDevice->CreateRootSignature(
+		0,
+		serializedRootSignature->GetBufferPointer(),
+		serializedRootSignature->GetBufferSize(),
 		IID_PPV_ARGS(&m_rootSignature)));
 }
 

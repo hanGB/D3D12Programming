@@ -58,6 +58,7 @@ private:
 
 	// 렌더 아이템 그리기
 	void DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems);
+	void DrawRenderItemsWithRootConstants(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems);
 
 	// 상수 버퍼 업데이트
 	void UpdateCamera(const GameTimer& gt);
@@ -69,12 +70,14 @@ private:
 	void BuildRenderItems();
 	void BuildFrameResources();
 	void BuildDescriptorHeaps();
-	void BuildConstantBufferViews();
+	void BuildDescriptorHeapsWithRootConstants();
+	void BuildObjectConstantBufferViews();
+	void BuildPassConstantBufferViews();
 	void BuildRootSignature();
+	void BuildRootSignatureWithRootConstants();
 	void BuildShadersAndInputLayout();
 	void BuildPSO();
 
-	// 
 	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex, 
 		const char* geometry, const char* submesh, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
 
