@@ -286,7 +286,7 @@ void ShapesApp::UpdateObjectCBs(const GameTimer& gt)
 	for (auto& e : m_allRenderItems)
 	{
 		// 상수들이 바꾸었을 때에만 cbuffer 자료 갱신
-		if (e->numFamesDirty > 0)
+		if (e->numFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->world);
 
@@ -296,7 +296,7 @@ void ShapesApp::UpdateObjectCBs(const GameTimer& gt)
 			currentObjectCB->CopyData(e->objectCBIndex, objConstants);
 
 			// 다음 프레임 자원으로 넘어감
-			e->numFamesDirty--;
+			e->numFramesDirty--;
 		}
 	}
 }

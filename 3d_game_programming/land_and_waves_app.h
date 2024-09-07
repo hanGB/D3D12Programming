@@ -4,8 +4,6 @@
 #include "land_and_waves_frame_resource.h"
 #include "waves.h"
 
-static const int NUM_FRAME_RESOURCES = 3;
-
 struct RenderItem
 {
 	RenderItem() = default;
@@ -14,13 +12,15 @@ struct RenderItem
 	XMFLOAT4X4 world = MathHelper::Identity4x4();
 
 	// 물체의 자료가 변해서 상수 버퍼를 갱신해야 하는 지 여부
-	int numFamesDirty = NUM_FRAME_RESOURCES;
+	int numFramesDirty = NUM_FRAME_RESOURCES;
 
 	// 이 렌더 항목의 물체 상수 버퍼에 해당하는 GPU 상수 버퍼 인덱스
 	UINT objectCBIndex = -1;
 
 	// 기하 구조
 	MeshGeometry* geometry = nullptr;
+	// 재질
+	Material* material = nullptr;
 
 	// 기본 도형 위상 구조
 	D3D12_PRIMITIVE_TOPOLOGY primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -59,11 +59,13 @@ private:
 	// 상수 버퍼 업데이트
 	void UpdateCamera(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
+	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 
 	// 초기화시의 빌드
 	void BuildLandGeometry();
 	void BuildWavesGeometry();
+	void BuildMaterials();
 	void BuildRenderItems();
 	void BuildFrameResources();
 	void BuildRootSignature();
@@ -73,7 +75,7 @@ private:
 	float GetHillsHeight(float x, float z) const;
 
 	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,
-		const char* geometry, const char* submesh, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
+		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
 
 	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
 
@@ -109,6 +111,9 @@ private:
 	// 파도
 	std::unique_ptr<Waves> m_waves;
 	RenderItem* m_wavesRenderItem;
+
+	// 재질
+	std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
 
 	// 와이어 프레임 여부
 	bool m_IsWireFrame = true;

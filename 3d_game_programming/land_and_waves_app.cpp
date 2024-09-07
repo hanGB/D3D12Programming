@@ -28,6 +28,7 @@ bool LandAndWavesApp::Initialize()
 
 	BuildLandGeometry();
 	BuildWavesGeometry();
+	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildRootSignature();
@@ -74,6 +75,7 @@ void LandAndWavesApp::Update(const GameTimer& gt)
 
 	// 현재 프레임 리소스 갱신
 	UpdateObjectCBs(gt);
+	UpdateMaterialCBs(gt);
 	UpdateMainPassCB(gt);
 }
 
@@ -114,7 +116,7 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 
 	// 현재 프레임 리소스의 패스 CBV 설정
 	ID3D12Resource* passCB = m_currentFrameResource->passCB->Resource();
-	m_commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+	m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	// 렌더 아이템 그리기
 	DrawRenderItems(m_commandList.Get(), m_opqaueRederItems);
@@ -206,8 +208,10 @@ void LandAndWavesApp::OnKeyboradUse(WPARAM btnState, bool isPressed)
 void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems)
 {
 	UINT objectCBbyteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT matrialCBbyteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(MaterialConstants));
 
 	ID3D12Resource* objectCB = m_currentFrameResource->objectCB->Resource();
+	ID3D12Resource* materialCB = m_currentFrameResource->materialCB->Resource();
 
 	// 각 렌더 아이템 그리기
 	for (size_t i = 0; i < renderItems.size(); ++i)
@@ -221,8 +225,11 @@ void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, co
 		// 현재 프레임 리소스에 대한 이 오브젝트를 위한 상수 버퍼 가상 주소 계산
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
 		objCBAddress += renderItem->objectCBIndex * objectCBbyteSize;
+		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress();
+		matCBAddress += renderItem->material->cbIndex * matrialCBbyteSize;
 
 		commandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+		commandList->SetGraphicsRootConstantBufferView(1, matCBAddress);
 
 		commandList->DrawIndexedInstanced(
 			renderItem->indexCount, 1,
@@ -290,7 +297,7 @@ void LandAndWavesApp::UpdateObjectCBs(const GameTimer& gt)
 	for (auto& e : m_allRenderItems)
 	{
 		// 상수들이 바꾸었을 때에만 cbuffer 자료 갱신
-		if (e->numFamesDirty > 0)
+		if (e->numFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->world);
 
@@ -300,7 +307,32 @@ void LandAndWavesApp::UpdateObjectCBs(const GameTimer& gt)
 			currentObjectCB->CopyData(e->objectCBIndex, objConstants);
 
 			// 다음 프레임 자원으로 넘어감
-			e->numFamesDirty--;
+			e->numFramesDirty--;
+		}
+	}
+}
+
+void LandAndWavesApp::UpdateMaterialCBs(const GameTimer& gt)
+{
+	auto currentMaterialCB = m_currentFrameResource->materialCB.get();
+
+	for (auto& e : m_materials)
+	{
+		// 상수들이 바꾸었을 때에만 cbuffer 자료 갱신
+		Material* mat = e.second.get();
+		if (mat->numFramesDirty > 0)
+		{
+			XMMATRIX matTransform = XMLoadFloat4x4(&mat->matTransform);
+
+			MaterialConstants matConstants;
+			matConstants.diffuseAlbedo = mat->diffuseAlbedo;
+			matConstants.fresnelR0 = mat->fresnelR0;
+			matConstants.roughness = mat->roughness;
+
+			currentMaterialCB->CopyData(mat->cbIndex, matConstants);
+
+			// 다음 프레임 자원으로 넘어감
+			mat->numFramesDirty--;
 		}
 	}
 }
@@ -460,6 +492,26 @@ void LandAndWavesApp::BuildWavesGeometry()
 	m_geometries[geo->name] = std::move(geo);
 }
 
+void LandAndWavesApp::BuildMaterials()
+{
+	auto grass = std::make_unique<Material>();
+	grass->name = "grass";
+	grass->cbIndex = 0;
+	grass->diffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.6f, 1.0f);
+	grass->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	grass->roughness = 0.125f;
+
+	auto water = std::make_unique<Material>();
+	water->name = "water";
+	water->cbIndex = 1;
+	water->diffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
+	water->fresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	water->roughness = 0.0f;
+
+	m_materials[grass->name] = std::move(grass);
+	m_materials[water->name] = std::move(water);
+}
+
 void LandAndWavesApp::BuildRenderItems()
 {
 	UINT objCBIndex = 0;
@@ -467,13 +519,13 @@ void LandAndWavesApp::BuildRenderItems()
 
 	XMMATRIX wavesWorld = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> wavesRederItem
-		= CreateRenderItem(wavesWorld, objCBIndex++, "water_geometry", "grid", primitiveTopogoly);
+		= CreateRenderItem(wavesWorld, objCBIndex++, "water_geometry", "grid", "water", primitiveTopogoly);
 	m_wavesRenderItem = wavesRederItem.get();
 	m_allRenderItems.push_back(std::move(wavesRederItem));
 
 	XMMATRIX gridWorld = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> gridRederItem
-		= CreateRenderItem(gridWorld, objCBIndex++, "land_geometry", "grid", primitiveTopogoly);
+		= CreateRenderItem(gridWorld, objCBIndex++, "land_geometry", "grid", "grass", primitiveTopogoly);
 	m_allRenderItems.push_back(std::move(gridRederItem));
 
 
@@ -488,21 +540,22 @@ void LandAndWavesApp::BuildFrameResources()
 {
 	for (int i = 0; i < NUM_FRAME_RESOURCES; ++i)
 	{
-		m_frameResources.push_back(std::make_unique<LandAndWavesFrameResource>(m_d3dDevice.Get(), 1, (UINT)m_allRenderItems.size(), m_waves->VertexCount()));
+		m_frameResources.push_back(std::make_unique<LandAndWavesFrameResource>(m_d3dDevice.Get(), 1, (UINT)m_allRenderItems.size(), (UINT)m_materials.size(), m_waves->VertexCount()));
 	}
 }
 
 void LandAndWavesApp::BuildRootSignature()
 {
-	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 
 	// 루트 CBV 생성
 	slotRootParameter[0].InitAsConstantBufferView(0);
 	slotRootParameter[1].InitAsConstantBufferView(1);
+	slotRootParameter[2].InitAsConstantBufferView(2);
 
 	// 루트 시그니쳐는 루트 매개변수들의 배열
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(
-		2, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	ComPtr<ID3DBlob> serializedRootSignature = nullptr;
 	ComPtr<ID3DBlob> errorBlob = nullptr;
@@ -521,8 +574,8 @@ void LandAndWavesApp::BuildRootSignature()
 
 void LandAndWavesApp::BuildShadersAndInputLayout()
 {
-	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"./shader/shapes_vertex.cso");
-	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"./shader/shapes_pixel.cso");
+	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"./shader/light_vertex.cso");
+	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"./shader/light_pixel.cso");
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -571,13 +624,14 @@ float LandAndWavesApp::GetHillsHeight(float x, float z) const
 }
 
 std::unique_ptr<RenderItem> LandAndWavesApp::CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,
-	const char* geometry, const char* submesh, D3D_PRIMITIVE_TOPOLOGY primitiveTopology)
+	const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology)
 {
 	std::unique_ptr<RenderItem> rederItem = std::make_unique<RenderItem>();
 
 	XMStoreFloat4x4(&rederItem->world, world);
 	rederItem->objectCBIndex = objectCBIndex;
 	rederItem->geometry = m_geometries[geometry].get();
+	rederItem->material = m_materials[material].get();
 	rederItem->primitiveTopology = primitiveTopology;
 	rederItem->indexCount = rederItem->geometry->drawArgs[submesh].indexCount;
 	rederItem->startIndexLocation = rederItem->geometry->drawArgs[submesh].startIndexLocation;

@@ -1,4 +1,5 @@
 #pragma once
+#include "math_helper.h"
 
 inline std::wstring AnsiToWString(const std::string& str)
 {
@@ -112,6 +113,27 @@ struct MeshGeometry
 		}
 		indexBuffer.uploader = nullptr;
 	}
+};
+
+struct Material
+{
+	// 재질 이름
+	std::string name;
+
+	// 상수 버퍼의 인덱스
+	int cbIndex = -1;
+
+	// SRV 힙에서 해당하는 디뷰즈 텍스쳐 인덱스
+	int diffuseSrvHeapIndex = -1;
+
+	// 재질이 변해서 하당 상수 버퍼를 갱신해야 하는지 여부
+	int numFramesDirty = NUM_FRAME_RESOURCES;
+
+	// 세이딩에 쓰이는 재질 상수 버퍼 자료
+	XMFLOAT4 diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+	XMFLOAT3 fresnelR0 = { 0.01f, 0.01f, 0.01f };
+	float roughness = 0.25f;
+	XMFLOAT4X4 matTransform = MathHelper::Identity4x4();
 };
 
 #ifndef ThrowIfFailed

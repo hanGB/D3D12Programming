@@ -19,6 +19,9 @@
     <Filter Include="Shapes">
       <UniqueIdentifier>{26684208-791a-45c2-922b-3e81c931a289}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Light">
+      <UniqueIdentifier>{3cb3146d-ae69-4307-83fc-bceea74deaa6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="box_pixel.hlsl">
@@ -32,6 +35,12 @@
     </FxCompile>
     <FxCompile Include="shapes_pixel.hlsl">
       <Filter>Shapes</Filter>
+    </FxCompile>
+    <FxCompile Include="light_vertex.hlsl">
+      <Filter>Light</Filter>
+    </FxCompile>
+    <FxCompile Include="light_pixel.hlsl">
+      <Filter>Light</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

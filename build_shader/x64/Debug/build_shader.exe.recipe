@@ -13,6 +13,12 @@
       <FullPath>G:\Project\OnlyVS\learning_d3d12\direct3d12_programming\x64\Debug\box_vertex.cso</FullPath>
     </ContentFile>
     <ContentFile>
+      <FullPath>G:\Project\OnlyVS\learning_d3d12\direct3d12_programming\x64\Debug\light_pixel.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
+      <FullPath>G:\Project\OnlyVS\learning_d3d12\direct3d12_programming\x64\Debug\light_vertex.cso</FullPath>
+    </ContentFile>
+    <ContentFile>
       <FullPath>G:\Project\OnlyVS\learning_d3d12\direct3d12_programming\x64\Debug\shapes_pixel.cso</FullPath>
     </ContentFile>
     <ContentFile>

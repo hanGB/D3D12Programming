@@ -33,3 +33,5 @@ using namespace Microsoft::WRL;
 #include <array>
 #include <unordered_map>
 #include <fstream>
+
+static const int NUM_FRAME_RESOURCES = 3;

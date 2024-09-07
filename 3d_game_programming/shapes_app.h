@@ -3,8 +3,6 @@
 #include "math_helper.h"
 #include "shapes_frame_resource.h"
 
-static const int NUM_FRAME_RESOURCES = 3;
-
 struct Vertex
 {
 	XMFLOAT3 pos;
@@ -19,7 +17,7 @@ struct RenderItem
 	XMFLOAT4X4 world = MathHelper::Identity4x4();
 
 	// 물체의 자료가 변해서 상수 버퍼를 갱신해야 하는 지 여부
-	int numFamesDirty = NUM_FRAME_RESOURCES;
+	int numFramesDirty = NUM_FRAME_RESOURCES;
 
 	// 이 렌더 항목의 물체 상수 버퍼에 해당하는 GPU 상수 버퍼 인덱스
 	UINT objectCBIndex = -1;
