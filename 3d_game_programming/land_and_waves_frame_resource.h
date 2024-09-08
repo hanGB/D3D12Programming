@@ -4,6 +4,8 @@
 #include "math_helper.h"
 #include <d3d12.h>
 
+#define MAX_LIGHTS 16
+
 struct PassConstants
 {
 	XMFLOAT4X4 view = MathHelper::Identity4x4();
@@ -20,6 +22,9 @@ struct PassConstants
 	float farZ = 0.0f;
 	float totalTime = 0.0f;
 	float deltaTime = 0.0f;
+	XMFLOAT4 ambientLight;
+
+	Light lights[MAX_LIGHTS];
 };
 
 struct ObjectConstants
@@ -39,7 +44,7 @@ struct MaterialConstants
 struct Vertex
 {
 	XMFLOAT3 pos;
-	XMFLOAT4 color;
+	XMFLOAT3 normal;
 };
 
 struct LandAndWavesFrameResource

@@ -265,7 +265,7 @@ void LandAndWavesApp::UpdateWaves(const GameTimer& gt)
 		Vertex v;
 
 		v.pos = m_waves->Position(i);
-		v.color = XMFLOAT4(Colors::Blue);
+		v.normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 		currentWavesVB->CopyData(i, v);
 	}
@@ -360,6 +360,10 @@ void LandAndWavesApp::UpdateMainPassCB(const GameTimer& gt)
 	m_mainPassCB.farZ = 1000.0f;
 	m_mainPassCB.totalTime = gt.TotalTime();
 	m_mainPassCB.deltaTime = gt.DeltaTime();
+	m_mainPassCB.ambientLight = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
+
+	m_mainPassCB.lights[0].direction = XMFLOAT3(-1.0f, -1.0f, 0.0f);
+	m_mainPassCB.lights[0].strength = XMFLOAT3(1.0f, 1.0f, 1.0f);
 
 	UploadBuffer<PassConstants>* currentPassCB = m_currentFrameResource->passCB.get();
 	currentPassCB->CopyData(0, m_mainPassCB);
@@ -377,33 +381,7 @@ void LandAndWavesApp::BuildLandGeometry()
 		XMFLOAT3& p = grid.vertices[i].position;
 		vertices[i].pos = p;
 		vertices[i].pos.y = GetHillsHeight(p.x, p.z);
-
-		// 높이에 기초해서 정점 색성 설정
-		if (vertices[i].pos.y < -10.0f)
-		{
-			// 해변의 모래색
-			vertices[i].color = XMFLOAT4(1.0f, 0.96f, 0.62f, 1.0f);
-		}
-		else if (vertices[i].pos.y < 5.0f)
-		{
-			// 밝은 녹황색
-			vertices[i].color = XMFLOAT4(0.48f, 0.77f, 0.46f, 1.0f);
-		}
-		else if (vertices[i].pos.y < 12.0f)
-		{
-			// 짙은 녹황색
-			vertices[i].color = XMFLOAT4(0.1f, 0.48f, 0.19f, 1.0f);
-		}
-		else if (vertices[i].pos.y < 20.0f)
-		{
-			// 짙은 갈생
-			vertices[i].color = XMFLOAT4(0.45f, 0.39f, 0.34f, 1.0f);
-		}
-		else
-		{
-			// 흰색(눈)
-			vertices[i].color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		}
+		vertices[i].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
 	}
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 
@@ -579,7 +557,7 @@ void LandAndWavesApp::BuildShadersAndInputLayout()
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
 

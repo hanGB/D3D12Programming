@@ -1,3 +1,15 @@
+#define MAX_LIGHTS 16
+
+struct Light
+{
+    float3 strength;
+    float falloffStart;
+    float3 direction;
+    float falloffEnd;
+    float3 position;
+    float spotPower;
+};
+
 cbuffer cbPass : register(b2)
 {
     float4x4 gView;
@@ -6,7 +18,7 @@ cbuffer cbPass : register(b2)
     float4x4 gInvProjection;
     float4x4 gViewProjection;
     float4x4 gInvViewProjection;
-    float3 gEyeposW;
+    float3 gEyePosW;
     float cbPerObjectPad1;
     float2 gRenderTargetSize;
     float2 gInvRenderTargetSize;
@@ -14,6 +26,9 @@ cbuffer cbPass : register(b2)
     float gFarZ;
     float gTotalTime;
     float gDeltaTime;
+    float4 gAmbientLight;
+    
+    Light gLights[MAX_LIGHTS];
 };
 
 cbuffer cbPerObject : register(b0)
@@ -23,23 +38,28 @@ cbuffer cbPerObject : register(b0)
 
 struct VertexIn
 {
-    float3 pos : POSITION;
-    float4 color : COLOR;
+    float3 posL : POSITION;
+    float3 normalL : NORMAL;
 };
 
 struct VertexOut
 {
     float4 posH : SV_Position;
-    float4 color : COLOR;
+    float3 posW : Position;
+    float3 normalW : NORMAL;
 };
 
 VertexOut main(VertexIn vin)
 {
-    VertexOut vout;
+    VertexOut vout = (VertexOut)0.0f;
     
-    float4 posW = mul(float4(vin.pos, 1.0f), gWorld);
+    float4 posW = mul(float4(vin.posL, 1.0f), gWorld);
+    vout.posW = posW.xyz;
+    
     vout.posH = mul(posW, gViewProjection);
-    vout.color = vin.color;
     
+    // 비균등 비례가 없다고 가정하여 계산 -> 비균등 비례가 있을 경우 역전치 행렬 사용
+    vout.normalW = mul(vin.normalL, (float3x3)gWorld);
+
     return vout;
 }
