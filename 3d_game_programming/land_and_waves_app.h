@@ -73,6 +73,7 @@ private:
 	void BuildPSO();
 
 	float GetHillsHeight(float x, float z) const;
+	XMFLOAT3 GetHillsNormal(float x, float z) const;
 
 	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,
 		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
@@ -125,4 +126,8 @@ private:
 	float m_theta = 1.5f * XM_PI;
 	float m_phi = 0.2f * XM_PI;
 	float m_radius = 100.0f;
+
+	// 태양
+	float m_sunTheta = 1.25f * XM_PI;
+	float m_sunPhi = XM_PIDIV4;
 };

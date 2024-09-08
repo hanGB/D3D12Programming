@@ -196,11 +196,30 @@ void LandAndWavesApp::OnMouseMove(WPARAM btnState, int x, int y)
 
 void LandAndWavesApp::OnKeyboradUse(WPARAM btnState, bool isPressed)
 {
-	if (btnState == VK_F1)
+	if (isPressed)
 	{
-		if (isPressed)
+		if (btnState == VK_F1)
 		{
 			m_IsWireFrame = !m_IsWireFrame;
+		}
+
+		const float dt = m_timer.DeltaTime();
+
+		if (btnState == VK_LEFT)
+		{
+			m_sunTheta -= 10.0f * dt;
+		}
+		if (btnState == VK_RIGHT)
+		{
+			m_sunTheta += 10.0f * dt;
+		}
+		if (btnState == VK_UP)
+		{
+			m_sunPhi -= 10.0f * dt;
+		}
+		if (btnState == VK_DOWN)
+		{
+			m_sunPhi += 10.0f * dt;
 		}
 	}
 }
@@ -265,7 +284,7 @@ void LandAndWavesApp::UpdateWaves(const GameTimer& gt)
 		Vertex v;
 
 		v.pos = m_waves->Position(i);
-		v.normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+		v.normal = m_waves->Normal(i);
 
 		currentWavesVB->CopyData(i, v);
 	}
@@ -362,8 +381,9 @@ void LandAndWavesApp::UpdateMainPassCB(const GameTimer& gt)
 	m_mainPassCB.deltaTime = gt.DeltaTime();
 	m_mainPassCB.ambientLight = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
 
-	m_mainPassCB.lights[0].direction = XMFLOAT3(-1.0f, -1.0f, 0.0f);
-	m_mainPassCB.lights[0].strength = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	XMVECTOR lightDirection = -MathHelper::SphericalToCartesian(1.0f, m_sunTheta, m_sunPhi);
+	XMStoreFloat3(&m_mainPassCB.lights[0].direction, lightDirection);
+	m_mainPassCB.lights[0].strength = XMFLOAT3(0.8f, 0.8f, 0.7f);
 
 	UploadBuffer<PassConstants>* currentPassCB = m_currentFrameResource->passCB.get();
 	currentPassCB->CopyData(0, m_mainPassCB);
@@ -381,7 +401,7 @@ void LandAndWavesApp::BuildLandGeometry()
 		XMFLOAT3& p = grid.vertices[i].position;
 		vertices[i].pos = p;
 		vertices[i].pos.y = GetHillsHeight(p.x, p.z);
-		vertices[i].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+		vertices[i].normal = GetHillsNormal(p.x, p.z);
 	}
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 
@@ -599,6 +619,20 @@ void LandAndWavesApp::BuildPSO()
 float LandAndWavesApp::GetHillsHeight(float x, float z) const
 {
 	return 0.3f * (z * sinf(0.1f * x) + x * cosf(0.1f * z));
+}
+
+XMFLOAT3 LandAndWavesApp::GetHillsNormal(float x, float z) const
+{
+	// n = (-df/dx, 1 -df/dz)
+	XMFLOAT3 n(
+		-0.03f * z * cosf(0.1f * x) - 0.3f * cosf(0.1f * z),
+		1.0f,
+		-0.3f * sinf(0.1f * x) + 0.03f * x * sinf(0.1f * z));
+
+	XMVECTOR uintNormal = XMVector3Normalize(XMLoadFloat3(&n));
+	XMStoreFloat3(&n, uintNormal);
+
+	return n;
 }
 
 std::unique_ptr<RenderItem> LandAndWavesApp::CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,
