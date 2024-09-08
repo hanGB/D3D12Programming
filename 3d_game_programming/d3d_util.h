@@ -136,6 +136,16 @@ struct Material
 	XMFLOAT4X4 matTransform = MathHelper::Identity4x4();
 };
 
+struct Light
+{
+	XMFLOAT3 strength;
+	float falloffStart;
+	XMFLOAT3 direction;
+	float falloffEnd;
+	XMFLOAT3 position;
+	float spotPower;	
+};
+
 #ifndef ThrowIfFailed
 #define ThrowIfFailed(x) \
 { \

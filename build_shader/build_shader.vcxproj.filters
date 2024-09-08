@@ -43,4 +43,9 @@
       <Filter>Light</Filter>
     </FxCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="lighting_utils.hlsli">
+      <Filter>Light</Filter>
+    </None>
+  </ItemGroup>
 </Project>

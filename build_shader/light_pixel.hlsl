@@ -31,8 +31,11 @@ struct VertexOut
     float4 color : COLOR;
 };
 
+#include "lighting_utils.hlsli"
+
 float4 main(VertexOut pin) : SV_TARGET
 {
-    //return pin.color;
-    return diffuseAlbedo;
+    float att = CalculateAttenuation(50.0f, 1.0f, 100.0f);
+    
+    return diffuseAlbedo * att;
 }
