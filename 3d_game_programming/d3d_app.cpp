@@ -222,7 +222,7 @@ LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return 0;
 
     case WM_KEYUP:
-        OnKeyboradUse(wParam, false);
+        OnKeyboradInput(wParam, false);
 
         if (wParam == VK_ESCAPE) PostQuitMessage(0);
         else if (wParam == VK_F2) Set4xMsaaState(!m_4xMsaaState);
@@ -230,7 +230,7 @@ LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return 0;
 
     case WM_KEYDOWN:
-        OnKeyboradUse(wParam, true);
+        OnKeyboradInput(wParam, true);
     }
 
     return DefWindowProc(hwnd, msg, wParam, lParam);

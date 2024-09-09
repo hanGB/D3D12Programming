@@ -3,6 +3,8 @@
 #include "upload_buffer.h"
 #include "math_helper.h"
 
+#define MAX_LIGHTS 16
+
 namespace shapes
 {
 	struct VertexBaseData
@@ -31,6 +33,9 @@ namespace shapes
 		float farZ = 0.0f;
 		float totalTime = 0.0f;
 		float deltaTime = 0.0f;
+		XMFLOAT4 ambientLight;
+
+		Light lights[MAX_LIGHTS];
 	};
 
 	struct ObjectConstants

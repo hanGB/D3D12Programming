@@ -3,15 +3,7 @@
 #define MAX_LIGHTS 16
 
 #ifndef NUM_DIR_LIGHTS
-    #define NUM_DIR_LIGHTS 1
-#endif
-
-#ifndef NUM_POINT_LIGHTS
-    #define NUM_POINT_LIGHTS 0
-#endif
-
-#ifndef NUM_SPOT_LIGHTS
-    #define NUM_SPOT_LIGHTS 0
+    #define NUM_DIR_LIGHTS 3
 #endif
 
 cbuffer cbPass : register(b2)
@@ -62,7 +54,7 @@ float4 main(VertexOut pin) : SV_TARGET
     float3 toEye = normalize(gEyePosW - pin.posW);
     
     // 간접 조명을 흉내 내는 주변광
-    float ambient = gAmbientLight * gDiffuseAlbedo;
+    float4 ambient = gAmbientLight * gDiffuseAlbedo;
 
     // 직접 ㅈ명
     const float shininess = 1.0f - gRoughness;

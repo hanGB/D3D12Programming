@@ -53,7 +53,7 @@ private:
 	virtual void OnMouseDown(WPARAM btnState, int x, int y) override;
 	virtual void OnMouseUp(WPARAM btnState, int x, int y) override;
 	virtual void OnMouseMove(WPARAM btnState, int x, int y) override;
-	virtual void OnKeyboradUse(WPARAM btnState, bool isPressed) override;
+	virtual void OnKeyboradInput(WPARAM btnState, bool isPressed) override;
 
 	// 렌더 아이템 그리기
 	void DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems);
@@ -118,7 +118,7 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
 
 	// 와이어 프레임 여부
-	bool m_IsWireFrame = true;
+	bool m_IsWireFrame = false;
 
 	// 마우스 입력
 	POINT m_lastMousePosition;

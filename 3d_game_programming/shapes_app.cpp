@@ -201,11 +201,11 @@ void ShapesApp::OnMouseMove(WPARAM btnState, int x, int y)
 	m_lastMousePosition.y = y;
 }
 
-void ShapesApp::OnKeyboradUse(WPARAM btnState, bool isPressed)
+void ShapesApp::OnKeyboradInput(WPARAM btnState, bool isPressed)
 {
-	if (btnState == VK_F1)
+	if (isPressed)
 	{
-		if (isPressed) 
+		if (btnState == VK_F1)
 		{
 			m_IsWireFrame = !m_IsWireFrame;
 		}
@@ -361,6 +361,17 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 	m_mainPassCB.farZ = 1000.0f;
 	m_mainPassCB.totalTime = gt.TotalTime();
 	m_mainPassCB.deltaTime = gt.DeltaTime();
+	m_mainPassCB.ambientLight = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
+
+	// key light
+	m_mainPassCB.lights[0].direction = XMFLOAT3(1.0f, -0.5f, 1.0f);
+	m_mainPassCB.lights[0].strength = XMFLOAT3(0.9f, 0.9f, 0.8f);
+	// fill light
+	m_mainPassCB.lights[1].direction = XMFLOAT3(-1.0f, -0.5f, 1.0f);
+	m_mainPassCB.lights[1].strength = XMFLOAT3(0.5f, 0.5f, 0.4f);
+	// back light
+	m_mainPassCB.lights[2].direction = XMFLOAT3(1.0f, -0.5f, -1.0f);
+	m_mainPassCB.lights[2].strength = XMFLOAT3(0.25f, 0.25f, 0.20f);
 
 	UploadBuffer<PassConstants>* currentPassCB = m_currentFrameResource->passCB.get();
 	currentPassCB->CopyData(0, m_mainPassCB);
@@ -849,8 +860,7 @@ void ShapesApp::BuildShadersAndInputLayout()
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
 

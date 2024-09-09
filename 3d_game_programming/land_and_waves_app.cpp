@@ -194,7 +194,7 @@ void LandAndWavesApp::OnMouseMove(WPARAM btnState, int x, int y)
 	m_lastMousePosition.y = y;
 }
 
-void LandAndWavesApp::OnKeyboradUse(WPARAM btnState, bool isPressed)
+void LandAndWavesApp::OnKeyboradInput(WPARAM btnState, bool isPressed)
 {
 	if (isPressed)
 	{
