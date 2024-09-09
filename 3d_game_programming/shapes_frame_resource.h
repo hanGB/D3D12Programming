@@ -5,9 +5,14 @@
 
 namespace shapes
 {
-	struct Vertex
+	struct VertexPosData
 	{
 		XMFLOAT3 pos;
+	};
+
+	struct VertexColorData
+	{
+		XMFLOAT3 normal;
 		XMFLOAT4 color;
 	};
 

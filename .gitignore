@@ -1,6 +1,7 @@
 /.vs
 /learning_d3d12/x64
 /3d_game_programming/x64
+/build_shader/x64
 *.exe
 *.ilk
 *.pdb

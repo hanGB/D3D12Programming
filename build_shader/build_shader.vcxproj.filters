@@ -42,6 +42,12 @@
     <FxCompile Include="light_pixel.hlsl">
       <Filter>Light</Filter>
     </FxCompile>
+    <FxCompile Include="shapes_light_pixel.hlsl">
+      <Filter>Light</Filter>
+    </FxCompile>
+    <FxCompile Include="shapes_light_vertex.hlsl">
+      <Filter>Light</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="lighting_utils.hlsli">

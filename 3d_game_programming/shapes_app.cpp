@@ -28,12 +28,12 @@ bool ShapesApp::Initialize()
 	BuildSkullGeometry();
 	BuildRenderItems();
 	BuildFrameResources();
-	//BuildDescriptorHeaps();
-	BuildDescriptorHeapsWithRootConstants();
-	//BuildObjectConstantBufferViews();
+	BuildDescriptorHeaps();
+	//BuildDescriptorHeapsWithRootConstants();
+	BuildObjectConstantBufferViews();
 	BuildPassConstantBufferViews();
-	//BuildRootSignature();
-	BuildRootSignatureWithRootConstants();
+	BuildRootSignature();
+	//BuildRootSignatureWithRootConstants();
 	BuildShadersAndInputLayout();
 	BuildPSO();
 
@@ -73,7 +73,7 @@ void ShapesApp::Update(const GameTimer& gt)
 	UpdateCamera(gt);
 
 	// 현재 프레임 리소스 갱신
-	//UpdateObjectCBs(gt);
+	UpdateObjectCBs(gt);
 	UpdateMainPassCB(gt);
 }
 
@@ -122,8 +122,8 @@ void ShapesApp::Draw(const GameTimer& gt)
 	m_commandList->SetGraphicsRootDescriptorTable(1, passCbvHandle);
 
 	// 렌더 아이템 그리기
-	//DrawRenderItems(m_commandList.Get(), m_opqaueRederItems);
-	DrawRenderItemsWithRootConstants(m_commandList.Get(), m_opqaueRederItems);
+	DrawRenderItems(m_commandList.Get(), m_opqaueRederItems);
+	//DrawRenderItemsWithRootConstants(m_commandList.Get(), m_opqaueRederItems);
 
 	// 리소스 용도에 관련된 상태 전이 통지
 	m_commandList->ResourceBarrier(1,
@@ -220,7 +220,8 @@ void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, const st
 	{
 		RenderItem* renderItem = renderItems[i];
 
-		commandList->IASetVertexBuffers(0, 1, &renderItem->geometry->VertexBufferView(0));
+		D3D12_VERTEX_BUFFER_VIEW vbs[] = { renderItem->geometry->VertexBufferView(0), renderItem->geometry->VertexBufferView(1) };
+		commandList->IASetVertexBuffers(0, 2, vbs);
 		commandList->IASetIndexBuffer(&renderItem->geometry->IndexBufferView());
 		commandList->IASetPrimitiveTopology(renderItem->primitiveTopology);
 
@@ -246,7 +247,8 @@ void ShapesApp::DrawRenderItemsWithRootConstants(ID3D12GraphicsCommandList* comm
 	{
 		RenderItem* renderItem = renderItems[i];
 
-		commandList->IASetVertexBuffers(0, 1, &renderItem->geometry->VertexBufferView(0));
+		D3D12_VERTEX_BUFFER_VIEW vbs[] = { renderItem->geometry->VertexBufferView(0), renderItem->geometry->VertexBufferView(1) };
+		commandList->IASetVertexBuffers(0, 2, vbs);
 		commandList->IASetIndexBuffer(&renderItem->geometry->IndexBufferView());
 		commandList->IASetPrimitiveTopology(renderItem->primitiveTopology);
 
@@ -373,28 +375,33 @@ void ShapesApp::BuildShapeGeometry()
 	// 필요한 정점 성분을 추출하고 모든 메시의 정점을 하나의 정점 버퍼에 넣음
 	size_t totalVertexCount = box.vertices.size() + grid.vertices.size() + cylinder.vertices.size() + sphere.vertices.size();
 
-	std::vector<Vertex> vertices(totalVertexCount);
+	std::vector<VertexPosData> posDatas(totalVertexCount);
+	std::vector<VertexColorData> colorDatas(totalVertexCount);
 
 	UINT k = 0;
 	for (size_t i = 0; i < box.vertices.size(); ++i, ++k)
 	{
-		vertices[k].pos = box.vertices[i].position;
-		vertices[k].color = XMFLOAT4(Colors::DarkGreen);
+		posDatas[k].pos = box.vertices[i].position;
+		colorDatas[k].normal = box.vertices[i].normal;
+		colorDatas[k].color = XMFLOAT4(Colors::DarkGreen);
 	}
 	for (size_t i = 0; i < grid.vertices.size(); ++i, ++k)
 	{
-		vertices[k].pos = grid.vertices[i].position;
-		vertices[k].color = XMFLOAT4(Colors::ForestGreen);
+		posDatas[k].pos = grid.vertices[i].position;
+		colorDatas[k].normal = grid.vertices[i].normal;
+		colorDatas[k].color = XMFLOAT4(Colors::ForestGreen);
 	}
 	for (size_t i = 0; i < cylinder.vertices.size(); ++i, ++k)
 	{
-		vertices[k].pos = cylinder.vertices[i].position;
-		vertices[k].color = XMFLOAT4(Colors::SteelBlue);
+		posDatas[k].pos = cylinder.vertices[i].position;
+		colorDatas[k].normal = cylinder.vertices[i].normal;
+		colorDatas[k].color = XMFLOAT4(Colors::SteelBlue);
 	}
 	for (size_t i = 0; i < sphere.vertices.size(); ++i, ++k)
 	{
-		vertices[k].pos = sphere.vertices[i].position;
-		vertices[k].color = XMFLOAT4(Colors::Crimson);
+		posDatas[k].pos = sphere.vertices[i].position;
+		colorDatas[k].normal = sphere.vertices[i].normal;
+		colorDatas[k].color = XMFLOAT4(Colors::Crimson);
 	}
 
 	std::vector<std::uint16_t> indices;
@@ -403,23 +410,32 @@ void ShapesApp::BuildShapeGeometry()
 	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
 	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
 
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT vbPosByteSize = (UINT)posDatas.size() * sizeof(VertexPosData);
+	const UINT vbColorByteSize = (UINT)colorDatas.size() * sizeof(VertexColorData);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	std::unique_ptr<MeshGeometry> geometry = std::make_unique<MeshGeometry>();
 	geometry->name = "shape_geometry";
 
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geometry->vertexBuffers[0].cpu));
-	CopyMemory(geometry->vertexBuffers[0].cpu->GetBufferPointer(), vertices.data(), vbByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbPosByteSize, &geometry->vertexBuffers[0].cpu));
+	CopyMemory(geometry->vertexBuffers[0].cpu->GetBufferPointer(), posDatas.data(), vbPosByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(vbColorByteSize, &geometry->vertexBuffers[1].cpu));
+	CopyMemory(geometry->vertexBuffers[1].cpu->GetBufferPointer(), colorDatas.data(), vbColorByteSize);
 
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geometry->indexBuffer.cpu));
 	CopyMemory(geometry->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
 
 	geometry->vertexBuffers[0].gpu = D3DUtil::CreateDefaultBuffer(
-			m_d3dDevice.Get(), 
-			m_commandList.Get(), 
-			vertices.data(), vbByteSize, 
-			geometry->vertexBuffers[0].uploader);
+		m_d3dDevice.Get(), 
+		m_commandList.Get(), 
+		posDatas.data(), vbPosByteSize,
+		geometry->vertexBuffers[0].uploader);
+	geometry->vertexBuffers[1].gpu = D3DUtil::CreateDefaultBuffer(
+		m_d3dDevice.Get(),
+		m_commandList.Get(),
+		colorDatas.data(), vbColorByteSize,
+		geometry->vertexBuffers[1].uploader);
 
 	geometry->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(
 		m_d3dDevice.Get(),
@@ -427,8 +443,10 @@ void ShapesApp::BuildShapeGeometry()
 		indices.data(), ibByteSize,
 		geometry->indexBuffer.uploader);
 
-	geometry->vertexBuffers[0].byteStride = sizeof(Vertex);
-	geometry->vertexBuffers[0].byteSize = vbByteSize;
+	geometry->vertexBuffers[0].byteStride = sizeof(VertexPosData);
+	geometry->vertexBuffers[0].byteSize = vbPosByteSize;
+	geometry->vertexBuffers[1].byteStride = sizeof(VertexColorData);
+	geometry->vertexBuffers[1].byteSize = vbColorByteSize;
 	geometry->indexBuffer.format = DXGI_FORMAT_R16_UINT; // D3D12에서는 오직 DXGI_FORMAT_R16_UINT와 DXGI_FORMAT_R32_UINT만 유효함
 	geometry->indexBuffer.byteSize = ibByteSize;
 
@@ -462,15 +480,13 @@ void ShapesApp::BuildSkullGeometry()
 	in >> ignore >> ignore >> ignore >> ignore;
 
 	// 버텍스 읽기
-	std::vector<Vertex> vertices(vertexCount);
+	std::vector<VertexPosData> posDatas(vertexCount);
+	std::vector<VertexColorData> colorDatas(vertexCount);
 	for (size_t i = 0; i < vertexCount; ++i)
 	{
-		in >> vertices[i].pos.x >> vertices[i].pos.y >> vertices[i].pos.z;
-		vertices[i].color = XMFLOAT4(Colors::Gray);
-
-		float normal;
-		// 노말값은 당장 쓰이지 않음으로 건너뜀
-		in >> normal >> normal >> normal;
+		in >> posDatas[i].pos.x >> posDatas[i].pos.y >> posDatas[i].pos.z;
+		in >> colorDatas[i].normal.x >> colorDatas[i].normal.y >> colorDatas[i].normal.z;
+		colorDatas[i].color = XMFLOAT4(Colors::Gray);
 	}
 
 	in >> ignore >> ignore >> ignore;
@@ -485,7 +501,8 @@ void ShapesApp::BuildSkullGeometry()
 
 	in.close();
 
-	const UINT vbByteSize = (UINT)vertexCount * sizeof(Vertex);
+	const UINT vbPosByteSize = (UINT)vertexCount * sizeof(VertexPosData);
+	const UINT vbColorByteSize = (UINT)vertexCount * sizeof(VertexColorData);
 	const UINT ibByteSize = (UINT)indexCount * sizeof(uint16_t);
 
 	SubmeshGeometry submesh;
@@ -497,8 +514,10 @@ void ShapesApp::BuildSkullGeometry()
 	std::unique_ptr<MeshGeometry> geometry = std::make_unique<MeshGeometry>();
 	geometry->name = "skull_geometry";
 
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geometry->vertexBuffers[0].cpu));
-	CopyMemory(geometry->vertexBuffers[0].cpu->GetBufferPointer(), vertices.data(), vbByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbPosByteSize, &geometry->vertexBuffers[0].cpu));
+	CopyMemory(geometry->vertexBuffers[0].cpu->GetBufferPointer(), posDatas.data(), vbPosByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbColorByteSize, &geometry->vertexBuffers[1].cpu));
+	CopyMemory(geometry->vertexBuffers[1].cpu->GetBufferPointer(), colorDatas.data(), vbColorByteSize);
 
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geometry->indexBuffer.cpu));
 	CopyMemory(geometry->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
@@ -507,9 +526,17 @@ void ShapesApp::BuildSkullGeometry()
 		= D3DUtil::CreateDefaultBuffer(
 			m_d3dDevice.Get(), 
 			m_commandList.Get(), 
-			vertices.data(), 
-			vbByteSize, 
+			posDatas.data(), 
+			vbPosByteSize, 
 			geometry->vertexBuffers[0].uploader);
+	geometry->vertexBuffers[1].gpu
+		= D3DUtil::CreateDefaultBuffer(
+			m_d3dDevice.Get(),
+			m_commandList.Get(),
+			colorDatas.data(),
+			vbColorByteSize,
+			geometry->vertexBuffers[1].uploader);
+
 	geometry->indexBuffer.gpu
 		= D3DUtil::CreateDefaultBuffer(
 			m_d3dDevice.Get(),
@@ -518,8 +545,10 @@ void ShapesApp::BuildSkullGeometry()
 			ibByteSize,
 			geometry->indexBuffer.uploader);
 
-	geometry->vertexBuffers[0].byteStride = sizeof(Vertex);
-	geometry->vertexBuffers[0].byteSize = vbByteSize;
+	geometry->vertexBuffers[0].byteStride = sizeof(VertexPosData);
+	geometry->vertexBuffers[0].byteSize = vbPosByteSize;
+	geometry->vertexBuffers[1].byteStride = sizeof(VertexColorData);
+	geometry->vertexBuffers[1].byteSize = vbColorByteSize;
 	geometry->indexBuffer.byteSize = ibByteSize;
 	geometry->indexBuffer.format = DXGI_FORMAT_R16_UINT;
 
@@ -741,12 +770,13 @@ void ShapesApp::BuildRootSignatureWithRootConstants()
 
 void ShapesApp::BuildShadersAndInputLayout()
 {
-	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"./shader/shapes_vertex.cso");
-	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"./shader/shapes_pixel.cso");
+	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"./shader/shapes_light_vertex.cso");
+	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"./shader/shapes_light_pixel.cso");
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
 
