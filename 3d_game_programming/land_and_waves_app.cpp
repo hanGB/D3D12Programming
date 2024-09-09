@@ -86,7 +86,7 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 	// 커맨드 할당자 리셋
 	ThrowIfFailed(cmdListAllocator->Reset());
 
-	if (m_IsWireFrame)
+	if (m_isWireFrame)
 	{
 		ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque_wirefame"].Get()));
 	}
@@ -200,7 +200,7 @@ void LandAndWavesApp::OnKeyboradInput(WPARAM btnState, bool isPressed)
 	{
 		if (btnState == VK_F1)
 		{
-			m_IsWireFrame = !m_IsWireFrame;
+			m_isWireFrame = !m_isWireFrame;
 		}
 
 		const float dt = m_timer.DeltaTime();

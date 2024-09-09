@@ -118,7 +118,8 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
 
 	// 와이어 프레임 여부
-	bool m_IsWireFrame = false;
+	bool m_isWireFrame = false;
+	bool m_isSpotLight = false;
 
 	// 마우스 입력
 	POINT m_lastMousePosition;

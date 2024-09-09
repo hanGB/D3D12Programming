@@ -87,13 +87,20 @@ void ShapesApp::Draw(const GameTimer& gt)
 	// 커맨드 할당자 리셋
 	ThrowIfFailed(cmdListAllocator->Reset());
 
-	if (m_IsWireFrame)
+	if (m_isWireFrame)
 	{
 		ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque_wirefame"].Get()));
 	}
 	else
 	{
-		ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque"].Get()));
+		if (m_isSpotLight)
+		{
+			ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque_spot_light"].Get()));
+		}
+		else 
+		{
+			ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque"].Get()));
+		}
 	}
 
 	m_commandList->RSSetViewports(1, &m_screenViewport);
@@ -207,7 +214,11 @@ void ShapesApp::OnKeyboradInput(WPARAM btnState, bool isPressed)
 	{
 		if (btnState == VK_F1)
 		{
-			m_IsWireFrame = !m_IsWireFrame;
+			m_isWireFrame = !m_isWireFrame;
+		}
+		if (btnState == '1')
+		{
+			m_isSpotLight = !m_isSpotLight;
 		}
 	}
 }
@@ -363,15 +374,19 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 	m_mainPassCB.deltaTime = gt.DeltaTime();
 	m_mainPassCB.ambientLight = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
 
-	// key light
-	m_mainPassCB.lights[0].direction = XMFLOAT3(1.0f, -0.5f, 1.0f);
-	m_mainPassCB.lights[0].strength = XMFLOAT3(0.9f, 0.9f, 0.8f);
-	// fill light
-	m_mainPassCB.lights[1].direction = XMFLOAT3(-1.0f, -0.5f, 1.0f);
-	m_mainPassCB.lights[1].strength = XMFLOAT3(0.5f, 0.5f, 0.4f);
-	// back light
-	m_mainPassCB.lights[2].direction = XMFLOAT3(1.0f, -0.5f, -1.0f);
-	m_mainPassCB.lights[2].strength = XMFLOAT3(0.25f, 0.25f, 0.20f);
+	for (int i = 0, k = 0; i < 5; ++i, k += 2)
+	{
+		m_mainPassCB.lights[k].position = XMFLOAT3(-5.0f, 3.5f, -10.0f + i * 5.0f);
+		m_mainPassCB.lights[k + 1].position = XMFLOAT3(5.0f, 3.5f, -10.0f + i * 5.0f);
+	}
+	for (int i = 0; i < 10; ++i)
+	{
+		m_mainPassCB.lights[i].strength = XMFLOAT3(1.0f, 0.9f, 0.7f);
+		m_mainPassCB.lights[i].falloffStart = 1.0f;
+		m_mainPassCB.lights[i].falloffEnd = 10.0f;
+		m_mainPassCB.lights[i].direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
+		m_mainPassCB.lights[i].spotPower = 5.0f;
+	}
 
 	UploadBuffer<PassConstants>* currentPassCB = m_currentFrameResource->passCB.get();
 	currentPassCB->CopyData(0, m_mainPassCB);
@@ -857,6 +872,7 @@ void ShapesApp::BuildShadersAndInputLayout()
 {
 	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"./shader/shapes_light_vertex.cso");
 	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"./shader/shapes_light_pixel.cso");
+	m_shaders["opaque_spot_light_ps"] = D3DUtil::LoadBinary(L"./shader/shapes_spot_light_pixel.cso");
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -897,6 +913,13 @@ void ShapesApp::BuildPSO()
 	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
 	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque"])));
+	
+	psoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["opaque_spot_light_ps"]->GetBufferPointer()),
+		m_shaders["opaque_spot_light_ps"]->GetBufferSize()
+	};
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque_spot_light"])));
 }
 
 std::unique_ptr<RenderItem> ShapesApp::CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,
