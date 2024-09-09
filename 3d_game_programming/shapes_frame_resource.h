@@ -5,15 +5,14 @@
 
 namespace shapes
 {
-	struct VertexPosData
+	struct VertexBaseData
 	{
 		XMFLOAT3 pos;
 	};
 
-	struct VertexColorData
+	struct VertexLightingData
 	{
 		XMFLOAT3 normal;
-		XMFLOAT4 color;
 	};
 
 	struct PassConstants
@@ -39,9 +38,17 @@ namespace shapes
 		XMFLOAT4X4 world = MathHelper::Identity4x4();
 	};
 
+	struct MaterialConstants
+	{
+		XMFLOAT4 diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+		XMFLOAT3 fresnelR0 = { 0.01f, 0.01f, 0.01f };
+		float roughness = 0.25f;
+		XMFLOAT4X4 matTransform = MathHelper::Identity4x4();
+	};
+
 	struct ShapesFrameResource
 	{
-		ShapesFrameResource(ID3D12Device* device, UINT passCount, UINT objectCount);
+		ShapesFrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount);
 		ShapesFrameResource(const ShapesFrameResource& rhs) = delete;
 		ShapesFrameResource& operator=(const ShapesFrameResource& rhs) = delete;
 		~ShapesFrameResource();
@@ -54,6 +61,7 @@ namespace shapes
 		// 프레임마다 상수 버퍼를 새로 만들어야 함
 		std::unique_ptr<UploadBuffer<PassConstants>> passCB = nullptr;
 		std::unique_ptr<UploadBuffer<ObjectConstants>> objectCB = nullptr;
+		std::unique_ptr<UploadBuffer<MaterialConstants>> materialCB = nullptr;
 
 		// GPU가 아직 이 프레임 자원들을 사용하고 있는지 판정하는 값
 		UINT64 fence = 0;

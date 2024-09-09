@@ -26,11 +26,13 @@ bool ShapesApp::Initialize()
 
 	BuildShapeGeometry();
 	BuildSkullGeometry();
+	BuildMaterial();
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildDescriptorHeaps();
 	//BuildDescriptorHeapsWithRootConstants();
 	BuildObjectConstantBufferViews();
+	//BuildMaterialConstantBufferViews();
 	BuildPassConstantBufferViews();
 	BuildRootSignature();
 	//BuildRootSignatureWithRootConstants();
@@ -74,6 +76,7 @@ void ShapesApp::Update(const GameTimer& gt)
 
 	// 현재 프레임 리소스 갱신
 	UpdateObjectCBs(gt);
+	UpdateMaterialCBs(gt);
 	UpdateMainPassCB(gt);
 }
 
@@ -212,8 +215,10 @@ void ShapesApp::OnKeyboradUse(WPARAM btnState, bool isPressed)
 void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems)
 {
 	UINT objectCBbyteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT materialCBbyteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(MaterialConstants));
 
 	ID3D12Resource* objectCB = m_currentFrameResource->objectCB->Resource();
+	ID3D12Resource* materialCB = m_currentFrameResource->materialCB->Resource();
 
 	// 각 렌더 아이템 그리기
 	for (size_t i = 0; i < renderItems.size(); ++i)
@@ -226,11 +231,16 @@ void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, const st
 		commandList->IASetPrimitiveTopology(renderItem->primitiveTopology);
 
 		// 현재 프레임 리소스에 대한 서술자 힙에서 이 오브젝트를 위한 CBV 오프셋 계산
-		UINT cbvIndex = m_currentFrameResourceIndex * (UINT)m_opqaueRederItems.size() + renderItem->objectCBIndex;
-		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
-		cbvHandle.Offset(cbvIndex, m_cbvSrvDescriptorSize);
+		UINT objectCbvIndex = m_currentFrameResourceIndex * (UINT)m_opqaueRederItems.size() + renderItem->objectCBIndex;
+		auto objectCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+		objectCbvHandle.Offset(objectCbvIndex, m_cbvSrvDescriptorSize);
 
-		commandList->SetGraphicsRootDescriptorTable(0, cbvHandle);
+		// 머터리얼 CBV 주소 계산
+		D3D12_GPU_VIRTUAL_ADDRESS materialCbvAdress = materialCB->GetGPUVirtualAddress();
+		materialCbvAdress += renderItem->material->cbIndex * materialCBbyteSize;
+
+		commandList->SetGraphicsRootDescriptorTable(0, objectCbvHandle);
+		commandList->SetGraphicsRootConstantBufferView(2, materialCbvAdress);
 
 		commandList->DrawIndexedInstanced(
 			renderItem->indexCount, 1, 
@@ -299,6 +309,31 @@ void ShapesApp::UpdateObjectCBs(const GameTimer& gt)
 
 			// 다음 프레임 자원으로 넘어감
 			e->numFramesDirty--;
+		}
+	}
+}
+
+void ShapesApp::UpdateMaterialCBs(const GameTimer& gt)
+{
+	auto currentMaterialCB = m_currentFrameResource->materialCB.get();
+
+	for (auto& e : m_materials)
+	{
+		// 상수들이 바꾸었을 때에만 cbuffer 자료 갱신
+		Material* mat = e.second.get();
+		if (mat->numFramesDirty > 0)
+		{
+			XMMATRIX matTransform = XMLoadFloat4x4(&mat->matTransform);
+
+			MaterialConstants matConstants;
+			matConstants.diffuseAlbedo = mat->diffuseAlbedo;
+			matConstants.fresnelR0 = mat->fresnelR0;
+			matConstants.roughness = mat->roughness;
+
+			currentMaterialCB->CopyData(mat->cbIndex, matConstants);
+
+			// 다음 프레임 자원으로 넘어감
+			mat->numFramesDirty--;
 		}
 	}
 }
@@ -375,33 +410,30 @@ void ShapesApp::BuildShapeGeometry()
 	// 필요한 정점 성분을 추출하고 모든 메시의 정점을 하나의 정점 버퍼에 넣음
 	size_t totalVertexCount = box.vertices.size() + grid.vertices.size() + cylinder.vertices.size() + sphere.vertices.size();
 
-	std::vector<VertexPosData> posDatas(totalVertexCount);
-	std::vector<VertexColorData> colorDatas(totalVertexCount);
+	std::vector<VertexBaseData> baseDatas(totalVertexCount);
+	std::vector<VertexLightingData> lightingDatas(totalVertexCount);
 
 	UINT k = 0;
 	for (size_t i = 0; i < box.vertices.size(); ++i, ++k)
 	{
-		posDatas[k].pos = box.vertices[i].position;
-		colorDatas[k].normal = box.vertices[i].normal;
-		colorDatas[k].color = XMFLOAT4(Colors::DarkGreen);
+		baseDatas[k].pos = box.vertices[i].position;
+		lightingDatas[k].normal = box.vertices[i].normal;
 	}
 	for (size_t i = 0; i < grid.vertices.size(); ++i, ++k)
 	{
-		posDatas[k].pos = grid.vertices[i].position;
-		colorDatas[k].normal = grid.vertices[i].normal;
-		colorDatas[k].color = XMFLOAT4(Colors::ForestGreen);
+		baseDatas[k].pos = grid.vertices[i].position;
+		lightingDatas[k].normal = grid.vertices[i].normal;
+		
 	}
 	for (size_t i = 0; i < cylinder.vertices.size(); ++i, ++k)
 	{
-		posDatas[k].pos = cylinder.vertices[i].position;
-		colorDatas[k].normal = cylinder.vertices[i].normal;
-		colorDatas[k].color = XMFLOAT4(Colors::SteelBlue);
+		baseDatas[k].pos = cylinder.vertices[i].position;
+		lightingDatas[k].normal = cylinder.vertices[i].normal;
 	}
 	for (size_t i = 0; i < sphere.vertices.size(); ++i, ++k)
 	{
-		posDatas[k].pos = sphere.vertices[i].position;
-		colorDatas[k].normal = sphere.vertices[i].normal;
-		colorDatas[k].color = XMFLOAT4(Colors::Crimson);
+		baseDatas[k].pos = sphere.vertices[i].position;
+		lightingDatas[k].normal = sphere.vertices[i].normal;
 	}
 
 	std::vector<std::uint16_t> indices;
@@ -410,18 +442,17 @@ void ShapesApp::BuildShapeGeometry()
 	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
 	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
 
-	const UINT vbPosByteSize = (UINT)posDatas.size() * sizeof(VertexPosData);
-	const UINT vbColorByteSize = (UINT)colorDatas.size() * sizeof(VertexColorData);
+	const UINT vbByteSizes[] = { (UINT)baseDatas.size() * sizeof(VertexBaseData), (UINT)lightingDatas.size() * sizeof(VertexLightingData) };
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	std::unique_ptr<MeshGeometry> geometry = std::make_unique<MeshGeometry>();
 	geometry->name = "shape_geometry";
 
-	ThrowIfFailed(D3DCreateBlob(vbPosByteSize, &geometry->vertexBuffers[0].cpu));
-	CopyMemory(geometry->vertexBuffers[0].cpu->GetBufferPointer(), posDatas.data(), vbPosByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbByteSizes[0], &geometry->vertexBuffers[0].cpu));
+	CopyMemory(geometry->vertexBuffers[0].cpu->GetBufferPointer(), baseDatas.data(), vbByteSizes[0]);
 
-	ThrowIfFailed(D3DCreateBlob(vbColorByteSize, &geometry->vertexBuffers[1].cpu));
-	CopyMemory(geometry->vertexBuffers[1].cpu->GetBufferPointer(), colorDatas.data(), vbColorByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbByteSizes[1], &geometry->vertexBuffers[1].cpu));
+	CopyMemory(geometry->vertexBuffers[1].cpu->GetBufferPointer(), lightingDatas.data(), vbByteSizes[1]);
 
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geometry->indexBuffer.cpu));
 	CopyMemory(geometry->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
@@ -429,12 +460,12 @@ void ShapesApp::BuildShapeGeometry()
 	geometry->vertexBuffers[0].gpu = D3DUtil::CreateDefaultBuffer(
 		m_d3dDevice.Get(), 
 		m_commandList.Get(), 
-		posDatas.data(), vbPosByteSize,
+		baseDatas.data(), vbByteSizes[0],
 		geometry->vertexBuffers[0].uploader);
 	geometry->vertexBuffers[1].gpu = D3DUtil::CreateDefaultBuffer(
 		m_d3dDevice.Get(),
 		m_commandList.Get(),
-		colorDatas.data(), vbColorByteSize,
+		lightingDatas.data(), vbByteSizes[1],
 		geometry->vertexBuffers[1].uploader);
 
 	geometry->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(
@@ -443,10 +474,10 @@ void ShapesApp::BuildShapeGeometry()
 		indices.data(), ibByteSize,
 		geometry->indexBuffer.uploader);
 
-	geometry->vertexBuffers[0].byteStride = sizeof(VertexPosData);
-	geometry->vertexBuffers[0].byteSize = vbPosByteSize;
-	geometry->vertexBuffers[1].byteStride = sizeof(VertexColorData);
-	geometry->vertexBuffers[1].byteSize = vbColorByteSize;
+	geometry->vertexBuffers[0].byteStride = sizeof(VertexBaseData);
+	geometry->vertexBuffers[0].byteSize = vbByteSizes[0];
+	geometry->vertexBuffers[1].byteStride = sizeof(VertexLightingData);
+	geometry->vertexBuffers[1].byteSize = vbByteSizes[1];
 	geometry->indexBuffer.format = DXGI_FORMAT_R16_UINT; // D3D12에서는 오직 DXGI_FORMAT_R16_UINT와 DXGI_FORMAT_R32_UINT만 유효함
 	geometry->indexBuffer.byteSize = ibByteSize;
 
@@ -480,13 +511,12 @@ void ShapesApp::BuildSkullGeometry()
 	in >> ignore >> ignore >> ignore >> ignore;
 
 	// 버텍스 읽기
-	std::vector<VertexPosData> posDatas(vertexCount);
-	std::vector<VertexColorData> colorDatas(vertexCount);
+	std::vector<VertexBaseData> baseDatas(vertexCount);
+	std::vector<VertexLightingData> lightingDatas(vertexCount);
 	for (size_t i = 0; i < vertexCount; ++i)
 	{
-		in >> posDatas[i].pos.x >> posDatas[i].pos.y >> posDatas[i].pos.z;
-		in >> colorDatas[i].normal.x >> colorDatas[i].normal.y >> colorDatas[i].normal.z;
-		colorDatas[i].color = XMFLOAT4(Colors::Gray);
+		in >> baseDatas[i].pos.x >> baseDatas[i].pos.y >> baseDatas[i].pos.z;
+		in >> lightingDatas[i].normal.x >> lightingDatas[i].normal.y >> lightingDatas[i].normal.z;
 	}
 
 	in >> ignore >> ignore >> ignore;
@@ -501,8 +531,7 @@ void ShapesApp::BuildSkullGeometry()
 
 	in.close();
 
-	const UINT vbPosByteSize = (UINT)vertexCount * sizeof(VertexPosData);
-	const UINT vbColorByteSize = (UINT)vertexCount * sizeof(VertexColorData);
+	const UINT vbByteSizes[] = { (UINT)baseDatas.size() * sizeof(VertexBaseData), (UINT)lightingDatas.size() * sizeof(VertexLightingData) };
 	const UINT ibByteSize = (UINT)indexCount * sizeof(uint16_t);
 
 	SubmeshGeometry submesh;
@@ -514,10 +543,10 @@ void ShapesApp::BuildSkullGeometry()
 	std::unique_ptr<MeshGeometry> geometry = std::make_unique<MeshGeometry>();
 	geometry->name = "skull_geometry";
 
-	ThrowIfFailed(D3DCreateBlob(vbPosByteSize, &geometry->vertexBuffers[0].cpu));
-	CopyMemory(geometry->vertexBuffers[0].cpu->GetBufferPointer(), posDatas.data(), vbPosByteSize);
-	ThrowIfFailed(D3DCreateBlob(vbColorByteSize, &geometry->vertexBuffers[1].cpu));
-	CopyMemory(geometry->vertexBuffers[1].cpu->GetBufferPointer(), colorDatas.data(), vbColorByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbByteSizes[0], &geometry->vertexBuffers[0].cpu));
+	CopyMemory(geometry->vertexBuffers[0].cpu->GetBufferPointer(), baseDatas.data(), vbByteSizes[0]);
+	ThrowIfFailed(D3DCreateBlob(vbByteSizes[1], &geometry->vertexBuffers[1].cpu));
+	CopyMemory(geometry->vertexBuffers[1].cpu->GetBufferPointer(), lightingDatas.data(), vbByteSizes[1]);
 
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geometry->indexBuffer.cpu));
 	CopyMemory(geometry->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
@@ -526,15 +555,15 @@ void ShapesApp::BuildSkullGeometry()
 		= D3DUtil::CreateDefaultBuffer(
 			m_d3dDevice.Get(), 
 			m_commandList.Get(), 
-			posDatas.data(), 
-			vbPosByteSize, 
+			baseDatas.data(), 
+			vbByteSizes[0],
 			geometry->vertexBuffers[0].uploader);
 	geometry->vertexBuffers[1].gpu
 		= D3DUtil::CreateDefaultBuffer(
 			m_d3dDevice.Get(),
 			m_commandList.Get(),
-			colorDatas.data(),
-			vbColorByteSize,
+			lightingDatas.data(),
+			vbByteSizes[1],
 			geometry->vertexBuffers[1].uploader);
 
 	geometry->indexBuffer.gpu
@@ -545,16 +574,60 @@ void ShapesApp::BuildSkullGeometry()
 			ibByteSize,
 			geometry->indexBuffer.uploader);
 
-	geometry->vertexBuffers[0].byteStride = sizeof(VertexPosData);
-	geometry->vertexBuffers[0].byteSize = vbPosByteSize;
-	geometry->vertexBuffers[1].byteStride = sizeof(VertexColorData);
-	geometry->vertexBuffers[1].byteSize = vbColorByteSize;
+	geometry->vertexBuffers[0].byteStride = sizeof(VertexBaseData);
+	geometry->vertexBuffers[0].byteSize = vbByteSizes[0];
+	geometry->vertexBuffers[1].byteStride = sizeof(VertexLightingData);
+	geometry->vertexBuffers[1].byteSize = vbByteSizes[1];
 	geometry->indexBuffer.byteSize = ibByteSize;
 	geometry->indexBuffer.format = DXGI_FORMAT_R16_UINT;
 
 	geometry->drawArgs["skull"] = submesh;
 
 	m_geometries[geometry->name] = std::move(geometry);
+}
+
+void ShapesApp::BuildMaterial()
+{
+	auto bone = std::make_unique<Material>();
+	bone->name = "bone";
+	bone->cbIndex = 0;
+	bone->diffuseAlbedo = XMFLOAT4(Colors::Gray);
+	bone->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	bone->roughness = 0.5f;
+
+	auto grass = std::make_unique<Material>();
+	grass->name = "grass";
+	grass->cbIndex = 1;
+	grass->diffuseAlbedo = XMFLOAT4(Colors::ForestGreen);
+	grass->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	grass->roughness = 0.3f;
+
+	auto blueSteel = std::make_unique<Material>();
+	blueSteel->name = "blue_steel";
+	blueSteel->cbIndex = 2;
+	blueSteel->diffuseAlbedo = XMFLOAT4(Colors::SteelBlue);
+	blueSteel->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	blueSteel->roughness = 0.05f;
+
+	auto redPlastic = std::make_unique<Material>();
+	redPlastic->name = "red_plastic";
+	redPlastic->cbIndex = 3;
+	redPlastic->diffuseAlbedo = XMFLOAT4(Colors::Crimson);
+	redPlastic->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	redPlastic->roughness = 0.2f;
+
+	auto greenWood = std::make_unique<Material>();
+	greenWood->name = "green_wood";
+	greenWood->cbIndex = 4;
+	greenWood->diffuseAlbedo = XMFLOAT4(Colors::DarkGreen);
+	greenWood->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	greenWood->roughness = 0.9f;
+
+	m_materials[bone->name] = std::move(bone);
+	m_materials[grass->name] = std::move(grass);
+	m_materials[blueSteel->name] = std::move(blueSteel);
+	m_materials[redPlastic->name] = std::move(redPlastic);
+	m_materials[greenWood->name] = std::move(greenWood);
 }
 
 void ShapesApp::BuildRenderItems()
@@ -564,17 +637,17 @@ void ShapesApp::BuildRenderItems()
 
 	XMMATRIX skullWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(0.0f, 1.0f, 0.0f);
 	std::unique_ptr<RenderItem> skullRederItem
-		= CreateRenderItem(skullWorld, objCBIndex++, "skull_geometry", "skull", primitiveTopogoly);
+		= CreateRenderItem(skullWorld, objCBIndex++, "skull_geometry", "skull", "bone", primitiveTopogoly);
 	m_allRenderItems.push_back(std::move(skullRederItem));
 
 	XMMATRIX boxWorld = XMMatrixScaling(2.0f, 2.0f, 2.0f) * XMMatrixTranslation(0.0f, 0.5f, 0.0f);
 	std::unique_ptr<RenderItem> boxRederItem
-		= CreateRenderItem(boxWorld, objCBIndex++, "shape_geometry", "box", primitiveTopogoly);
+		= CreateRenderItem(boxWorld, objCBIndex++, "shape_geometry", "box", "green_wood", primitiveTopogoly);
 	m_allRenderItems.push_back(std::move(boxRederItem));
 
 	XMMATRIX gridWorld = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> gridRederItem 
-		= CreateRenderItem(gridWorld, objCBIndex++, "shape_geometry", "grid", primitiveTopogoly);
+		= CreateRenderItem(gridWorld, objCBIndex++, "shape_geometry", "grid", "grass", primitiveTopogoly);
 	m_allRenderItems.push_back(std::move(gridRederItem));
 
 	for (int i = 0; i < 5; ++i)
@@ -585,13 +658,13 @@ void ShapesApp::BuildRenderItems()
 		XMMATRIX rightSphereWorld = XMMatrixTranslation(5.0f, 3.5f, -10.0f + i * 5.0f);
 
 		std::unique_ptr<RenderItem> leftCylinderRederItem 
-			= CreateRenderItem(leftCylinderWorld, objCBIndex++, "shape_geometry", "cylinder", primitiveTopogoly);
+			= CreateRenderItem(leftCylinderWorld, objCBIndex++, "shape_geometry", "cylinder", "blue_steel", primitiveTopogoly);
 		std::unique_ptr<RenderItem> rightCylinderRederItem 
-			= CreateRenderItem(rightCylinderWorld, objCBIndex++, "shape_geometry", "cylinder", primitiveTopogoly);
+			= CreateRenderItem(rightCylinderWorld, objCBIndex++, "shape_geometry", "cylinder", "blue_steel", primitiveTopogoly);
 		std::unique_ptr<RenderItem> leftSphereRederItem 
-			= CreateRenderItem(leftSphereWorld, objCBIndex++, "shape_geometry", "sphere", primitiveTopogoly);
+			= CreateRenderItem(leftSphereWorld, objCBIndex++, "shape_geometry", "sphere", "red_plastic", primitiveTopogoly);
 		std::unique_ptr<RenderItem> rightSphereRederItem 
-			= CreateRenderItem(rightSphereWorld, objCBIndex++, "shape_geometry", "sphere", primitiveTopogoly);
+			= CreateRenderItem(rightSphereWorld, objCBIndex++, "shape_geometry", "sphere", "red_plastic", primitiveTopogoly);
 
 		m_allRenderItems.push_back(std::move(leftCylinderRederItem));
 		m_allRenderItems.push_back(std::move(rightCylinderRederItem));
@@ -610,7 +683,7 @@ void ShapesApp::BuildFrameResources()
 {
 	for (int i = 0; i < NUM_FRAME_RESOURCES; ++i)
 	{
-		m_frameResources.push_back(std::make_unique<ShapesFrameResource>(m_d3dDevice.Get(), 1, (UINT)m_allRenderItems.size()));
+		m_frameResources.push_back(std::make_unique<ShapesFrameResource>(m_d3dDevice.Get(), 1, (UINT)m_allRenderItems.size(), (UINT)m_materials.size()));
 	}
 }
 
@@ -636,7 +709,7 @@ void ShapesApp::BuildDescriptorHeaps()
 void ShapesApp::BuildDescriptorHeapsWithRootConstants()
 {
 	// 각 프레임 리소스의 패스별 CBV 하나 필요
-	UINT numDescriptors =  NUM_FRAME_RESOURCES;
+	UINT numDescriptors = NUM_FRAME_RESOURCES;
 
 	// 패스별 CBV의 시작 오프셋 저장
 	m_passCbvOffset = 0;
@@ -712,15 +785,15 @@ void ShapesApp::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
 	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
 
-	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
-
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 	// 루트 CBV 생성
-	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable0);
+	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable0, D3D12_SHADER_VISIBILITY_VERTEX);
 	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
+	slotRootParameter[2].InitAsConstantBufferView(2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	// 루트 시그니쳐는 루트 매개변수들의 배열
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(
-		2, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	
 	ComPtr<ID3DBlob> serializedRootSignature = nullptr;
 	ComPtr<ID3DBlob> errorBlob = nullptr;
@@ -739,14 +812,15 @@ void ShapesApp::BuildRootSignature()
 
 void ShapesApp::BuildRootSignatureWithRootConstants()
 {
-	CD3DX12_DESCRIPTOR_RANGE cbvTable;
-	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+	CD3DX12_DESCRIPTOR_RANGE cbvTable1;
+	cbvTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
 
-	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 
 	// 루트 CBV 생성
 	slotRootParameter[0].InitAsConstants(16, 0);
-	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable);
+	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable1);
+	slotRootParameter[2].InitAsConstantBufferView(2);
 
 
 	// 루트 시그니쳐는 루트 매개변수들의 배열
@@ -816,13 +890,14 @@ void ShapesApp::BuildPSO()
 }
 
 std::unique_ptr<RenderItem> ShapesApp::CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,
-	const char* geometry, const char* submesh, D3D_PRIMITIVE_TOPOLOGY primitiveTopology)
+	const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology)
 {
 	std::unique_ptr<RenderItem> rederItem = std::make_unique<RenderItem>();
 	
 	XMStoreFloat4x4(&rederItem->world, world);
 	rederItem->objectCBIndex = objectCBIndex;
 	rederItem->geometry = m_geometries[geometry].get();
+	rederItem->material = m_materials[material].get();
 	rederItem->primitiveTopology = primitiveTopology;
 	rederItem->indexCount = rederItem->geometry->drawArgs[submesh].indexCount;
 	rederItem->startIndexLocation = rederItem->geometry->drawArgs[submesh].startIndexLocation;

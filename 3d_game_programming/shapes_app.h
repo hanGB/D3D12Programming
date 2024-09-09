@@ -20,6 +20,8 @@ namespace shapes
 
 		// 기하 구조
 		MeshGeometry* geometry = nullptr;
+		// 재질
+		Material* material = nullptr;
 
 		// 기본 도형 위상 구조
 		D3D12_PRIMITIVE_TOPOLOGY primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -60,11 +62,13 @@ private:
 	// 상수 버퍼 업데이트
 	void UpdateCamera(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
+	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 
 	// 초기화시의 빌드
 	void BuildShapeGeometry();
 	void BuildSkullGeometry();
+	void BuildMaterial();
 	void BuildRenderItems();
 	void BuildFrameResources();
 	void BuildDescriptorHeaps();
@@ -77,7 +81,7 @@ private:
 	void BuildPSO();
 
 	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex, 
-		const char* geometry, const char* submesh, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
+		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
 
 	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
 
@@ -108,8 +112,10 @@ private:
 	XMFLOAT4X4 m_projectionTransform = MathHelper::Identity4x4();
 	XMFLOAT3 m_eyePosition;
 
-	// 지오메트리
+	// 지오메트리(기하)
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_geometries;
+	// 머터리얼(재질)
+	std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
 
 	// 와이어 프레임 여부
 	bool m_IsWireFrame = true;
