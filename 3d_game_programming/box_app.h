@@ -4,28 +4,33 @@
 #include "math_helper.h"
 #include "upload_buffer.h"
 
-struct Vertex
+namespace box
 {
-	XMFLOAT3 pos;
-	XMCOLOR color;
-};
+	struct Vertex
+	{
+		XMFLOAT3 pos;
+		XMCOLOR color;
+	};
 
-struct VPosData
-{
-	XMFLOAT3 pos;
-};
-struct VColorData
-{
-	XMCOLOR color;
-};
+	struct VPosData
+	{
+		XMFLOAT3 pos;
+	};
+	struct VColorData
+	{
+		XMCOLOR color;
+	};
 
+	struct ObjectConstants
+	{
+		XMFLOAT4X4 worldViewProjection = MathHelper::Identity4x4();
+		XMFLOAT4 pulseColor;
+		float time = 0.0f;
+	};
 
-struct ObjectConstants
-{
-	XMFLOAT4X4 worldViewProjection = MathHelper::Identity4x4();
-	XMFLOAT4 pulseColor;
-	float time = 0.0f;
-};
+}
+
+using namespace box;
 
 class BoxApp : public D3DApp
 {
