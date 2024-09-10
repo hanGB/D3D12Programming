@@ -123,7 +123,7 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 
 	// 현재 프레임 리소스의 패스 CBV 설정
 	ID3D12Resource* passCB = m_currentFrameResource->passCB->Resource();
-	m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+	m_commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 
 	// 렌더 아이템 그리기
 	DrawRenderItems(m_commandList.Get(), m_opqaueRederItems);
@@ -260,7 +260,7 @@ void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, co
 		matCBAddress += renderItem->material->cbIndex * matrialCBbyteSize;
 
 		commandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
-		commandList->SetGraphicsRootConstantBufferView(1, matCBAddress);
+		commandList->SetGraphicsRootConstantBufferView(2, matCBAddress);
 
 		commandList->DrawIndexedInstanced(
 			renderItem->indexCount, 1,

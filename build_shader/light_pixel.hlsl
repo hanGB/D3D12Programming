@@ -14,7 +14,7 @@
 #define NUM_SPOT_LIGHTS 0
 #endif
 
-cbuffer cbPass : register(b2)
+cbuffer cbPass : register(b1)
 {
     float4x4 gView;
     float4x4 gInView;
@@ -35,7 +35,7 @@ cbuffer cbPass : register(b2)
     Light gLights[MAX_LIGHTS];
 };
 
-cbuffer cbMaterial : register(b1)
+cbuffer cbMaterial : register(b2)
 {
     float4 gDiffuseAlbedo;
     float3 gFresnelR0;

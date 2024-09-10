@@ -120,6 +120,7 @@ private:
 	// 와이어 프레임 여부
 	bool m_isWireFrame = false;
 	bool m_isSpotLight = false;
+	bool m_isToonShading = false;
 
 	// 마우스 입력
 	POINT m_lastMousePosition;

@@ -93,13 +93,20 @@ void ShapesApp::Draw(const GameTimer& gt)
 	}
 	else
 	{
-		if (m_isSpotLight)
+		if (m_isToonShading)
 		{
-			ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque_spot_light"].Get()));
+			ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["toon_opaque"].Get()));
 		}
 		else 
 		{
-			ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque"].Get()));
+			if (m_isSpotLight)
+			{
+				ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque_spot_light"].Get()));
+			}
+			else
+			{
+				ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque"].Get()));
+			}
 		}
 	}
 
@@ -219,6 +226,10 @@ void ShapesApp::OnKeyboradInput(WPARAM btnState, bool isPressed)
 		if (btnState == '1')
 		{
 			m_isSpotLight = !m_isSpotLight;
+		}
+		if (btnState == '2')
+		{
+			m_isToonShading = !m_isToonShading;
 		}
 	}
 }
@@ -386,6 +397,12 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
 		m_mainPassCB.lights[i].falloffEnd = 10.0f;
 		m_mainPassCB.lights[i].direction = XMFLOAT3(0.0f, -1.0f, 0.0f);
 		m_mainPassCB.lights[i].spotPower = 5.0f;
+	}
+
+	if (m_isToonShading)
+	{
+		m_mainPassCB.lights[0].strength = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		m_mainPassCB.lights[0].direction = XMFLOAT3(0.0f, -0.25f, 1.0f);
 	}
 
 	UploadBuffer<PassConstants>* currentPassCB = m_currentFrameResource->passCB.get();
@@ -873,6 +890,7 @@ void ShapesApp::BuildShadersAndInputLayout()
 	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"../x64/Debug/shapes_light_vertex.cso");
 	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/shapes_light_pixel.cso");
 	m_shaders["opaque_spot_light_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/shapes_spot_light_pixel.cso");
+	m_shaders["toon_opaque_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/toon_light_pixel.cso");
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -920,6 +938,12 @@ void ShapesApp::BuildPSO()
 		m_shaders["opaque_spot_light_ps"]->GetBufferSize()
 	};
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque_spot_light"])));
+	psoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["toon_opaque_ps"]->GetBufferPointer()),
+		m_shaders["toon_opaque_ps"]->GetBufferSize()
+	};
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["toon_opaque"])));
 }
 
 std::unique_ptr<RenderItem> ShapesApp::CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,

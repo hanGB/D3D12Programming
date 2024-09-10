@@ -16,6 +16,8 @@ struct Material
     float shininess;
 };
 
+static const float4 TOON_AMBIENT_COLOR = float4(0.4f, 0.4f, 0.4f, 1.0f);
+
 // 선형 감쇄
 float CalculateAttenuation(float distance, float falloffStart, float falloffEnd);
 // 슐릭 근사(프레넬 반사의 근사값 제공)
@@ -31,10 +33,12 @@ float3 ComputePointLight(Light light, Material material, float3 pos, float3 norm
 // 스포트 라이트
 float3 ComputeSpotLight(Light light, Material material, float3 pos, float3 normal, float3 toEye);
 
-// 구간 별 빛의 세기 변경
-float3 CaculateLightStrengthPerZone(float3 baseStrenght, float3 normal, float3 lightVector);
-// 툰 쉐이딩
-float3 ToonShading(float3 lightStrength, float3 lightVector, float3 normal, float3 toEye, Material material);
+// 빛의 세기
+float3 CaculateLightStrengthInToon(float3 baseStrenght, float3 normal, float3 lightVector);
+// 스페큘러
+float3 CaculateSpecularInToon(float3 color, float3 lightVector, float3 normal, float3 toEye, Material material);
+// 림
+float3 CaculateRimInToon(float3 color, float amount, float3 lightVector, float3 normal, float3 toEye);
 // 툰 디렉셔널 라이트
 float3 ComputeToonDirectionalLight(Light light, Material material, float3 normal, float3 toEye);
 // 툰 포인트 라이트
@@ -152,33 +156,43 @@ float3 ComputeSpotLight(Light light, Material material, float3 pos, float3 norma
     return BlinnPhong(lightStrength, lightVector, normal, toEye, material);
 }
 
-float3 CaculateLightStrengthPerZone(float3 baseStrenght, float3 normal, float3 lightVector)
+float3 CaculateLightStrengthInToon(float3 baseStrenght, float3 normal, float3 lightVector)
 {
     // 람베르트 코사인 법칙에 따른 빛의 세기 변경
     float ndotl = max(dot(lightVector, normal), 0.0f);
-   
-    if (ndotl > 0.8)        ndotl = 0.9f;
-    else if (ndotl > 0.6)   ndotl = 0.7f;
-    else if (ndotl > 0.4)   ndotl = 0.5f;
-    else if (ndotl > 0.2)   ndotl = 0.3f;
-    else                    ndotl = 0.1f;
     
-    return baseStrenght * ndotl;
+    // 0.0보다 크면 감쇄 없음
+    ndotl = ndotl > 0.0f ? 1.0f : 0.0f;
+    // 경계를 약간 부드럽게 변경
+    float intensity = smoothstep(0.0f, 0.01f, ndotl);
+    
+    return intensity * baseStrenght;
 }
 
-float3 ToonShading(float3 lightStrength, float3 lightVector, float3 normal, float3 toEye, Material material)
+float3 CaculateSpecularInToon(float3 color, float3 lightVector, float3 normal, float3 toEye, Material material)
 {
-    float3 reflectVector = reflect(-lightVector, normal);
-    float specular = pow(max(dot(reflectVector, toEye), 0.0f), material.shininess * 256.0f);
+    // 거칠기에서 얻은 광택도로부터 m 유도
+    const float m = material.shininess * 256.0f;
+    float3 halfVector = normalize(toEye + lightVector);
     
-    // [0, 1] 사이로 변경(LDR)
-    specular = specular / (specular + 1.0f);
+    float specularIntensity = pow(max(dot(halfVector, normal), 0.0f), m * m);
     
-    if (specular > 0.6)         specular = 0.9f;
-    else if (specular > 0.3)    specular = 0.4f;
-    else                        specular = 0.1f;
+    specularIntensity = smoothstep(0.005, 0.01, specularIntensity);
     
-    return (material.diffuseAlbedo.rgb + float3(specular, specular, specular)) * lightStrength;
+    return specularIntensity * color;
+}
+
+float3 CaculateRimInToon(float3 color, float amount, float3 lightVector, float3 normal, float3 toEye)
+{
+    float ndotl = max(dot(lightVector, normal), 0.0f);
+    
+    float3 rimDot = 1 - dot(normal, toEye);
+    
+    float rimIntensity = rimDot * pow(ndotl, 0.1f);
+    
+    rimIntensity = smoothstep(amount - 0.01f, amount + 0.01f, rimIntensity);
+    
+    return rimIntensity * color;
 }
 
 float3 ComputeToonDirectionalLight(Light light, Material material, float3 normal, float3 toEye)
@@ -186,10 +200,25 @@ float3 ComputeToonDirectionalLight(Light light, Material material, float3 normal
     // 빛 벡터: 광선들이 나아가는 방향의 반대
     float3 lightVector = -light.direction;
     
-    // 빛의 세기 변경
-    float3 lightStrength = CaculateLightStrengthPerZone(light.strength, normal, lightVector);
+    // 빛의 세기(디퓨즈)
+    float3 lightStrength = CaculateLightStrengthInToon(light.strength, normal, lightVector);
     
-    return ToonShading(lightStrength, lightVector, normal, toEye, material);
+    // 엠비언트
+    float3 ambient = TOON_AMBIENT_COLOR.rgb;
+    
+    // 스페큘러
+    float3 specular = CaculateSpecularInToon(float3(1.0f, 1.0f, 1.0f), lightVector, normal, toEye, material);
+    
+    // 림
+    float3 rim = CaculateRimInToon(float3(1.0f, 1.0f, 1.0f), 0.8f, lightVector, normal, toEye);
+    
+    // 계산된 조명
+    float3 caculatedLight = lightStrength + ambient + specular + rim;
+    
+    // [0, 1] 사이로 변경(LDR)
+    caculatedLight = caculatedLight / (caculatedLight + 1.0f);
+    
+    return material.diffuseAlbedo.rgb * caculatedLight;
 }
 
 float3 ComputeToonPointLight(Light light, Material material, float3 pos, float3 normal, float3 toEye)
@@ -204,19 +233,29 @@ float3 ComputeToonPointLight(Light light, Material material, float3 pos, float3 
     if (distance > light.falloffEnd)
     {
         return 0.0f;
-    }
-    
+    }  
     // 빛 벡터 정규화
     lightVector /= distance;
     
-    // 빛의 세기 변경
-    float3 lightStrength = CaculateLightStrengthPerZone(light.strength, normal, lightVector);
+    // 빛의 세기(디퓨즈)
+    float3 lightStrength = CaculateLightStrengthInToon(light.strength, normal, lightVector);
     
-    // 거리에 따른 빛 감쇄
-    float att = CalculateAttenuation(distance, light.falloffStart, light.falloffEnd);
-    lightStrength *= att;
+    // 엠비언트
+    float3 ambient = TOON_AMBIENT_COLOR.rgb;
     
-    return ToonShading(lightStrength, lightVector, normal, toEye, material);
+    // 스페큘러
+    float3 specular = CaculateSpecularInToon(float3(1.0f, 1.0f, 1.0f), lightVector, normal, toEye, material);
+    
+    // 림
+    float3 rim = CaculateRimInToon(float3(1.0f, 1.0f, 1.0f), 0.8f, lightVector, normal, toEye);
+    
+    // 계산된 조명
+    float3 caculatedLight = lightStrength + ambient + specular + rim;
+  
+    // [0, 1] 사이로 변경(LDR)
+    caculatedLight = caculatedLight / (caculatedLight + 1.0f);
+     
+    return material.diffuseAlbedo.rgb * caculatedLight;
 }
 
 float3 ComputeToonSpotLight(Light light, Material material, float3 pos, float3 normal, float3 toEye)
@@ -236,16 +275,23 @@ float3 ComputeToonSpotLight(Light light, Material material, float3 pos, float3 n
     // 빛 벡터 정규화
     lightVector /= distance;
     
-    // 빛의 세기 변경
-    float3 lightStrength = CaculateLightStrengthPerZone(light.strength, normal, lightVector);
+    // 빛의 세기(디퓨즈)
+    float3 lightStrength = CaculateLightStrengthInToon(light.strength, normal, lightVector);
     
-    // 거리에 따른 빛 감쇄
-    float att = CalculateAttenuation(distance, light.falloffStart, light.falloffEnd);
-    lightStrength *= att;
+    // 엠비언트
+    float3 ambient = TOON_AMBIENT_COLOR.rgb;
     
-    // 방향과 스포트 라이트 계수로 세기 변경
-    float spotFactor = pow(max(dot(-lightVector, light.direction), 0.0f), light.spotPower);
-    lightStrength *= spotFactor;
+    // 스페큘러
+    float3 specular = CaculateSpecularInToon(float3(1.0f, 1.0f, 1.0f), lightVector, normal, toEye, material);
     
-    return ToonShading(lightStrength, lightVector, normal, toEye, material);
+    // 림
+    float3 rim = CaculateRimInToon(float3(1.0f, 1.0f, 1.0f), 0.8f, lightVector, normal, toEye);
+    
+    // 계산된 조명
+    float3 caculatedLight = lightStrength + ambient + specular + rim;
+  
+    // [0, 1] 사이로 변경(LDR)
+    caculatedLight = caculatedLight / (caculatedLight + 1.0f);
+     
+    return material.diffuseAlbedo.rgb * caculatedLight;
 }

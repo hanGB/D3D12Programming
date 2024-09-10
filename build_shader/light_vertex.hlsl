@@ -10,7 +10,7 @@ struct Light
     float spotPower;
 };
 
-cbuffer cbPass : register(b2)
+cbuffer cbPass : register(b1)
 {
     float4x4 gView;
     float4x4 gInView;
