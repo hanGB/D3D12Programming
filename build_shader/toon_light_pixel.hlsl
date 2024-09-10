@@ -64,7 +64,7 @@ float4 main(VertexOut pin) : SV_TARGET
     // 간접 조명을 흉내 내는 주변광
     float4 ambient = gAmbientLight * gDiffuseAlbedo;
 
-    // 직접 조명
+    // 직접 ㅈ명
     const float shininess = 1.0f - gRoughness;
     Material material = { gDiffuseAlbedo, gFresnelR0, shininess };
     float3 shadowFactor = 1.0f;
@@ -87,21 +87,21 @@ float4 ComputeLighting(Material material, float3 pos, float3 normal, float3 toEy
 #if (NUM_DIR_LIGHTS > 0)
     for (i = 0; i < NUM_DIR_LIGHTS; ++i)
     {
-        result += shadowFactor[i] * ComputeDirectionalLight(gLights[i], material, normal, toEye);
+        result += shadowFactor[i] * ComputeToonDirectionalLight(gLights[i], material, normal, toEye);
     }
 #endif
     
 #if (NUM_POINT_LIGHTS > 0)
     for (i; i < NUM_POINT_LIGHTS; ++i)
     {
-        result += ComputePointLight(gLights[i], material, pos, normal, toEye);
+        result += ComputeToonPointLight(gLights[i], material, pos, normal, toEye);
     }
 #endif
     
 #if (NUM_SPOT_LIGHTS > 0)
     for (i; i < NUM_SPOT_LIGHTS; ++i)
     {
-        result += ComputeSpotLight(gLights[i], material, pos, normal, toEye);
+        result += ComputeToonSpotLight(gLights[i], material, pos, normal, toEye);
     }
 #endif
     

@@ -870,9 +870,9 @@ void ShapesApp::BuildRootSignatureWithRootConstants()
 
 void ShapesApp::BuildShadersAndInputLayout()
 {
-	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"./shader/shapes_light_vertex.cso");
-	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"./shader/shapes_light_pixel.cso");
-	m_shaders["opaque_spot_light_ps"] = D3DUtil::LoadBinary(L"./shader/shapes_spot_light_pixel.cso");
+	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"../x64/Debug/shapes_light_vertex.cso");
+	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/shapes_light_pixel.cso");
+	m_shaders["opaque_spot_light_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/shapes_spot_light_pixel.cso");
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },

@@ -260,8 +260,8 @@ void BoxApp::BuildRootSignature()
 void BoxApp::BuildshadersAndInputLayout()
 {
 	HRESULT hr = S_OK;
-	m_vsByteCode = D3DUtil::LoadBinary(L"./shader/box_vertex.cso");
-	m_psByteCode = D3DUtil::LoadBinary(L"./shader/box_pixel.cso");
+	m_vsByteCode = D3DUtil::LoadBinary(L"../x64/Debug/box_vertex.cso");
+	m_psByteCode = D3DUtil::LoadBinary(L"../x64/Debug/box_pixel.cso");
 
 	m_inputLayout =
 	{

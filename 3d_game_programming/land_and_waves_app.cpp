@@ -92,7 +92,14 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 	}
 	else
 	{
-		ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque"].Get()));
+		if (m_isToonShading)
+		{
+			ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["toon_opaque"].Get()));
+		}
+		else
+		{
+			ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque"].Get()));
+		}
 	}
 
 	m_commandList->RSSetViewports(1, &m_screenViewport);
@@ -201,6 +208,11 @@ void LandAndWavesApp::OnKeyboradInput(WPARAM btnState, bool isPressed)
 		if (btnState == VK_F1)
 		{
 			m_isWireFrame = !m_isWireFrame;
+		}
+
+		if (btnState == '1')
+		{
+			m_isToonShading = !m_isToonShading;
 		}
 
 		const float dt = m_timer.DeltaTime();
@@ -572,8 +584,9 @@ void LandAndWavesApp::BuildRootSignature()
 
 void LandAndWavesApp::BuildShadersAndInputLayout()
 {
-	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"./shader/light_vertex.cso");
-	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"./shader/light_pixel.cso");
+	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"../x64/Debug/light_vertex.cso");
+	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/light_pixel.cso");
+	m_shaders["toon_opaque_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/toon_light_pixel.cso");
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -614,6 +627,13 @@ void LandAndWavesApp::BuildPSO()
 	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
 	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque"])));
+
+	psoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["toon_opaque_ps"]->GetBufferPointer()),
+		m_shaders["toon_opaque_ps"]->GetBufferSize()
+	};
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["toon_opaque"])));
 }
 
 float LandAndWavesApp::GetHillsHeight(float x, float z) const

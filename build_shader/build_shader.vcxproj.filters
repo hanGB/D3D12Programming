@@ -51,6 +51,9 @@
     <FxCompile Include="shapes_spot_light_pixel.hlsl">
       <Filter>Light</Filter>
     </FxCompile>
+    <FxCompile Include="toon_light_pixel.hlsl">
+      <Filter>Light</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="lighting_utils.hlsli">

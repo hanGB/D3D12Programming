@@ -123,6 +123,8 @@ private:
 
 	// 와이어 프레임 여부
 	bool m_isWireFrame = false;
+	// toon 쉐이딩 여부
+	bool m_isToonShading = false;
 
 	// 마우스 입력
 	POINT m_lastMousePosition;
