@@ -131,6 +131,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="box_app.h" />
+    <ClInclude Include="crate_app.h" />
+    <ClInclude Include="crate_frame_resource.h" />
     <ClInclude Include="d3d_app.h" />
     <ClInclude Include="d3d_util.h" />
     <ClInclude Include="geometry_generator.h" />
@@ -147,6 +149,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="box_app.cpp" />
+    <ClCompile Include="crate_app.cpp" />
+    <ClCompile Include="crate_frame_resource.cpp" />
     <ClCompile Include="d3d_app.cpp" />
     <ClCompile Include="d3d_util.cpp" />
     <ClCompile Include="geometry_generator.cpp" />

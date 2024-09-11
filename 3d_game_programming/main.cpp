@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "land_and_waves_app.h"
+#include "crate_app.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, int showCmd)
 {
@@ -10,7 +10,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, PSTR cmdLine, in
 
 	try
 	{
-		LandAndWavesApp app(hInstance);
+		CrateApp app(hInstance);
 
 		if (!app.Initialize()) return 0;
 
