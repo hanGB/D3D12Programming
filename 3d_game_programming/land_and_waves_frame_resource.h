@@ -8,9 +8,14 @@
 
 namespace land_and_waves 
 {
-	struct Vertex
+	struct VertexBaseData
 	{
 		XMFLOAT3 pos;
+		XMFLOAT2 uv;
+	};
+
+	struct VertexLightingData
+	{
 		XMFLOAT3 normal;
 	};
 
@@ -38,6 +43,7 @@ namespace land_and_waves
 	struct ObjectConstants
 	{
 		XMFLOAT4X4 world = MathHelper::Identity4x4();
+		XMFLOAT4X4 texTransform = MathHelper::Identity4x4();
 	};
 
 	struct MaterialConstants
@@ -67,7 +73,8 @@ namespace land_and_waves
 		std::unique_ptr<UploadBuffer<MaterialConstants>> materialCB = nullptr;
 
 		// 파도를 위한 버텍스 버퍼
-		std::unique_ptr<UploadBuffer<Vertex>> wavesVB = nullptr;
+		std::unique_ptr<UploadBuffer<VertexBaseData>> wavesBaseVB = nullptr;
+		std::unique_ptr<UploadBuffer<VertexLightingData>> wavesLightingVB = nullptr;
 
 		// GPU가 아직 이 프레임 자원들을 사용하고 있는지 판정하는 값
 		UINT64 fence = 0;

@@ -12,6 +12,7 @@ namespace land_and_waves
 
 		// 월드 변환 행렬
 		XMFLOAT4X4 world = MathHelper::Identity4x4();
+		XMFLOAT4X4 texTransform = MathHelper::Identity4x4();
 
 		// 물체의 자료가 변해서 상수 버퍼를 갱신해야 하는 지 여부
 		int numFramesDirty = NUM_FRAME_RESOURCES;
@@ -66,6 +67,8 @@ private:
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
+	// 텍스처 애니메이션
+	void AnimateMaterials(const GameTimer& gt);
 
 	// 초기화시의 빌드
 	void BuildLandGeometry();
@@ -77,13 +80,17 @@ private:
 	void BuildShadersAndInputLayout();
 	void BuildPSO();
 
+	// 텍스처
+	void BuildTexture();
+	void BuildDescriptorHeapAndTextureShaderResourceView();
+
 	float GetHillsHeight(float x, float z) const;
 	XMFLOAT3 GetHillsNormal(float x, float z) const;
 
-	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,
+	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
 		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
 
-	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> m_srvHeap = nullptr;
 
 	// 프레임 리소스
 	std::vector<std::unique_ptr<LandAndWavesFrameResource>> m_frameResources;
@@ -120,11 +127,8 @@ private:
 
 	// 재질
 	std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
-
-	// 와이어 프레임 여부
-	bool m_isWireFrame = false;
-	// toon 쉐이딩 여부
-	bool m_isToonShading = false;
+	// 텍스처
+	std::unordered_map<std::string, std::unique_ptr<Texture>> m_textures;
 
 	// 마우스 입력
 	POINT m_lastMousePosition;

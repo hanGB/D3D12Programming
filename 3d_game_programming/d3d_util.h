@@ -8,6 +8,17 @@ inline std::wstring AnsiToWString(const std::string& str)
 	return std::wstring(buffer);
 }
 
+struct Texture
+{
+	// 텍스처 이름
+	std::string name;
+
+	std::wstring filename;
+
+	ComPtr<ID3D12Resource> resource = nullptr;
+	ComPtr<ID3D12Resource> uploadHeap = nullptr;
+};
+
 class D3DUtil
 {
 public:
@@ -30,6 +41,8 @@ public:
 	// 정적 샘플러
 	static std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticsSamplers();
 
+	// 텍스처 생성
+	static std::unique_ptr<Texture> CreateTextureFromDDSFile(const char* name, const wchar_t* filename, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList);
 };
 
 class DxException
@@ -138,17 +151,6 @@ struct Material
 	XMFLOAT3 fresnelR0 = { 0.01f, 0.01f, 0.01f };
 	float roughness = 0.25f;
 	XMFLOAT4X4 matTransform = MathHelper::Identity4x4();
-};
-
-struct Texture
-{
-	// 텍스처 이름
-	std::string name;
-
-	std::wstring filename;
-
-	ComPtr<ID3D12Resource> resource = nullptr;
-	ComPtr<ID3D12Resource> uploadHeap = nullptr;
 };
 
 struct Light

@@ -1,3 +1,4 @@
+
 cbuffer cbPass : register(b1)
 {
     float4x4 gView;
@@ -20,6 +21,16 @@ cbuffer cbPass : register(b1)
 cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorld;
+    float4x4 gTexTransform;
+};
+
+cbuffer cbMaterial : register(b2)
+{
+    float4 gDiffuseAlbedo;
+    float3 gFresnelR0;
+    float gRoughness;
+
+    float4x4 gMatTransform;
 };
 
 struct VertexIn
@@ -46,7 +57,8 @@ VertexOut main(VertexIn vin)
     
     vout.posH = mul(posW, gViewProjection);
     
-    vout.uv = vin.uv;
+    float4 uv = mul(float4(vin.uv, 0.0f, 1.0f), gTexTransform);
+    vout.uv = mul(uv, gMatTransform).xy;
     
     // 비균등 비례가 없다고 가정하여 계산 -> 비균등 비례가 있을 경우 역전치 행렬 사용
     vout.normalW = mul(vin.normalL, (float3x3) gWorld);

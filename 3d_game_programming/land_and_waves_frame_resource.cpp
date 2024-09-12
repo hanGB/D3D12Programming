@@ -9,7 +9,8 @@ land_and_waves::LandAndWavesFrameResource::LandAndWavesFrameResource(ID3D12Devic
 	objectCB = std::make_unique<UploadBuffer<ObjectConstants>>(device, objectCount, true);
 	materialCB = std::make_unique<UploadBuffer<MaterialConstants>>(device, materialCount, true);
 
-	wavesVB = std::make_unique<UploadBuffer<Vertex>>(device, wavesVertexCount, false);
+	wavesBaseVB = std::make_unique<UploadBuffer<VertexBaseData>>(device, wavesVertexCount, false);
+	wavesLightingVB = std::make_unique<UploadBuffer<VertexLightingData>>(device, wavesVertexCount, false);
 }
 
 land_and_waves::LandAndWavesFrameResource::~LandAndWavesFrameResource()

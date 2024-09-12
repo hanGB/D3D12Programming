@@ -29,6 +29,8 @@ bool LandAndWavesApp::Initialize()
 	BuildLandGeometry();
 	BuildWavesGeometry();
 	BuildMaterials();
+	BuildTexture();
+	BuildDescriptorHeapAndTextureShaderResourceView();
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildRootSignature();
@@ -67,6 +69,9 @@ void LandAndWavesApp::Update(const GameTimer& gt)
 		CloseHandle(eventHandle);
 	}
 
+	// 텍스처 애니메이션
+	AnimateMaterials(gt);
+
 	// 파도 업데이트
 	UpdateWaves(gt);
 
@@ -86,21 +91,7 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 	// 커맨드 할당자 리셋
 	ThrowIfFailed(cmdListAllocator->Reset());
 
-	if (m_isWireFrame)
-	{
-		ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque_wirefame"].Get()));
-	}
-	else
-	{
-		if (m_isToonShading)
-		{
-			ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["toon_opaque"].Get()));
-		}
-		else
-		{
-			ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque"].Get()));
-		}
-	}
+	ThrowIfFailed(m_commandList->Reset(cmdListAllocator.Get(), m_psos["opaque"].Get()));
 
 	m_commandList->RSSetViewports(1, &m_screenViewport);
 	m_commandList->RSSetScissorRects(1, &m_scissorRect);
@@ -119,11 +110,13 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 	// 렌더링 결과가 기록될 렌더 타켓 버퍼 저장
 	m_commandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_srvHeap.Get()};
+	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	// 현재 프레임 리소스의 패스 CBV 설정
 	ID3D12Resource* passCB = m_currentFrameResource->passCB->Resource();
-	m_commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+	m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	// 렌더 아이템 그리기
 	DrawRenderItems(m_commandList.Get(), m_opqaueRederItems);
@@ -205,16 +198,6 @@ void LandAndWavesApp::OnKeyboradInput(WPARAM btnState, bool isPressed)
 {
 	if (isPressed)
 	{
-		if (btnState == VK_F1)
-		{
-			m_isWireFrame = !m_isWireFrame;
-		}
-
-		if (btnState == '1')
-		{
-			m_isToonShading = !m_isToonShading;
-		}
-
 		const float dt = m_timer.DeltaTime();
 
 		if (btnState == VK_LEFT)
@@ -249,9 +232,14 @@ void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, co
 	{
 		RenderItem* renderItem = renderItems[i];
 
-		commandList->IASetVertexBuffers(0, 1, &renderItem->geometry->VertexBufferView(0));
+		D3D12_VERTEX_BUFFER_VIEW vbvs[] = { renderItem->geometry->VertexBufferView(0), renderItem->geometry->VertexBufferView(1) };
+		commandList->IASetVertexBuffers(0, _countof(vbvs), vbvs);
 		commandList->IASetIndexBuffer(&renderItem->geometry->IndexBufferView());
 		commandList->IASetPrimitiveTopology(renderItem->primitiveTopology);
+
+		// 텍스처 서술자 핸들
+		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+		tex.Offset(renderItem->material->diffuseSrvHeapIndex, m_cbvSrvDescriptorSize);
 
 		// 현재 프레임 리소스에 대한 이 오브젝트를 위한 상수 버퍼 가상 주소 계산
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
@@ -259,8 +247,9 @@ void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, co
 		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress();
 		matCBAddress += renderItem->material->cbIndex * matrialCBbyteSize;
 
-		commandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
-		commandList->SetGraphicsRootConstantBufferView(2, matCBAddress);
+		commandList->SetGraphicsRootDescriptorTable(0, tex);
+		commandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
+		commandList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
 		commandList->DrawIndexedInstanced(
 			renderItem->indexCount, 1,
@@ -290,19 +279,28 @@ void LandAndWavesApp::UpdateWaves(const GameTimer& gt)
 	m_waves->Update(gt.DeltaTime());
 
 	// 새 정점들로 파도 정점 버퍼 갱신
-	auto currentWavesVB = m_currentFrameResource->wavesVB.get();
+	auto currentWavesBaseVB = m_currentFrameResource->wavesBaseVB.get();
+	auto currentWavesLightingVB = m_currentFrameResource->wavesLightingVB.get();
 	for (int i = 0; i < m_waves->VertexCount(); ++i)
 	{
-		Vertex v;
+		VertexBaseData b;
+		VertexLightingData l;
 
-		v.pos = m_waves->Position(i);
-		v.normal = m_waves->Normal(i);
+		b.pos = m_waves->Position(i);
 
-		currentWavesVB->CopyData(i, v);
+		// 위치로 부터 텍스처 좌표 계산 [-w/2,w/2] --> [0,1]
+		b.uv.x = 0.5f + b.pos.x / m_waves->Width();
+		b.uv.y = 0.5f - b.pos.z / m_waves->Depth();
+
+		l.normal = m_waves->Normal(i);
+
+		currentWavesBaseVB->CopyData(i, b);
+		currentWavesLightingVB->CopyData(i, l);
 	}
 
 	// 파도 렌더 항목의 동적 VB를 현재 프레임의 VB로 설정
-	m_wavesRenderItem->geometry->vertexBuffers[0].gpu = currentWavesVB->Resource();
+	m_wavesRenderItem->geometry->vertexBuffers[0].gpu = currentWavesBaseVB->Resource();
+	m_wavesRenderItem->geometry->vertexBuffers[1].gpu = currentWavesLightingVB->Resource();
 }
 
 void LandAndWavesApp::UpdateCamera(const GameTimer& gt)
@@ -331,9 +329,11 @@ void LandAndWavesApp::UpdateObjectCBs(const GameTimer& gt)
 		if (e->numFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->world);
+			XMMATRIX texTransform = XMLoadFloat4x4(&e->texTransform);
 
 			ObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.world, XMMatrixTranspose(world));
+			XMStoreFloat4x4(&objConstants.texTransform, XMMatrixTranspose(texTransform));
 
 			currentObjectCB->CopyData(e->objectCBIndex, objConstants);
 
@@ -356,6 +356,7 @@ void LandAndWavesApp::UpdateMaterialCBs(const GameTimer& gt)
 			XMMATRIX matTransform = XMLoadFloat4x4(&mat->matTransform);
 
 			MaterialConstants matConstants;
+			XMStoreFloat4x4(&matConstants.matTransform, XMMatrixTranspose(matTransform));
 			matConstants.diffuseAlbedo = mat->diffuseAlbedo;
 			matConstants.fresnelR0 = mat->fresnelR0;
 			matConstants.roughness = mat->roughness;
@@ -401,47 +402,92 @@ void LandAndWavesApp::UpdateMainPassCB(const GameTimer& gt)
 	currentPassCB->CopyData(0, m_mainPassCB);
 }
 
+void LandAndWavesApp::AnimateMaterials(const GameTimer& gt)
+{
+	// 물 재질 텍스처 좌표를 스크롤함
+	auto waterMat = m_materials["water"].get();
+
+	float& tu = waterMat->matTransform(3, 0);
+	float& tv = waterMat->matTransform(3, 1);
+
+	tu += 0.05f * gt.DeltaTime();
+	tv += 0.01f * gt.DeltaTime();
+
+	if (tu >= 1.0f) tu -= 1.0f;
+	if (tv >= 1.0f) tv -= 1.0f;
+
+	waterMat->matTransform(3, 0) = tu;
+	waterMat->matTransform(3, 1) = tv;
+
+	// 상수 버퍼 갱신
+	waterMat->numFramesDirty = NUM_FRAME_RESOURCES;
+}
+
 void LandAndWavesApp::BuildLandGeometry()
 {
 	GeometryGenerator geoGenerator;
 	GeometryGenerator::MeshData grid = geoGenerator.CreateGrid(160.0f, 160.0f, 50, 50);
+	GeometryGenerator::MeshData box = geoGenerator.CreateBox(10.0f, 10.0f, 10.0f, 0);
 
 	// 필요한 정점 성분들을 추출해서 각 정점에 높이 함수 적용
-	std::vector<Vertex> vertices(grid.vertices.size());
-	for (size_t i = 0; i < grid.vertices.size(); ++i)
+	std::vector<VertexBaseData> baseDatas(grid.vertices.size() + box.vertices.size());
+	std::vector<VertexLightingData> lightingDatas(grid.vertices.size() + box.vertices.size());
+	int k = 0;
+	for (size_t i = 0; i < grid.vertices.size(); ++i, ++k)
 	{
 		XMFLOAT3& p = grid.vertices[i].position;
-		vertices[i].pos = p;
-		vertices[i].pos.y = GetHillsHeight(p.x, p.z);
-		vertices[i].normal = GetHillsNormal(p.x, p.z);
+		baseDatas[k].pos = p;
+		baseDatas[k].pos.y = GetHillsHeight(p.x, p.z);
+		baseDatas[k].uv = grid.vertices[i].texCoord;
+		lightingDatas[k].normal = GetHillsNormal(p.x, p.z);
 	}
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	for (size_t i = 0; i < box.vertices.size(); ++i, ++k)
+	{
+		baseDatas[k].pos = box.vertices[i].position;
+		baseDatas[k].uv = box.vertices[i].texCoord;
+		lightingDatas[k].normal = box.vertices[i].normal;
+	}
 
-	std::vector<std::uint16_t> indices = grid.GetIndices16();
+	const UINT vbByteSizes[] = { (UINT)baseDatas.size() * sizeof(VertexBaseData), (UINT)lightingDatas.size() * sizeof(VertexLightingData) };
+
+	std::vector<std::uint16_t> indices;
+	indices.insert(indices.end(), grid.GetIndices16().begin(), grid.GetIndices16().end());
+	indices.insert(indices.end(), box.GetIndices16().begin(), box.GetIndices16().end());
+
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
 	geo->name = "land_geometry";
 
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->vertexBuffers[0].cpu));
-	CopyMemory(geo->vertexBuffers[0].cpu->GetBufferPointer(), vertices.data(), vbByteSize);
+	ThrowIfFailed(D3DCreateBlob(vbByteSizes[0], &geo->vertexBuffers[0].cpu));
+	CopyMemory(geo->vertexBuffers[0].cpu->GetBufferPointer(), baseDatas.data(), vbByteSizes[0]);
+	ThrowIfFailed(D3DCreateBlob(vbByteSizes[1], &geo->vertexBuffers[1].cpu));
+	CopyMemory(geo->vertexBuffers[1].cpu->GetBufferPointer(), lightingDatas.data(), vbByteSizes[1]);
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->indexBuffer.cpu));
 	CopyMemory(geo->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
 
-	geo->vertexBuffers[0].gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), vertices.data(), vbByteSize, geo->vertexBuffers[0].uploader);
+	geo->vertexBuffers[0].gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), baseDatas.data(), vbByteSizes[0], geo->vertexBuffers[0].uploader);
+	geo->vertexBuffers[1].gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), lightingDatas.data(), vbByteSizes[1], geo->vertexBuffers[1].uploader);
 	geo->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, geo->indexBuffer.uploader);
 
-	geo->vertexBuffers[0].byteStride = sizeof(Vertex);
-	geo->vertexBuffers[0].byteSize = vbByteSize;
+	geo->vertexBuffers[0].byteStride = sizeof(VertexBaseData);
+	geo->vertexBuffers[0].byteSize = vbByteSizes[0];
+	geo->vertexBuffers[1].byteStride = sizeof(VertexLightingData);
+	geo->vertexBuffers[1].byteSize = vbByteSizes[1];
 	geo->indexBuffer.format = DXGI_FORMAT_R16_UINT;
 	geo->indexBuffer.byteSize = ibByteSize;
 
-	SubmeshGeometry submesh;
-	submesh.indexCount = (UINT)indices.size();
-	submesh.startIndexLocation = 0;
-	submesh.baseVertexLocation = 0;
+	SubmeshGeometry girdSubmesh;
+	girdSubmesh.indexCount = (UINT)grid.indices32.size();
+	girdSubmesh.startIndexLocation = 0;
+	girdSubmesh.baseVertexLocation = 0;
+	SubmeshGeometry boxSubmesh;
+	boxSubmesh.indexCount = (UINT)box.indices32.size();
+	boxSubmesh.startIndexLocation = (UINT)grid.indices32.size();
+	boxSubmesh.baseVertexLocation = (UINT)grid.vertices.size();
 
-	geo->drawArgs["grid"] = submesh;
+	geo->drawArgs["grid"] = girdSubmesh;
+	geo->drawArgs["box"] = boxSubmesh;
 
 	m_geometries[geo->name] = std::move(geo);
 }
@@ -471,7 +517,7 @@ void LandAndWavesApp::BuildWavesGeometry()
 		}
 	}
 
-	UINT vbByteSize = m_waves->VertexCount() * sizeof(Vertex);
+	UINT vbByteSizes[] = { m_waves->VertexCount() * sizeof(VertexBaseData), m_waves->VertexCount() * sizeof(VertexLightingData) };
 	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
@@ -480,6 +526,8 @@ void LandAndWavesApp::BuildWavesGeometry()
 	// 동적으로 설정
 	geo->vertexBuffers[0].cpu = nullptr;
 	geo->vertexBuffers[0].gpu = nullptr;
+	geo->vertexBuffers[1].cpu = nullptr;
+	geo->vertexBuffers[1].gpu = nullptr;
 
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->indexBuffer.cpu));
 	CopyMemory(geo->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
@@ -487,8 +535,10 @@ void LandAndWavesApp::BuildWavesGeometry()
 	geo->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(),
 		m_commandList.Get(), indices.data(), ibByteSize, geo->indexBuffer.uploader);
 
-	geo->vertexBuffers[0].byteStride = sizeof(Vertex);
-	geo->vertexBuffers[0].byteSize = vbByteSize;
+	geo->vertexBuffers[0].byteStride = sizeof(VertexBaseData);
+	geo->vertexBuffers[0].byteSize = vbByteSizes[0];
+	geo->vertexBuffers[1].byteStride = sizeof(VertexLightingData);
+	geo->vertexBuffers[1].byteSize = vbByteSizes[1];
 	geo->indexBuffer.format = DXGI_FORMAT_R16_UINT;
 	geo->indexBuffer.byteSize = ibByteSize;
 
@@ -507,19 +557,27 @@ void LandAndWavesApp::BuildMaterials()
 	auto grass = std::make_unique<Material>();
 	grass->name = "grass";
 	grass->cbIndex = 0;
-	grass->diffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.6f, 1.0f);
+	grass->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	grass->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	grass->roughness = 0.125f;
 
 	auto water = std::make_unique<Material>();
 	water->name = "water";
 	water->cbIndex = 1;
-	water->diffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
+	water->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	water->fresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	water->roughness = 0.0f;
 
+	auto wood = std::make_unique<Material>();
+	wood->name = "wood";
+	wood->cbIndex = 2;
+	wood->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	wood->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	wood->roughness = 0.125f;
+
 	m_materials[grass->name] = std::move(grass);
 	m_materials[water->name] = std::move(water);
+	m_materials[wood->name] = std::move(wood);
 }
 
 void LandAndWavesApp::BuildRenderItems()
@@ -528,16 +586,23 @@ void LandAndWavesApp::BuildRenderItems()
 	D3D_PRIMITIVE_TOPOLOGY primitiveTopogoly = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	XMMATRIX wavesWorld = XMMatrixIdentity();
+	XMMATRIX wavesTexTransform = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> wavesRederItem
-		= CreateRenderItem(wavesWorld, objCBIndex++, "water_geometry", "grid", "water", primitiveTopogoly);
+		= CreateRenderItem(wavesWorld, wavesTexTransform, objCBIndex++, "water_geometry", "grid", "water", primitiveTopogoly);
 	m_wavesRenderItem = wavesRederItem.get();
 	m_allRenderItems.push_back(std::move(wavesRederItem));
 
 	XMMATRIX gridWorld = XMMatrixIdentity();
+	XMMATRIX gridTexTransform = XMMatrixScaling(5.0f, 5.0f, 1.0f);
 	std::unique_ptr<RenderItem> gridRederItem
-		= CreateRenderItem(gridWorld, objCBIndex++, "land_geometry", "grid", "grass", primitiveTopogoly);
+		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, "land_geometry", "grid", "grass", primitiveTopogoly);
 	m_allRenderItems.push_back(std::move(gridRederItem));
 
+	XMMATRIX boxWorld = XMMatrixIdentity();
+	XMMATRIX boxTexTransform = XMMatrixIdentity();
+	std::unique_ptr<RenderItem> boxRederItem
+		= CreateRenderItem(boxWorld, boxTexTransform, objCBIndex++, "land_geometry", "box", "wood", primitiveTopogoly);
+	m_allRenderItems.push_back(std::move(boxRederItem));
 
 	// 이 예제의 모든 렌더 항목은 불투명함
 	for (auto& e : m_allRenderItems)
@@ -556,16 +621,21 @@ void LandAndWavesApp::BuildFrameResources()
 
 void LandAndWavesApp::BuildRootSignature()
 {
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+	CD3DX12_DESCRIPTOR_RANGE descRange;
+	descRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
 
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 	// 루트 CBV 생성
-	slotRootParameter[0].InitAsConstantBufferView(0);
-	slotRootParameter[1].InitAsConstantBufferView(1);
-	slotRootParameter[2].InitAsConstantBufferView(2);
+	slotRootParameter[0].InitAsDescriptorTable(1, &descRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[1].InitAsConstantBufferView(0);
+	slotRootParameter[2].InitAsConstantBufferView(1);
+	slotRootParameter[3].InitAsConstantBufferView(2);
+
+	auto staticSamplers = D3DUtil::GetStaticsSamplers();
 
 	// 루트 시그니쳐는 루트 매개변수들의 배열
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(
-		3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		4, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	ComPtr<ID3DBlob> serializedRootSignature = nullptr;
 	ComPtr<ID3DBlob> errorBlob = nullptr;
@@ -574,6 +644,11 @@ void LandAndWavesApp::BuildRootSignature()
 		D3D_ROOT_SIGNATURE_VERSION_1,
 		serializedRootSignature.GetAddressOf(),
 		errorBlob.GetAddressOf());
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	}
+	ThrowIfFailed(hr);
 
 	ThrowIfFailed(m_d3dDevice->CreateRootSignature(
 		0,
@@ -584,13 +659,13 @@ void LandAndWavesApp::BuildRootSignature()
 
 void LandAndWavesApp::BuildShadersAndInputLayout()
 {
-	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"../x64/Debug/light_vertex.cso");
-	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/light_pixel.cso");
-	m_shaders["toon_opaque_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/toon_light_pixel.cso");
+	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"../x64/Debug/texture_vertex.cso");
+	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/texture_pixel.cso");
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
 
@@ -611,8 +686,6 @@ void LandAndWavesApp::BuildPSO()
 		m_shaders["opaque_ps"]->GetBufferSize()
 	};
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
@@ -622,18 +695,56 @@ void LandAndWavesApp::BuildPSO()
 	psoDesc.SampleDesc.Count = m_4xMsaaState ? 4 : 1;
 	psoDesc.SampleDesc.Quality = m_4xMsaaQuality ? (m_4xMsaaQuality - 1) : 0;
 	psoDesc.DSVFormat = m_depthStencilFormat;
-	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque_wirefame"])));
-
-	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque"])));
+}
 
-	psoDesc.PS =
-	{
-		reinterpret_cast<BYTE*>(m_shaders["toon_opaque_ps"]->GetBufferPointer()),
-		m_shaders["toon_opaque_ps"]->GetBufferSize()
-	};
-	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["toon_opaque"])));
+void LandAndWavesApp::BuildTexture()
+{
+	m_textures["grass"] = D3DUtil::CreateTextureFromDDSFile("grass", L"./resource/grass.dds", m_d3dDevice.Get(), m_commandList.Get());
+	m_textures["water"] = D3DUtil::CreateTextureFromDDSFile("water", L"./resource/water1.dds", m_d3dDevice.Get(), m_commandList.Get());
+	m_textures["woodCrate"] = D3DUtil::CreateTextureFromDDSFile("woodCrate", L"./resource/WoodCrate01.dds", m_d3dDevice.Get(), m_commandList.Get());
+}
+
+void LandAndWavesApp::BuildDescriptorHeapAndTextureShaderResourceView()
+{
+	// 서술자 힙 생성
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+	srvHeapDesc.NumDescriptors = (UINT)m_textures.size();
+	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
+
+	// srv 생성
+	auto grass = m_textures["grass"]->resource.Get();
+	auto water = m_textures["water"]->resource.Get();
+	auto woodCrate = m_textures["woodCrate"]->resource.Get();
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = grass->GetDesc().Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = grass->GetDesc().MipLevels;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	m_d3dDevice->CreateShaderResourceView(grass, &srvDesc, hDescriptor);
+	m_materials["grass"].get()->diffuseSrvHeapIndex = 0;
+
+	// 힙의 다음 서술자로 이동
+	hDescriptor.Offset(1, m_cbvSrvDescriptorSize);
+
+	srvDesc.Format = water->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = water->GetDesc().MipLevels;
+	m_d3dDevice->CreateShaderResourceView(water, &srvDesc, hDescriptor);
+	m_materials["water"].get()->diffuseSrvHeapIndex = 1;
+
+	hDescriptor.Offset(1, m_cbvSrvDescriptorSize);
+
+	srvDesc.Format = woodCrate->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = woodCrate->GetDesc().MipLevels;
+	m_d3dDevice->CreateShaderResourceView(woodCrate, &srvDesc, hDescriptor);
+	m_materials["wood"].get()->diffuseSrvHeapIndex = 2;
 }
 
 float LandAndWavesApp::GetHillsHeight(float x, float z) const
@@ -655,12 +766,13 @@ XMFLOAT3 LandAndWavesApp::GetHillsNormal(float x, float z) const
 	return n;
 }
 
-std::unique_ptr<RenderItem> LandAndWavesApp::CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,
+std::unique_ptr<RenderItem> LandAndWavesApp::CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
 	const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology)
 {
 	std::unique_ptr<RenderItem> rederItem = std::make_unique<RenderItem>();
 
 	XMStoreFloat4x4(&rederItem->world, world);
+	XMStoreFloat4x4(&rederItem->texTransform, texTransform);
 	rederItem->objectCBIndex = objectCBIndex;
 	rederItem->geometry = m_geometries[geometry].get();
 	rederItem->material = m_materials[material].get();

@@ -10,6 +10,8 @@ namespace crate
 
 		// 월드 변환 행렬
 		XMFLOAT4X4 world = MathHelper::Identity4x4();
+		// 텍스처 변환 행렬
+		XMFLOAT4X4 texTransform = MathHelper::Identity4x4();
 
 		// 물체의 자료가 변해서 상수 버퍼를 갱신해야 하는 지 여부
 		int numFramesDirty = NUM_FRAME_RESOURCES;

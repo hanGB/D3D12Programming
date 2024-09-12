@@ -261,9 +261,11 @@ void CrateApp::UpdateObjectCBs(const GameTimer& gt)
 		if (e->numFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->world);
+			XMMATRIX texTransform = XMLoadFloat4x4(&e->texTransform);
 
 			ObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.world, XMMatrixTranspose(world));
+			XMStoreFloat4x4(&objConstants.texTransform, XMMatrixTranspose(texTransform));
 
 			currentObjectCB->CopyData(e->objectCBIndex, objConstants);
 

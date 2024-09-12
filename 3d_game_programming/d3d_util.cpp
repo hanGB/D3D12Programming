@@ -130,3 +130,38 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> D3DUtil::GetStaticsSamplers()
         linearWrap, linearClamp, 
         anisotropicWrap, anisotropicClamp };
 }
+
+std::unique_ptr<Texture> D3DUtil::CreateTextureFromDDSFile(const char* name, const wchar_t* filename, ID3D12Device* device, ID3D12GraphicsCommandList* cmdList)
+{
+    auto texture = std::make_unique<Texture>();
+
+    texture->name = name;
+    texture->filename = filename;
+    std::unique_ptr<uint8_t[]> ddsData;
+    std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+
+    // 텍스처 로드
+    ThrowIfFailed(LoadDDSTextureFromFile(device, texture->filename.c_str(), texture->resource.GetAddressOf(), ddsData, subresources));
+
+    // 업로드 힙 생성
+    const UINT64 uploadBufferSize = GetRequiredIntermediateSize(texture->resource.Get(), 0, (UINT)subresources.size());
+    ThrowIfFailed(device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&texture->uploadHeap)));
+
+    // 서브 리소스 데이터 업로드
+    UpdateSubresources(cmdList, texture->resource.Get(), texture->uploadHeap.Get(), 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
+
+    // 리소스 배리어 설정 -> 필요 없는 경우도 있지만 명시적으로 리소스 배리어를 설정하는 것이 안전함
+    cmdList->ResourceBarrier(1,
+        &CD3DX12_RESOURCE_BARRIER::Transition(
+            texture->resource.Get(),
+            D3D12_RESOURCE_STATE_COPY_DEST,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+
+    return texture;
+}
