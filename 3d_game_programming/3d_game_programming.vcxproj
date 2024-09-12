@@ -106,7 +106,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>..\directx</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\dds_texture_loader;..\directx;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -148,6 +148,9 @@
     <ClInclude Include="waves.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\dds_texture_loader\DDSTextureLoader12.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="box_app.cpp" />
     <ClCompile Include="crate_app.cpp" />
     <ClCompile Include="crate_frame_resource.cpp" />

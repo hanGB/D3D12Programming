@@ -34,6 +34,9 @@
     <Filter Include="Example App\Crate">
       <UniqueIdentifier>{90f72516-da18-4cbe-8040-af8db3393f2d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Dependencies Src">
+      <UniqueIdentifier>{935206a0-2e4d-4f66-a1a7-ebedf4cb5bcc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -136,6 +139,9 @@
     </ClCompile>
     <ClCompile Include="crate_frame_resource.cpp">
       <Filter>Example App\Crate</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dds_texture_loader\DDSTextureLoader12.cpp">
+      <Filter>Dependencies Src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

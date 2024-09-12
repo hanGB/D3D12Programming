@@ -26,6 +26,10 @@ public:
 		const void* initData,
 		UINT64 byteSize,
 		ComPtr<ID3D12Resource>& uploadBuffer);
+
+	// 정적 샘플러
+	static std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticsSamplers();
+
 };
 
 class DxException
@@ -134,6 +138,17 @@ struct Material
 	XMFLOAT3 fresnelR0 = { 0.01f, 0.01f, 0.01f };
 	float roughness = 0.25f;
 	XMFLOAT4X4 matTransform = MathHelper::Identity4x4();
+};
+
+struct Texture
+{
+	// 텍스처 이름
+	std::string name;
+
+	std::wstring filename;
+
+	ComPtr<ID3D12Resource> resource = nullptr;
+	ComPtr<ID3D12Resource> uploadHeap = nullptr;
 };
 
 struct Light

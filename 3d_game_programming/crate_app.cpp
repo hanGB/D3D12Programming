@@ -26,6 +26,12 @@ bool CrateApp::Initialize()
 
 	BuildGeometry();
 	BuildMaterials();
+
+	// 머터리얼이 텍스처보다 먼저 생성되어 srv 힙 인덱스를 설정할 수 있어야 함
+	LoadTexture();
+	BuildDescriptorHeap();
+	BuildTextureShaderResourceViews();
+
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildRootSignature();
@@ -101,9 +107,13 @@ void CrateApp::Draw(const GameTimer& gt)
 
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
+	// 디스크립터 힙 설정
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_srvHeap.Get() };
+	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
 	// 현재 프레임 리소스의 패스 CBV 설정
 	ID3D12Resource* passCB = m_currentFrameResource->passCB->Resource();
-	m_commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+	m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	// 렌더 아이템 그리기
 	DrawRenderItems(m_commandList.Get(), m_opqaueRederItems);
@@ -203,14 +213,19 @@ void CrateApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std
 		commandList->IASetIndexBuffer(&renderItem->geometry->IndexBufferView());
 		commandList->IASetPrimitiveTopology(renderItem->primitiveTopology);
 
+		// 텍스처
+		CD3DX12_GPU_DESCRIPTOR_HANDLE texAddress(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+		texAddress.Offset(renderItem->material->diffuseSrvHeapIndex, m_cbvSrvDescriptorSize);
+
 		// 현재 프레임 리소스에 대한 이 오브젝트를 위한 상수 버퍼 가상 주소 계산
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
 		objCBAddress += renderItem->objectCBIndex * objectCBbyteSize;
 		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress();
 		matCBAddress += renderItem->material->cbIndex * matrialCBbyteSize;
 
-		commandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
-		commandList->SetGraphicsRootConstantBufferView(2, matCBAddress);
+		commandList->SetGraphicsRootDescriptorTable(0, texAddress);
+		commandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
+		commandList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
 		commandList->DrawIndexedInstanced(
 			renderItem->indexCount, 1,
@@ -378,7 +393,7 @@ void CrateApp::BuildMaterials()
 	auto wood = std::make_unique<Material>();
 	wood->name = "wood";
 	wood->cbIndex = 0;
-	wood->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f);
+	wood->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	wood->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	wood->roughness = 0.125f;
 
@@ -413,16 +428,23 @@ void CrateApp::BuildFrameResources()
 
 void CrateApp::BuildRootSignature()
 {
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+	// 텍스처 heapTable 설정
+	CD3DX12_DESCRIPTOR_RANGE descRange;
+	descRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 	// 루트 CBV 생성
-	slotRootParameter[0].InitAsConstantBufferView(0);
-	slotRootParameter[1].InitAsConstantBufferView(1);
-	slotRootParameter[2].InitAsConstantBufferView(2);
+	slotRootParameter[0].InitAsDescriptorTable(1, &descRange, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[1].InitAsConstantBufferView(0);
+	slotRootParameter[2].InitAsConstantBufferView(1);
+	slotRootParameter[3].InitAsConstantBufferView(2);
+
+	// 정적 샘플러
+	auto staticSamplers = D3DUtil::GetStaticsSamplers();
 
 	// 루트 시그니쳐는 루트 매개변수들의 배열
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(
-		3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		4, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	ComPtr<ID3DBlob> serializedRootSignature = nullptr;
 	ComPtr<ID3DBlob> errorBlob = nullptr;
@@ -431,6 +453,12 @@ void CrateApp::BuildRootSignature()
 		D3D_ROOT_SIGNATURE_VERSION_1,
 		serializedRootSignature.GetAddressOf(),
 		errorBlob.GetAddressOf());
+
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	}
+	ThrowIfFailed(hr);
 
 	ThrowIfFailed(m_d3dDevice->CreateRootSignature(
 		0,
@@ -441,12 +469,12 @@ void CrateApp::BuildRootSignature()
 
 void CrateApp::BuildShadersAndInputLayout()
 {
-	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"../x64/Debug/light_vertex.cso");
-	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/light_pixel.cso");
+	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"../x64/Debug/texture_vertex.cso");
+	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/texture_pixel.cso");
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
@@ -478,6 +506,71 @@ void CrateApp::BuildPSO()
 	psoDesc.SampleDesc.Quality = m_4xMsaaQuality ? (m_4xMsaaQuality - 1) : 0;
 	psoDesc.DSVFormat = m_depthStencilFormat;
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque"])));
+}
+
+void CrateApp::LoadTexture()
+{
+	auto woodCrateTex = std::make_unique<Texture>();
+
+	woodCrateTex->name = "wood_crate_tex";
+	woodCrateTex->filename = L"./resource/WoodCrate01.dds";
+	std::unique_ptr<uint8_t[]> ddsData;
+	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+	
+	// 텍스처 로드
+	ThrowIfFailed(LoadDDSTextureFromFile(m_d3dDevice.Get(), woodCrateTex->filename.c_str(), woodCrateTex->resource.GetAddressOf(), ddsData, subresources));
+
+	// 업로드 힙 생성
+	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(woodCrateTex->resource.Get(), 0, (UINT)subresources.size());
+	ThrowIfFailed(m_d3dDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&woodCrateTex->uploadHeap)));
+	
+	// 서브 리소스 데이터 업로드
+	UpdateSubresources(m_commandList.Get(), woodCrateTex->resource.Get(), woodCrateTex->uploadHeap.Get(), 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
+
+	// 리소스 배리어 설정 -> 필요 없는 경우도 있지만 명시적으로 리소스 배리어를 설정하는 것이 안전함
+	m_commandList->ResourceBarrier(1, 
+		&CD3DX12_RESOURCE_BARRIER::Transition(
+		woodCrateTex->resource.Get(),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+
+	m_textures[woodCrateTex->name] = std::move(woodCrateTex);
+}
+
+void CrateApp::BuildDescriptorHeap()
+{
+	// SRV
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+	srvHeapDesc.NumDescriptors = 1;
+	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
+}
+
+void CrateApp::BuildTextureShaderResourceViews()
+{
+	// 힙의 시작을 가리키는 포인터
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+
+	// wood_crate_tex
+	auto& woodCrateTex = m_textures["wood_crate_tex"]->resource;
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = woodCrateTex->GetDesc().Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = woodCrateTex->GetDesc().MipLevels;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+	m_d3dDevice->CreateShaderResourceView(woodCrateTex.Get(), &srvDesc, hDescriptor);
+	m_materials["wood"]->diffuseSrvHeapIndex = 0;
 }
 
 std::unique_ptr<RenderItem> CrateApp::CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,

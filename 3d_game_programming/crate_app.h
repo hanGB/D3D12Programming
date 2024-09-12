@@ -71,10 +71,16 @@ private:
 	void BuildShadersAndInputLayout();
 	void BuildPSO();
 
+	// 텍스처 관련
+	void LoadTexture();
+	void BuildDescriptorHeap();
+	void BuildTextureShaderResourceViews();
+
 	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,
 		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
 
 	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> m_srvHeap = nullptr;
 
 	// 프레임 리소스
 	std::vector<std::unique_ptr<CrateFrameResource>> m_frameResources;
@@ -108,6 +114,8 @@ private:
 
 	// 재질
 	std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
+	// 텍스처
+	std::unordered_map<std::string, std::unique_ptr<Texture>> m_textures;
 
 	// 마우스 입력
 	POINT m_lastMousePosition;

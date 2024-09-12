@@ -15,6 +15,7 @@
 #include <dxgidebug.h>
 #include <mmsystem.h>
 #include "d3dx12.h"
+#include "DDSTextureLoader12.h"
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;

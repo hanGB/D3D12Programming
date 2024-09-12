@@ -22,6 +22,9 @@
     <Filter Include="Light">
       <UniqueIdentifier>{3cb3146d-ae69-4307-83fc-bceea74deaa6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Texture">
+      <UniqueIdentifier>{331220c6-7481-425f-8ece-2372c3b4ad9a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="box_pixel.hlsl">
@@ -53,6 +56,12 @@
     </FxCompile>
     <FxCompile Include="toon_light_pixel.hlsl">
       <Filter>Light</Filter>
+    </FxCompile>
+    <FxCompile Include="texture_pixel.hlsl">
+      <Filter>Texture</Filter>
+    </FxCompile>
+    <FxCompile Include="texture_vertex.hlsl">
+      <Filter>Texture</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
