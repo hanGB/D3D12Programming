@@ -10,6 +10,7 @@ namespace shapes
 	struct VertexBaseData
 	{
 		XMFLOAT3 pos;
+		XMFLOAT2 uv;
 	};
 
 	struct VertexLightingData
@@ -41,6 +42,7 @@ namespace shapes
 	struct ObjectConstants
 	{
 		XMFLOAT4X4 world = MathHelper::Identity4x4();
+		XMFLOAT4X4 texTransform = MathHelper::Identity4x4();
 	};
 
 	struct MaterialConstants

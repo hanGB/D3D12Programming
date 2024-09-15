@@ -11,6 +11,7 @@ namespace shapes
 
 		// 월드 변환 행렬
 		XMFLOAT4X4 world = MathHelper::Identity4x4();
+		XMFLOAT4X4 texTransform = MathHelper::Identity4x4();
 
 		// 물체의 자료가 변해서 상수 버퍼를 갱신해야 하는 지 여부
 		int numFramesDirty = NUM_FRAME_RESOURCES;
@@ -57,7 +58,6 @@ private:
 
 	// 렌더 아이템 그리기
 	void DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems);
-	void DrawRenderItemsWithRootConstants(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems);
 
 	// 상수 버퍼 업데이트
 	void UpdateCamera(const GameTimer& gt);
@@ -69,21 +69,22 @@ private:
 	void BuildShapeGeometry();
 	void BuildSkullGeometry();
 	void BuildMaterial();
+	void BuildTexture();
 	void BuildRenderItems();
 	void BuildFrameResources();
 	void BuildDescriptorHeaps();
-	void BuildDescriptorHeapsWithRootConstants();
 	void BuildObjectConstantBufferViews();
 	void BuildPassConstantBufferViews();
+	void BuildTextureShaderResourceViews();
 	void BuildRootSignature();
-	void BuildRootSignatureWithRootConstants();
 	void BuildShadersAndInputLayout();
 	void BuildPSO();
 
-	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex, 
+	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
 		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
 
 	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> m_srvHeap = nullptr;
 
 	// 프레임 리소스
 	std::vector<std::unique_ptr<ShapesFrameResource>> m_frameResources;
@@ -116,11 +117,12 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> m_geometries;
 	// 머터리얼(재질)
 	std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
+	// 텍스처
+	std::unordered_map<std::string, std::unique_ptr<Texture>> m_textures;
 
 	// 와이어 프레임 여부
 	bool m_isWireFrame = false;
 	bool m_isSpotLight = false;
-	bool m_isToonShading = false;
 
 	// 마우스 입력
 	POINT m_lastMousePosition;

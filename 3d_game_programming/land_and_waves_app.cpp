@@ -622,7 +622,7 @@ void LandAndWavesApp::BuildFrameResources()
 void LandAndWavesApp::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE descRange;
-	descRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0);
+	descRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 	// 루트 CBV 생성

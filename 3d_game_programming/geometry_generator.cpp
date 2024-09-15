@@ -361,12 +361,12 @@ GeometryGenerator::MeshData GeometryGenerator::CreateGrid(float width, float dep
         {
             float x = -halfWidth + j * dx;
 
-            meshData.vertices[k].position = XMFLOAT3(x, 0.0f, z);
-            meshData.vertices[k].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
-            meshData.vertices[k].tangent = XMFLOAT3(1.0f, 0.0f, 0.0f);
+            meshData.vertices[i * n + j].position = XMFLOAT3(x, 0.0f, z);
+            meshData.vertices[i * n + j].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+            meshData.vertices[i * n + j].tangent = XMFLOAT3(1.0f, 0.0f, 0.0f);
 
-            meshData.vertices[k].texCoord.x = i * du;
-            meshData.vertices[k].texCoord.x = j * dv;
+            meshData.vertices[i * n + j].texCoord.x = j * du;
+            meshData.vertices[i * n + j].texCoord.y = i * dv;
         }
     }
 
