@@ -61,7 +61,7 @@ private:
 	void BuildPSO();
 
 	ComPtr<ID3D12RootSignature> m_rootSignature = nullptr;
-	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> m_cbvSrvHeap = nullptr;
 
 	std::unique_ptr<UploadBuffer<ObjectConstants>> m_objectCB = nullptr;
 

@@ -101,7 +101,7 @@ void BoxApp::Draw(const GameTimer& gt)
 	m_commandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
 	// 상수 버퍼 힙 설정
-	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbvHeap.Get() };
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbvSrvHeap.Get() };
 	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	// 루트 시그니쳐 설정
@@ -113,7 +113,7 @@ void BoxApp::Draw(const GameTimer& gt)
 	m_commandList->IASetIndexBuffer(&m_boxGeometry->IndexBufferView());
 	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	auto gpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+	auto gpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvSrvHeap->GetGPUDescriptorHandleForHeapStart());
 	// 쉐이더의 b0에 상수 버퍼 연결
 	m_commandList->SetGraphicsRootDescriptorTable(0, gpuHandle);
 
@@ -199,7 +199,7 @@ void BoxApp::BuildDescriptorHeaps()
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;
-	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_cbvHeap)));
+	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_cbvSrvHeap)));
 }
 
 void BoxApp::BuildConstantBuffers()
@@ -216,7 +216,7 @@ void BoxApp::BuildConstantBuffers()
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
 	cbvDesc.BufferLocation = cbAddress;
 	cbvDesc.SizeInBytes = objCBByteSize;
-	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvSrvHeap->GetCPUDescriptorHandleForHeapStart());
 	m_d3dDevice->CreateConstantBufferView(&cbvDesc, cpuHandle);
 }
 

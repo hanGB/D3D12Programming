@@ -119,14 +119,14 @@ void ShapesApp::Draw(const GameTimer& gt)
 	// 렌더링 결과가 기록될 렌더 타켓 버퍼 저장
 	m_commandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbvHeap.Get() };
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_cbvSrvHeap.Get() };
 	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	// 현재 프레임 리소스의 패스 CBV 설정
 	int passCbvIndex = m_passCbvOffset + m_currentFrameResourceIndex;
-	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvSrvHeap->GetGPUDescriptorHandleForHeapStart());
 	passCbvHandle.Offset(passCbvIndex, m_cbvSrvDescriptorSize);
 	m_commandList->SetGraphicsRootDescriptorTable(2, passCbvHandle);
 
@@ -241,11 +241,11 @@ void ShapesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, const st
 
 		// 현재 프레임 리소스에 대한 서술자 힙에서 이 오브젝트를 위한 CBV 오프셋 계산
 		UINT objectCbvIndex = m_currentFrameResourceIndex * (UINT)m_opqaueRederItems.size() + renderItem->objectCBIndex;
-		auto objectCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+		auto objectCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvSrvHeap->GetGPUDescriptorHandleForHeapStart());
 		objectCbvHandle.Offset(objectCbvIndex, m_cbvSrvDescriptorSize);
 		// 텍스처 SRV 핸들
-		CD3DX12_GPU_DESCRIPTOR_HANDLE texSrvHandle(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
-		texSrvHandle.Offset(renderItem->material->diffuseSrvHeapIndex, m_cbvSrvDescriptorSize);
+		CD3DX12_GPU_DESCRIPTOR_HANDLE texSrvHandle(m_cbvSrvHeap->GetGPUDescriptorHandleForHeapStart());
+		texSrvHandle.Offset(m_textureSrvOffset + renderItem->material->diffuseSrvHeapIndex, m_cbvSrvDescriptorSize);
 
 		// 머터리얼 CBV 주소 계산
 		D3D12_GPU_VIRTUAL_ADDRESS materialCbvAdress = materialCB->GetGPUVirtualAddress();
@@ -703,26 +703,20 @@ void ShapesApp::BuildDescriptorHeaps()
 	UINT objectCount = (UINT)m_opqaueRederItems.size();
 
 	// 각 프레임 리소스의 오브젝트마다 하나의 서술자 필요 + 각 프레임 리소스의 패스별 CBV 하나 필요
-	UINT numDescriptors = (objectCount + 1) * NUM_FRAME_RESOURCES;
+	UINT numDescriptors = (objectCount + 1) * NUM_FRAME_RESOURCES + (UINT)m_textures.size();
 
 	// 패스별 CBV의 시작 오프셋 저장
 	m_passCbvOffset = objectCount * NUM_FRAME_RESOURCES;
+	// 텍스처 SRV 시작  오프셋 저장
+	m_textureSrvOffset = (objectCount + 1) * NUM_FRAME_RESOURCES;
 
-	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = numDescriptors;
-	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	cbvHeapDesc.NodeMask = 0;
+	D3D12_DESCRIPTOR_HEAP_DESC cbvSrvHeapDesc;
+	cbvSrvHeapDesc.NumDescriptors = numDescriptors;
+	cbvSrvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	cbvSrvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	cbvSrvHeapDesc.NodeMask = 0;
 
-	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_cbvHeap)));
-
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc;
-	srvHeapDesc.NumDescriptors = (UINT)m_textures.size();
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	srvHeapDesc.NodeMask = 0;
-
-	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
+	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&cbvSrvHeapDesc, IID_PPV_ARGS(&m_cbvSrvHeap)));
 }
 
 void ShapesApp::BuildObjectConstantBufferViews()
@@ -743,7 +737,7 @@ void ShapesApp::BuildObjectConstantBufferViews()
 
 			// 서술자 힙에서 i번째 물체별 CBV의 오브셋
 			int heapIndex = frameIndex * objectCount + i;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
+			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvSrvHeap->GetCPUDescriptorHandleForHeapStart());
 			handle.Offset(heapIndex, m_cbvSrvDescriptorSize);
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
@@ -769,7 +763,7 @@ void ShapesApp::BuildPassConstantBufferViews()
 
 		// 서술자 힙 안에서 패스별 CBV의 오프셋
 		int heapIndex = m_passCbvOffset + frameIndex;
-		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
+		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvSrvHeap->GetCPUDescriptorHandleForHeapStart());
 		handle.Offset(heapIndex, m_cbvSrvDescriptorSize);
 
 		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
@@ -783,8 +777,10 @@ void ShapesApp::BuildPassConstantBufferViews()
 void ShapesApp::BuildTextureShaderResourceViews()
 {
 	auto resource = m_textures["bricks"]->resource.Get();
-	
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_cbvSrvHeap->GetCPUDescriptorHandleForHeapStart());
+	hDescriptor.Offset(m_textureSrvOffset, m_cbvSrvDescriptorSize);
+
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = resource->GetDesc().Format;

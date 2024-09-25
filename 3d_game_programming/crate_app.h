@@ -81,7 +81,7 @@ private:
 	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, UINT objectCBIndex,
 		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
 
-	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> m_cbvSrvHeap = nullptr;
 	ComPtr<ID3D12DescriptorHeap> m_srvHeap = nullptr;
 
 	// 프레임 리소스

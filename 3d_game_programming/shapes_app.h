@@ -83,8 +83,7 @@ private:
 	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
 		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
 
-	ComPtr<ID3D12DescriptorHeap> m_cbvHeap = nullptr;
-	ComPtr<ID3D12DescriptorHeap> m_srvHeap = nullptr;
+	ComPtr<ID3D12DescriptorHeap> m_cbvSrvHeap = nullptr;
 
 	// 프레임 리소스
 	std::vector<std::unique_ptr<ShapesFrameResource>> m_frameResources;
@@ -93,6 +92,7 @@ private:
 
 	PassConstants m_mainPassCB;
 	UINT m_passCbvOffset = 0;
+	UINT m_textureSrvOffset = 0;
 
 	ComPtr<ID3D12RootSignature> m_rootSignature = nullptr;
 
