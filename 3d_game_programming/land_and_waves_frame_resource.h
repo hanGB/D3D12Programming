@@ -37,6 +37,11 @@ namespace land_and_waves
 		float deltaTime = 0.0f;
 		XMFLOAT4 ambientLight;
 
+		XMFLOAT4 gFogColor;
+		float gFogStart;
+		float gFogRange;
+		XMFLOAT2 temp; // float4를 맞추기 위한 변수
+
 		Light lights[MAX_LIGHTS];
 	};
 

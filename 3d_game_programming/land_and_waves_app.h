@@ -142,7 +142,7 @@ private:
 	// 카메라
 	float m_theta = 1.5f * XM_PI;
 	float m_phi = 0.2f * XM_PI;
-	float m_radius = 100.0f;
+	float m_radius = 50.0f;
 
 	// 태양
 	float m_sunTheta = 1.25f * XM_PI;

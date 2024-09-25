@@ -43,6 +43,11 @@ cbuffer cbPass : register(b1)
     float gDeltaTime;
     float4 gAmbientLight;
     
+    float4 gFogColor;
+    float gFogStart;
+    float gFogRange;
+    float2 temp; // float4를 맞추기 위한 변수
+    
     Light gLights[MAX_LIGHTS];
 };
 
@@ -76,7 +81,9 @@ float4 main(VertexOut pin) : SV_TARGET
     pin.normalW = normalize(pin.normalW);
     
     // 조명이 되는 점에서 눈으로의 벡터
-    float3 toEye = normalize(gEyePosW - pin.posW);
+    float3 toEye= gEyePosW - pin.posW;
+    float distanceToEye = length(toEye);
+    toEye = normalize(toEye);
     
     // 직접 조명
     const float shininess = 1.0f - gRoughness;
@@ -85,6 +92,10 @@ float4 main(VertexOut pin) : SV_TARGET
     float4 directLight = ComputeLighting(material, pin.posW, pin.normalW, toEye, shadowFactor);
     
     float4 litColor = (gAmbientLight + directLight) * diffuseAlbedo;
+    
+    // 안개
+    float fogAmount = saturate((distanceToEye - gFogStart) / gFogRange);
+    litColor = lerp(litColor, gFogColor, fogAmount);
     
     // 흔히 하는 방식대로 분산 재질에서 알파를 가져옴
     litColor.a = diffuseAlbedo.a;

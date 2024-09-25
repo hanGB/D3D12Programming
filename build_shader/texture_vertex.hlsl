@@ -16,6 +16,11 @@ cbuffer cbPass : register(b1)
     float gTotalTime;
     float gDeltaTime;
     float4 gAmbientLight;
+    
+    float4 gFogColor;
+    float gFogStart;
+    float gFogRange;
+    float2 temp; // float4를 맞추기 위한 변수
 };
 
 cbuffer cbPerObject : register(b0)

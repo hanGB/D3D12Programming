@@ -399,6 +399,10 @@ void LandAndWavesApp::UpdateMainPassCB(const GameTimer& gt)
 	m_mainPassCB.deltaTime = gt.DeltaTime();
 	m_mainPassCB.ambientLight = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
 
+	m_mainPassCB.gFogColor = XMFLOAT4(Colors::LightSteelBlue);
+	m_mainPassCB.gFogStart = 30.0f;
+	m_mainPassCB.gFogRange = 100.0f;
+
 	XMVECTOR lightDirection = -MathHelper::SphericalToCartesian(1.0f, m_sunTheta, m_sunPhi);
 	XMStoreFloat3(&m_mainPassCB.lights[0].direction, lightDirection);
 	m_mainPassCB.lights[0].strength = XMFLOAT3(0.8f, 0.8f, 0.7f);
