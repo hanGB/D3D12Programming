@@ -118,8 +118,13 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 	ID3D12Resource* passCB = m_currentFrameResource->passCB->Resource();
 	m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
-	// 렌더 아이템 그리기
-	DrawRenderItems(m_commandList.Get(), m_opqaueRederItems);
+	// 각 레이어 별로 렌더 아이템 그리기
+	
+	for (int i = 0; i < (int)land_and_waves::RenderLayer::Count; ++i)
+	{
+		m_commandList->SetPipelineState(m_renderItemsEachRenderLayers[(land_and_waves::RenderLayer)i].first);
+		DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[(land_and_waves::RenderLayer)i].second);
+	}
 
 	// 리소스 용도에 관련된 상태 전이 통지
 	m_commandList->ResourceBarrier(1,
@@ -564,20 +569,20 @@ void LandAndWavesApp::BuildMaterials()
 	auto water = std::make_unique<Material>();
 	water->name = "water";
 	water->cbIndex = 1;
-	water->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	water->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
 	water->fresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	water->roughness = 0.0f;
 
-	auto wood = std::make_unique<Material>();
-	wood->name = "wood";
-	wood->cbIndex = 2;
-	wood->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	wood->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-	wood->roughness = 0.125f;
+	auto wire = std::make_unique<Material>();
+	wire->name = "wire";
+	wire->cbIndex = 2;
+	wire->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	wire->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	wire->roughness = 0.01f;
 
 	m_materials[grass->name] = std::move(grass);
 	m_materials[water->name] = std::move(water);
-	m_materials[wood->name] = std::move(wood);
+	m_materials[wire->name] = std::move(wire);
 }
 
 void LandAndWavesApp::BuildRenderItems()
@@ -588,27 +593,21 @@ void LandAndWavesApp::BuildRenderItems()
 	XMMATRIX wavesWorld = XMMatrixIdentity();
 	XMMATRIX wavesTexTransform = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> wavesRederItem
-		= CreateRenderItem(wavesWorld, wavesTexTransform, objCBIndex++, "water_geometry", "grid", "water", primitiveTopogoly);
+		= CreateRenderItem(wavesWorld, wavesTexTransform, objCBIndex++, "water_geometry", "grid", "water", primitiveTopogoly, land_and_waves::RenderLayer::Transparent);
 	m_wavesRenderItem = wavesRederItem.get();
 	m_allRenderItems.push_back(std::move(wavesRederItem));
 
 	XMMATRIX gridWorld = XMMatrixIdentity();
 	XMMATRIX gridTexTransform = XMMatrixScaling(5.0f, 5.0f, 1.0f);
 	std::unique_ptr<RenderItem> gridRederItem
-		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, "land_geometry", "grid", "grass", primitiveTopogoly);
+		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, "land_geometry", "grid", "grass", primitiveTopogoly, land_and_waves::RenderLayer::Opaque);
 	m_allRenderItems.push_back(std::move(gridRederItem));
 
 	XMMATRIX boxWorld = XMMatrixIdentity();
 	XMMATRIX boxTexTransform = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> boxRederItem
-		= CreateRenderItem(boxWorld, boxTexTransform, objCBIndex++, "land_geometry", "box", "wood", primitiveTopogoly);
+		= CreateRenderItem(boxWorld, boxTexTransform, objCBIndex++, "land_geometry", "box", "wire", primitiveTopogoly, land_and_waves::RenderLayer::AlphaTest);
 	m_allRenderItems.push_back(std::move(boxRederItem));
-
-	// 이 예제의 모든 렌더 항목은 불투명함
-	for (auto& e : m_allRenderItems)
-	{
-		m_opqaueRederItems.push_back(e.get());
-	}
 }
 
 void LandAndWavesApp::BuildFrameResources()
@@ -660,7 +659,8 @@ void LandAndWavesApp::BuildRootSignature()
 void LandAndWavesApp::BuildShadersAndInputLayout()
 {
 	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"../x64/Debug/texture_vertex.cso");
-	m_shaders["opaque_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/texture_pixel.cso");
+	m_shaders["standard_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/texture_pixel.cso");
+	m_shaders["alpha_tested_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/alpha_tested_texture_pixel.cso");
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -682,8 +682,8 @@ void LandAndWavesApp::BuildPSO()
 	};
 	psoDesc.PS =
 	{
-		reinterpret_cast<BYTE*>(m_shaders["opaque_ps"]->GetBufferPointer()),
-		m_shaders["opaque_ps"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(m_shaders["standard_ps"]->GetBufferPointer()),
+		m_shaders["standard_ps"]->GetBufferSize()
 	};
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
@@ -696,13 +696,42 @@ void LandAndWavesApp::BuildPSO()
 	psoDesc.SampleDesc.Quality = m_4xMsaaQuality ? (m_4xMsaaQuality - 1) : 0;
 	psoDesc.DSVFormat = m_depthStencilFormat;
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque"])));
+	m_renderItemsEachRenderLayers[land_and_waves::RenderLayer::Opaque].first = m_psos["opaque"].Get();
+
+	// 혼합용
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPsoDesc = psoDesc;
+
+	D3D12_RENDER_TARGET_BLEND_DESC blendDesc;
+	blendDesc.BlendEnable = true;
+	blendDesc.LogicOpEnable = false;
+	blendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	blendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	blendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	blendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	blendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+	blendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	blendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+	blendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	transparentPsoDesc.BlendState.RenderTarget[0] = blendDesc;
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&m_psos["transparent"])));
+	m_renderItemsEachRenderLayers[land_and_waves::RenderLayer::Transparent].first = m_psos["transparent"].Get();
+
+	// 알파 테스트용
+	transparentPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["alpha_tested_ps"]->GetBufferPointer()),
+		m_shaders["alpha_tested_ps"]->GetBufferSize()
+	};
+	transparentPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&m_psos["alpha_tested"])));
+	m_renderItemsEachRenderLayers[land_and_waves::RenderLayer::AlphaTest].first = m_psos["alpha_tested"].Get();
 }
 
 void LandAndWavesApp::BuildTexture()
 {
 	m_textures["grass"] = D3DUtil::CreateTextureFromDDSFile("grass", L"./resource/grass.dds", m_d3dDevice.Get(), m_commandList.Get());
 	m_textures["water"] = D3DUtil::CreateTextureFromDDSFile("water", L"./resource/water1.dds", m_d3dDevice.Get(), m_commandList.Get());
-	m_textures["woodCrate"] = D3DUtil::CreateTextureFromDDSFile("woodCrate", L"./resource/WoodCrate01.dds", m_d3dDevice.Get(), m_commandList.Get());
+	m_textures["wireFence"] = D3DUtil::CreateTextureFromDDSFile("wireFence", L"./resource/WireFence.dds", m_d3dDevice.Get(), m_commandList.Get());
 }
 
 void LandAndWavesApp::BuildDescriptorHeapAndTextureShaderResourceView()
@@ -717,7 +746,7 @@ void LandAndWavesApp::BuildDescriptorHeapAndTextureShaderResourceView()
 	// srv 생성
 	auto grass = m_textures["grass"]->resource.Get();
 	auto water = m_textures["water"]->resource.Get();
-	auto woodCrate = m_textures["woodCrate"]->resource.Get();
+	auto wireFence = m_textures["wireFence"]->resource.Get();
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
 
@@ -741,10 +770,10 @@ void LandAndWavesApp::BuildDescriptorHeapAndTextureShaderResourceView()
 
 	hDescriptor.Offset(1, m_cbvSrvDescriptorSize);
 
-	srvDesc.Format = woodCrate->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = woodCrate->GetDesc().MipLevels;
-	m_d3dDevice->CreateShaderResourceView(woodCrate, &srvDesc, hDescriptor);
-	m_materials["wood"].get()->diffuseSrvHeapIndex = 2;
+	srvDesc.Format = wireFence->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = wireFence->GetDesc().MipLevels;
+	m_d3dDevice->CreateShaderResourceView(wireFence, &srvDesc, hDescriptor);
+	m_materials["wire"].get()->diffuseSrvHeapIndex = 2;
 }
 
 float LandAndWavesApp::GetHillsHeight(float x, float z) const
@@ -767,7 +796,7 @@ XMFLOAT3 LandAndWavesApp::GetHillsNormal(float x, float z) const
 }
 
 std::unique_ptr<RenderItem> LandAndWavesApp::CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
-	const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology)
+	const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology, land_and_waves::RenderLayer layer)
 {
 	std::unique_ptr<RenderItem> rederItem = std::make_unique<RenderItem>();
 
@@ -780,6 +809,8 @@ std::unique_ptr<RenderItem> LandAndWavesApp::CreateRenderItem(const XMMATRIX& wo
 	rederItem->indexCount = rederItem->geometry->drawArgs[submesh].indexCount;
 	rederItem->startIndexLocation = rederItem->geometry->drawArgs[submesh].startIndexLocation;
 	rederItem->baseVertexLocation = rederItem->geometry->drawArgs[submesh].baseVertexLocation;
+
+	m_renderItemsEachRenderLayers[layer].second.push_back(rederItem.get());
 
 	return rederItem;
 }

@@ -32,7 +32,14 @@ namespace land_and_waves
 		UINT indexCount = 0;
 		UINT startIndexLocation = 0;
 		int baseVertexLocation = 0;
+	};
 
+	enum class RenderLayer : int
+	{
+		Opaque = 0,
+		AlphaTest,
+		Transparent,
+		Count
 	};
 }
 
@@ -88,7 +95,7 @@ private:
 	XMFLOAT3 GetHillsNormal(float x, float z) const;
 
 	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
-		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology);
+		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology, land_and_waves::RenderLayer layer);
 
 	ComPtr<ID3D12DescriptorHeap> m_srvHeap = nullptr;
 
@@ -111,8 +118,7 @@ private:
 	// 모든 렌더 아이템의 목록
 	std::vector<std::unique_ptr<RenderItem>> m_allRenderItems;
 	// PSO별 렌더 아이템
-	std::vector<RenderItem*> m_opqaueRederItems;
-	std::vector<RenderItem*> m_transparentRenderItems;
+	std::unordered_map<land_and_waves::RenderLayer, std::pair<ID3D12PipelineState*, std::vector<RenderItem*>>> m_renderItemsEachRenderLayers;
 
 	// 뷰, 투영 변환
 	XMFLOAT4X4 m_viewTransform = MathHelper::Identity4x4();

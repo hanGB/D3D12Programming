@@ -36,3 +36,4 @@ using namespace Microsoft::WRL;
 #include <fstream>
 
 static const int NUM_FRAME_RESOURCES = 3;
+#define IGNORE_ALPHA_VALUE 0.05f
