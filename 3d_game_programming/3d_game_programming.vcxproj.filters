@@ -37,6 +37,9 @@
     <Filter Include="Dependencies Src">
       <UniqueIdentifier>{935206a0-2e4d-4f66-a1a7-ebedf4cb5bcc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Example App\Stencil">
+      <UniqueIdentifier>{776e7bf9-7a71-4114-b4c9-648058623764}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -86,6 +89,12 @@
     </ClInclude>
     <ClInclude Include="crate_frame_resource.h">
       <Filter>Example App\Crate</Filter>
+    </ClInclude>
+    <ClInclude Include="stencil_app.h">
+      <Filter>Example App\Stencil</Filter>
+    </ClInclude>
+    <ClInclude Include="stencil_frame_resource.h">
+      <Filter>Example App\Stencil</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -142,6 +151,12 @@
     </ClCompile>
     <ClCompile Include="..\dds_texture_loader\DDSTextureLoader12.cpp">
       <Filter>Dependencies Src</Filter>
+    </ClCompile>
+    <ClCompile Include="stencil_app.cpp">
+      <Filter>Example App\Stencil</Filter>
+    </ClCompile>
+    <ClCompile Include="stencil_frame_resource.cpp">
+      <Filter>Example App\Stencil</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
