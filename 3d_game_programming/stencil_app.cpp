@@ -115,8 +115,23 @@ void StencilApp::Draw(const GameTimer& gt)
 	passCbvHandle.Offset(passCbvIndex, m_cbvSrvDescriptorSize);
 	m_commandList->SetGraphicsRootDescriptorTable(2, passCbvHandle);
 
-	// 렌더 아이템 그리기
-	DrawRenderItems(m_commandList.Get(), m_opqaueRederItems);
+	// 스텐실에 거울 영역 그리기
+	m_commandList->OMSetStencilRef(1);
+	m_commandList->SetPipelineState(m_psos["mark_stencil_mirrors"].Get());
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Mirrors]);
+
+	// 반사상 그리기
+	m_commandList->SetPipelineState(m_psos["draw_stencil_reflections"].Get());
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Reflected]);
+	m_commandList->OMSetStencilRef(0);
+
+	// 거울 그리기
+	m_commandList->SetPipelineState(m_psos["transparent"].Get());
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Transparent]);
+
+	// 불투명 그리기(거울로 가려진 벽 부분이 뚫려 있지 않기 때문에 거울을 먼저 그려 깊이 테스트로 거울로 가려진 벽 부분이 그려지지 않도록 해야 함)
+	m_commandList->SetPipelineState(m_psos["opaque"].Get());
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Opaque]);
 
 	// 리소스 용도에 관련된 상태 전이 통지
 	m_commandList->ResourceBarrier(1,
@@ -615,35 +630,51 @@ void StencilApp::BuildRenderItems()
 	UINT objCBIndex = 0;
 	D3D_PRIMITIVE_TOPOLOGY primitiveTopogoly = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
+	// 불투명
 	XMMATRIX floorWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(5.0f, 0.0f, 0.0f);
 	XMMATRIX floorTexTransform = XMMatrixScaling(5.0f, 5.0f, 1.0f);
 	std::unique_ptr<RenderItem> floorRederItem
 		= CreateRenderItem(floorWorld, floorTexTransform, objCBIndex++, "shape_geometry", "grid", "checkboard", primitiveTopogoly);
+	m_renderItemsEachRenderLayers[RenderLayer::Opaque].push_back(floorRederItem.get());
 	m_allRenderItems.push_back(std::move(floorRederItem));
 
-
-	XMMATRIX wallWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(0.0f, 0.0f, -0.5f * XM_PI) * XMMatrixTranslation(0.f, 5.f, 0.0f);
+	XMMATRIX wallWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(0.0f, 0.0f, -0.5f * XM_PI) * XMMatrixTranslation(0.0f, 5.f, 0.0f);
 	XMMATRIX wallTexTransform = XMMatrixScaling(5.0f, 5.0f, 1.0f) * XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.5 * XM_PI);
 	std::unique_ptr<RenderItem> wallRederItem
 		= CreateRenderItem(wallWorld, wallTexTransform, objCBIndex++, "shape_geometry", "grid", "bricks", primitiveTopogoly);
+	m_renderItemsEachRenderLayers[RenderLayer::Opaque].push_back(wallRederItem.get());
 	m_allRenderItems.push_back(std::move(wallRederItem));
-
-	XMMATRIX mirrorWorld = XMMatrixScaling(0.35f, 0.35f, 0.35f) * XMMatrixRotationRollPitchYaw(0.0f, 0.0f, -0.5f * XM_PI) * XMMatrixTranslation(0.1f, 3.5f, 0.0f);
-	XMMATRIX mirrorTexTransform = XMMatrixIdentity() * XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.5 * XM_PI);
-	std::unique_ptr<RenderItem> mirrorRederItem
-		= CreateRenderItem(mirrorWorld, mirrorTexTransform, objCBIndex++, "shape_geometry", "grid", "ice", primitiveTopogoly);
-	m_allRenderItems.push_back(std::move(mirrorRederItem));
 
 	XMMATRIX skullWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(5.0f, 1.0f, 0.0f);
 	XMMATRIX skullTexTransform = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> skullRenderItem
 		= CreateRenderItem(skullWorld, skullTexTransform, objCBIndex++, "skull_geometry", "skull", "white", primitiveTopogoly);
+	m_renderItemsEachRenderLayers[RenderLayer::Opaque].push_back(skullRenderItem.get());
 	m_allRenderItems.push_back(std::move(skullRenderItem));
 
-	for (auto& e : m_allRenderItems)
-	{
-		m_opqaueRederItems.push_back(e.get());
-	}
+	// 거울
+	XMMATRIX mirrorWorld = XMMatrixScaling(0.35f, 0.35f, 0.35f) * XMMatrixRotationRollPitchYaw(0.0f, 0.0f, -0.5f * XM_PI) * XMMatrixTranslation(0.001f, 3.5f, 0.0f);
+	XMMATRIX mirrorTexTransform = XMMatrixIdentity() * XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.5 * XM_PI);
+	std::unique_ptr<RenderItem> mirrorRederItem
+		= CreateRenderItem(mirrorWorld, mirrorTexTransform, objCBIndex++, "shape_geometry", "grid", "ice", primitiveTopogoly);
+	m_renderItemsEachRenderLayers[RenderLayer::Mirrors].push_back(mirrorRederItem.get());
+	m_renderItemsEachRenderLayers[RenderLayer::Transparent].push_back(mirrorRederItem.get());
+	m_allRenderItems.push_back(std::move(mirrorRederItem));
+
+	// 반사상
+	XMMATRIX reflectedFloorWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(-5.0f, 0.0f, 0.0f);
+	XMMATRIX reflectedFloorTexTransform = XMMatrixScaling(5.0f, 5.0f, 1.0f);
+	std::unique_ptr<RenderItem> reflectedFloorRederItem
+		= CreateRenderItem(reflectedFloorWorld, reflectedFloorTexTransform, objCBIndex++, "shape_geometry", "grid", "checkboard", primitiveTopogoly);
+	m_renderItemsEachRenderLayers[RenderLayer::Reflected].push_back(reflectedFloorRederItem.get());
+	m_allRenderItems.push_back(std::move(reflectedFloorRederItem));
+
+	XMMATRIX reflectedSkullWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(-5.0f, 1.0f, 0.0f);
+	XMMATRIX reflectedSkullTexTransform = XMMatrixIdentity();
+	std::unique_ptr<RenderItem> reflectedSkullRenderItem
+		= CreateRenderItem(reflectedSkullWorld, reflectedSkullTexTransform, objCBIndex++, "skull_geometry", "skull", "white", primitiveTopogoly);
+	m_renderItemsEachRenderLayers[RenderLayer::Reflected].push_back(reflectedSkullRenderItem.get());
+	m_allRenderItems.push_back(std::move(reflectedSkullRenderItem));
 }
 
 void StencilApp::BuildFrameResources()
@@ -820,31 +851,95 @@ void StencilApp::BuildShadersAndInputLayout()
 
 void StencilApp::BuildPSO()
 {
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
-	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	psoDesc.InputLayout = { m_inputLayout.data(), (UINT)m_inputLayout.size() };
-	psoDesc.pRootSignature = m_rootSignature.Get();
-	psoDesc.VS =
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
+	ZeroMemory(&opaquePsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	opaquePsoDesc.InputLayout = { m_inputLayout.data(), (UINT)m_inputLayout.size() };
+	opaquePsoDesc.pRootSignature = m_rootSignature.Get();
+	opaquePsoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(m_shaders["standard_vs"]->GetBufferPointer()),
 		m_shaders["standard_vs"]->GetBufferSize()
 	};
-	psoDesc.PS =
+	opaquePsoDesc.PS =
 	{
 		reinterpret_cast<BYTE*>(m_shaders["opaque_ps"]->GetBufferPointer()),
 		m_shaders["opaque_ps"]->GetBufferSize()
 	};
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	psoDesc.SampleMask = UINT_MAX;
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesc.NumRenderTargets = 1;
-	psoDesc.RTVFormats[0] = m_backBufferFormat;
-	psoDesc.SampleDesc.Count = m_4xMsaaState ? 4 : 1;
-	psoDesc.SampleDesc.Quality = m_4xMsaaQuality ? (m_4xMsaaQuality - 1) : 0;
-	psoDesc.DSVFormat = m_depthStencilFormat;
-	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque"])));
+	opaquePsoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	opaquePsoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	opaquePsoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	opaquePsoDesc.SampleMask = UINT_MAX;
+	opaquePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	opaquePsoDesc.NumRenderTargets = 1;
+	opaquePsoDesc.RTVFormats[0] = m_backBufferFormat;
+	opaquePsoDesc.SampleDesc.Count = m_4xMsaaState ? 4 : 1;
+	opaquePsoDesc.SampleDesc.Quality = m_4xMsaaQuality ? (m_4xMsaaQuality - 1) : 0;
+	opaquePsoDesc.DSVFormat = m_depthStencilFormat;
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&m_psos["opaque"])));
+
+	// 투명
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPsoDesc = opaquePsoDesc;
+	D3D12_RENDER_TARGET_BLEND_DESC blendDesc;
+	blendDesc.BlendEnable = true;
+	blendDesc.LogicOpEnable = false;
+	blendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	blendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	blendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	blendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	blendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+	blendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	blendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+	blendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	transparentPsoDesc.BlendState.RenderTarget[0] = blendDesc;
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&m_psos["transparent"])));
+
+	// 스텐실 거울 영역 표시용
+	CD3DX12_BLEND_DESC mirrorBlendDesc(D3D12_DEFAULT);
+	mirrorBlendDesc.RenderTarget[0].RenderTargetWriteMask = 0;
+
+	D3D12_DEPTH_STENCIL_DESC mirrorDSDesc;
+	mirrorDSDesc.DepthEnable = true;
+	mirrorDSDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	mirrorDSDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	mirrorDSDesc.StencilEnable = true;
+	mirrorDSDesc.StencilReadMask = 0xff;
+	mirrorDSDesc.StencilWriteMask = 0xff;
+	mirrorDSDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	mirrorDSDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	mirrorDSDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+	mirrorDSDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	mirrorDSDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	mirrorDSDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	mirrorDSDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+	mirrorDSDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC markMirrorsPsoDesc = opaquePsoDesc;
+	markMirrorsPsoDesc.BlendState = mirrorBlendDesc;
+	markMirrorsPsoDesc.DepthStencilState = mirrorDSDesc;
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&markMirrorsPsoDesc, IID_PPV_ARGS(&m_psos["mark_stencil_mirrors"])));
+
+	// 스텐실 반사상
+	D3D12_DEPTH_STENCIL_DESC reflectionsDSDesc;
+	reflectionsDSDesc.DepthEnable = true;
+	reflectionsDSDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	reflectionsDSDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	reflectionsDSDesc.StencilEnable = true;
+	reflectionsDSDesc.StencilReadMask = 0xff;
+	reflectionsDSDesc.StencilWriteMask = 0xff;
+	reflectionsDSDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+	reflectionsDSDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC drawStencilReflectionsDesc = opaquePsoDesc;
+	drawStencilReflectionsDesc.DepthStencilState = reflectionsDSDesc;
+	drawStencilReflectionsDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+	//drawStencilReflectionsDesc.RasterizerState.FrontCounterClockwise = true;
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&drawStencilReflectionsDesc, IID_PPV_ARGS(&m_psos["draw_stencil_reflections"])));
 }
 
 std::unique_ptr<RenderItem> StencilApp::CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,

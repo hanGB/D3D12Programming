@@ -31,7 +31,15 @@ namespace stencil
 		UINT indexCount = 0;
 		UINT startIndexLocation = 0;
 		int baseVertexLocation = 0;
+	};
 
+	enum class RenderLayer : int
+	{
+		Opaque = 0,
+		Mirrors,
+		Reflected,
+		Transparent,
+		Count
 	};
 }
 
@@ -104,9 +112,7 @@ private:
 	// 모든 렌더 아이템의 목록
 	std::vector<std::unique_ptr<RenderItem>> m_allRenderItems;
 	// PSO별 렌더 아이템
-	std::vector<RenderItem*> m_opqaueRederItems;
-	std::vector<RenderItem*> m_opqaueRederNoTextureItems;
-	std::vector<RenderItem*> m_transparentRenderItems;
+	std::unordered_map<RenderLayer,std::vector<RenderItem*>> m_renderItemsEachRenderLayers;
 
 	// 뷰, 투영 변환
 	XMFLOAT4X4 m_viewTransform = MathHelper::Identity4x4();
