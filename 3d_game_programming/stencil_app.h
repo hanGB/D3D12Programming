@@ -72,6 +72,7 @@ private:
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
+	void UpdateReflectedPassCB(const GameTimer& gt);
 
 	// 초기화시의 빌드
 	void BuildShapeGeometry();
@@ -98,6 +99,8 @@ private:
 	int m_currentFrameResourceIndex = 0;
 
 	PassConstants m_mainPassCB;
+	PassConstants m_reflectedPassCB;
+
 	UINT m_passCbvOffset = 0;
 	UINT m_textureSrvOffset = 0;
 

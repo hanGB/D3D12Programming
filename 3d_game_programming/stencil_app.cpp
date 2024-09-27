@@ -76,6 +76,7 @@ void StencilApp::Update(const GameTimer& gt)
 	UpdateObjectCBs(gt);
 	UpdateMaterialCBs(gt);
 	UpdateMainPassCB(gt);
+	UpdateReflectedPassCB(gt);
 }
 
 void StencilApp::Draw(const GameTimer& gt)
@@ -110,7 +111,7 @@ void StencilApp::Draw(const GameTimer& gt)
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	// 현재 프레임 리소스의 패스 CBV 설정
-	int passCbvIndex = m_passCbvOffset + m_currentFrameResourceIndex;
+	int passCbvIndex = m_passCbvOffset + m_currentFrameResourceIndex * 2;
 	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvSrvHeap->GetGPUDescriptorHandleForHeapStart());
 	passCbvHandle.Offset(passCbvIndex, m_cbvSrvDescriptorSize);
 	m_commandList->SetGraphicsRootDescriptorTable(2, passCbvHandle);
@@ -121,11 +122,17 @@ void StencilApp::Draw(const GameTimer& gt)
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Mirrors]);
 
 	// 반사상 그리기
+	auto reflectedPassCbvHandle = passCbvHandle;
+	reflectedPassCbvHandle.Offset(1, m_cbvSrvDescriptorSize);
+	m_commandList->SetGraphicsRootDescriptorTable(2, reflectedPassCbvHandle);
+
 	m_commandList->SetPipelineState(m_psos["draw_stencil_reflections"].Get());
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Reflected]);
 	m_commandList->OMSetStencilRef(0);
 
 	// 거울 그리기
+	m_commandList->SetGraphicsRootDescriptorTable(2, passCbvHandle);
+
 	m_commandList->SetPipelineState(m_psos["transparent"].Get());
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Transparent]);
 
@@ -353,6 +360,22 @@ void StencilApp::UpdateMainPassCB(const GameTimer& gt)
 
 	UploadBuffer<PassConstants>* currentPassCB = m_currentFrameResource->passCB.get();
 	currentPassCB->CopyData(0, m_mainPassCB);
+}
+
+void StencilApp::UpdateReflectedPassCB(const GameTimer& gt)
+{
+	m_reflectedPassCB = m_mainPassCB;
+
+	XMVECTOR mirrorPlane = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f); // yz 평면
+	XMMATRIX r = XMMatrixReflect(mirrorPlane);
+
+	XMVECTOR lightDir = XMLoadFloat3(&m_mainPassCB.lights[0].direction);
+	XMVECTOR reflectedLightDir = XMVector3TransformNormal(lightDir, r);
+	XMStoreFloat3(&m_reflectedPassCB.lights[0].direction, reflectedLightDir);
+
+	// 패스 상수 버퍼의 1번 인덱스에 저장
+	auto currentPassCB = m_currentFrameResource->passCB.get();
+	currentPassCB->CopyData(1, m_reflectedPassCB);
 }
 
 void StencilApp::BuildShapeGeometry()
@@ -662,17 +685,20 @@ void StencilApp::BuildRenderItems()
 	m_allRenderItems.push_back(std::move(mirrorRederItem));
 
 	// 반사상
-	XMMATRIX reflectedFloorWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(-5.0f, 0.0f, 0.0f);
+	XMVECTOR mirrorPlane = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f); // yz 평면
+	XMMATRIX r = XMMatrixReflect(mirrorPlane);
+
+	XMMATRIX reflectedFloorWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(5.0f, 0.0f, 0.0f);
 	XMMATRIX reflectedFloorTexTransform = XMMatrixScaling(5.0f, 5.0f, 1.0f);
 	std::unique_ptr<RenderItem> reflectedFloorRederItem
-		= CreateRenderItem(reflectedFloorWorld, reflectedFloorTexTransform, objCBIndex++, "shape_geometry", "grid", "checkboard", primitiveTopogoly);
+		= CreateRenderItem(reflectedFloorWorld * r, reflectedFloorTexTransform, objCBIndex++, "shape_geometry", "grid", "checkboard", primitiveTopogoly);
 	m_renderItemsEachRenderLayers[RenderLayer::Reflected].push_back(reflectedFloorRederItem.get());
 	m_allRenderItems.push_back(std::move(reflectedFloorRederItem));
 
-	XMMATRIX reflectedSkullWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(-5.0f, 1.0f, 0.0f);
+	XMMATRIX reflectedSkullWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(5.0f, 1.0f, 0.0f);
 	XMMATRIX reflectedSkullTexTransform = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> reflectedSkullRenderItem
-		= CreateRenderItem(reflectedSkullWorld, reflectedSkullTexTransform, objCBIndex++, "skull_geometry", "skull", "white", primitiveTopogoly);
+		= CreateRenderItem(reflectedSkullWorld * r, reflectedSkullTexTransform, objCBIndex++, "skull_geometry", "skull", "white", primitiveTopogoly);
 	m_renderItemsEachRenderLayers[RenderLayer::Reflected].push_back(reflectedSkullRenderItem.get());
 	m_allRenderItems.push_back(std::move(reflectedSkullRenderItem));
 }
@@ -681,7 +707,7 @@ void StencilApp::BuildFrameResources()
 {
 	for (int i = 0; i < NUM_FRAME_RESOURCES; ++i)
 	{
-		m_frameResources.push_back(std::make_unique<StencilFrameResource>(m_d3dDevice.Get(), 1, (UINT)m_allRenderItems.size(), (UINT)m_materials.size()));
+		m_frameResources.push_back(std::make_unique<StencilFrameResource>(m_d3dDevice.Get(), 2, (UINT)m_allRenderItems.size(), (UINT)m_materials.size()));
 	}
 }
 
@@ -690,12 +716,12 @@ void StencilApp::BuildDescriptorHeaps()
 	UINT objectCount = (UINT)m_allRenderItems.size();
 
 	// 각 프레임 리소스의 오브젝트마다 하나의 서술자 필요 + 각 프레임 리소스의 패스별 CBV 하나 필요
-	UINT numDescriptors = (objectCount + 1) * NUM_FRAME_RESOURCES + (UINT)m_textures.size();
+	UINT numDescriptors = (objectCount + 2) * NUM_FRAME_RESOURCES + (UINT)m_textures.size();
 
 	// 패스별 CBV의 시작 오프셋 저장
 	m_passCbvOffset = objectCount * NUM_FRAME_RESOURCES;
 	// 텍스처 SRV 시작  오프셋 저장
-	m_textureSrvOffset = (objectCount + 1) * NUM_FRAME_RESOURCES;
+	m_textureSrvOffset = (objectCount + 2) * NUM_FRAME_RESOURCES;
 
 	D3D12_DESCRIPTOR_HEAP_DESC cbvSrvHeapDesc;
 	cbvSrvHeapDesc.NumDescriptors = numDescriptors;
@@ -749,7 +775,7 @@ void StencilApp::BuildPassConstantBufferViews()
 		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = passCB->GetGPUVirtualAddress();
 
 		// 서술자 힙 안에서 패스별 CBV의 오프셋
-		int heapIndex = m_passCbvOffset + frameIndex;
+		int heapIndex = m_passCbvOffset + frameIndex * 2;
 		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_cbvSrvHeap->GetCPUDescriptorHandleForHeapStart());
 		handle.Offset(heapIndex, m_cbvSrvDescriptorSize);
 
@@ -758,6 +784,12 @@ void StencilApp::BuildPassConstantBufferViews()
 		cbvDesc.SizeInBytes = passCBByteSize;
 
 		m_d3dDevice->CreateConstantBufferView(&cbvDesc, handle);
+
+		// 반사용
+		cbvDesc.BufferLocation = cbAddress + passCBByteSize;
+
+		handle.Offset(1, m_cbvSrvDescriptorSize);
+		m_d3dDevice->CreateConstantBufferView(&cbvDesc, handle);		
 	}
 }
 
@@ -938,7 +970,7 @@ void StencilApp::BuildPSO()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC drawStencilReflectionsDesc = opaquePsoDesc;
 	drawStencilReflectionsDesc.DepthStencilState = reflectionsDSDesc;
 	drawStencilReflectionsDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-	//drawStencilReflectionsDesc.RasterizerState.FrontCounterClockwise = true;
+	drawStencilReflectionsDesc.RasterizerState.FrontCounterClockwise = true;
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&drawStencilReflectionsDesc, IID_PPV_ARGS(&m_psos["draw_stencil_reflections"])));
 }
 
