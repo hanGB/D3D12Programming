@@ -39,6 +39,8 @@ namespace stencil
 		Mirrors,
 		Reflected,
 		Transparent,
+		Shadow,
+		ReflectedShadow,
 		Count
 	};
 }

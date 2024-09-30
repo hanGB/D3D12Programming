@@ -128,6 +128,11 @@ void StencilApp::Draw(const GameTimer& gt)
 
 	m_commandList->SetPipelineState(m_psos["draw_stencil_reflections"].Get());
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Reflected]);
+
+	// 반사상의 그림자
+	m_commandList->SetPipelineState(m_psos["shadow"].Get());
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::ReflectedShadow]);
+
 	m_commandList->OMSetStencilRef(0);
 
 	// 거울 그리기
@@ -139,6 +144,10 @@ void StencilApp::Draw(const GameTimer& gt)
 	// 불투명 그리기(거울로 가려진 벽 부분이 뚫려 있지 않기 때문에 거울을 먼저 그려 깊이 테스트로 거울로 가려진 벽 부분이 그려지지 않도록 해야 함)
 	m_commandList->SetPipelineState(m_psos["opaque"].Get());
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Opaque]);
+
+	// 그림자
+	m_commandList->SetPipelineState(m_psos["shadow"].Get());
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Shadow]);
 
 	// 리소스 용도에 관련된 상태 전이 통지
 	m_commandList->ResourceBarrier(1,
@@ -354,7 +363,7 @@ void StencilApp::UpdateMainPassCB(const GameTimer& gt)
 	m_mainPassCB.gFogStart = 30.0f;
 	m_mainPassCB.gFogRange = 100.0f;
 
-	XMVECTOR lightDirection = -MathHelper::SphericalToCartesian(1.0f, 1.75f * XM_PI, XM_PIDIV4);
+	XMVECTOR lightDirection = XMVectorSet(-0.5f, -1.0f, 0.0f, 0.0f);
 	XMStoreFloat3(&m_mainPassCB.lights[0].direction, lightDirection);
 	m_mainPassCB.lights[0].strength = XMFLOAT3(0.8f, 0.8f, 0.8f);
 
@@ -640,12 +649,21 @@ void StencilApp::BuildMaterialAndTexture()
 	white->fresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	white->roughness = 0.3f;
 	white->diffuseSrvHeapIndex = 3;
+	auto shadow = std::make_unique<Material>();
+	shadow->name = "shadow";
+	shadow->cbIndex = 4;
+	shadow->diffuseAlbedo = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f);
+	shadow->fresnelR0 = XMFLOAT3(0.001f, 0.001f, 0.001f);
+	shadow->roughness = 0.0f;
+	shadow->diffuseSrvHeapIndex = 3;
 	m_textures["white"] = D3DUtil::CreateTextureFromDDSFile("white", L"./resource/white1x1.dds", m_d3dDevice.Get(), m_commandList.Get());
+
 
 	m_materials[bricks->name] = std::move(bricks);
 	m_materials[checkboard->name] = std::move(checkboard);
 	m_materials[ice->name] = std::move(ice);
 	m_materials[white->name] = std::move(white);
+	m_materials[shadow->name] = std::move(shadow);
 }
 
 void StencilApp::BuildRenderItems()
@@ -701,6 +719,30 @@ void StencilApp::BuildRenderItems()
 		= CreateRenderItem(reflectedSkullWorld * r, reflectedSkullTexTransform, objCBIndex++, "skull_geometry", "skull", "white", primitiveTopogoly);
 	m_renderItemsEachRenderLayers[RenderLayer::Reflected].push_back(reflectedSkullRenderItem.get());
 	m_allRenderItems.push_back(std::move(reflectedSkullRenderItem));
+
+	// 그림자
+	XMVECTOR shadowPlane = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f); // xz 평면
+	XMVECTOR lightDir = XMVectorSet(-0.5f, -1.0f, 0.0f, 0.0f);
+	XMMATRIX s = XMMatrixShadow(shadowPlane, -lightDir);
+	XMMATRIX shadowOffSetY = XMMatrixTranslation(0.0f, 0.001f, 0.0f);
+
+	XMMATRIX shadowSkullWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(5.0f, 1.0f, 0.0f);
+	XMMATRIX shadowSkullTexTransform = XMMatrixIdentity();
+	std::unique_ptr<RenderItem> shadowSkullRenderItem
+		= CreateRenderItem(shadowSkullWorld * s * shadowOffSetY, shadowSkullTexTransform, objCBIndex++, "skull_geometry", "skull", "shadow", primitiveTopogoly);
+	m_renderItemsEachRenderLayers[RenderLayer::Shadow].push_back(shadowSkullRenderItem.get());
+	m_allRenderItems.push_back(std::move(shadowSkullRenderItem));
+
+	// 반사된 그림자
+	XMVECTOR reflectedLightDir = XMVector3TransformNormal(lightDir, r);
+	s = XMMatrixShadow(shadowPlane, -reflectedLightDir);
+
+	XMMATRIX shadowReflectedSkullWorld = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixTranslation(5.0f, 1.0f, 0.0f);
+	XMMATRIX shadowReflectedSkullTexTransform = XMMatrixIdentity();
+	std::unique_ptr<RenderItem> shadowReflectedSkullRenderItem
+		= CreateRenderItem(shadowReflectedSkullWorld * r * s * shadowOffSetY, shadowReflectedSkullTexTransform, objCBIndex++, "skull_geometry", "skull", "shadow", primitiveTopogoly);
+	m_renderItemsEachRenderLayers[RenderLayer::ReflectedShadow].push_back(shadowReflectedSkullRenderItem.get());
+	m_allRenderItems.push_back(std::move(shadowReflectedSkullRenderItem));
 }
 
 void StencilApp::BuildFrameResources()
@@ -972,6 +1014,27 @@ void StencilApp::BuildPSO()
 	drawStencilReflectionsDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
 	drawStencilReflectionsDesc.RasterizerState.FrontCounterClockwise = true;
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&drawStencilReflectionsDesc, IID_PPV_ARGS(&m_psos["draw_stencil_reflections"])));
+
+	// 그림자
+	D3D12_DEPTH_STENCIL_DESC shadowDSDesc;
+	shadowDSDesc.DepthEnable = true;
+	shadowDSDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	shadowDSDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	shadowDSDesc.StencilEnable = true;
+	shadowDSDesc.StencilReadMask = 0xff;
+	shadowDSDesc.StencilWriteMask = 0xff;
+	shadowDSDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
+	shadowDSDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+	shadowDSDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
+	shadowDSDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowDesc = transparentPsoDesc;
+	shadowDesc.DepthStencilState = shadowDSDesc;
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&shadowDesc, IID_PPV_ARGS(&m_psos["shadow"])));
 }
 
 std::unique_ptr<RenderItem> StencilApp::CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
