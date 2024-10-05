@@ -25,6 +25,9 @@
     <Filter Include="Texture">
       <UniqueIdentifier>{331220c6-7481-425f-8ece-2372c3b4ad9a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Geometry Shader">
+      <UniqueIdentifier>{7f5eb7d7-74a6-48d5-aab6-b869b944297b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="box_pixel.hlsl">
@@ -65,6 +68,9 @@
     </FxCompile>
     <FxCompile Include="alpha_tested_texture_pixel.hlsl">
       <Filter>Texture</Filter>
+    </FxCompile>
+    <FxCompile Include="tree_sprite_shader.hlsl">
+      <Filter>Geometry Shader</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

@@ -29,6 +29,12 @@ public:
 		return (byteSize + 255) & ~255; // 255는 16비트로 0x00ff
 	}
 
+	static ComPtr<ID3DBlob> CompileShader(
+		const std::wstring& filename,
+		const D3D_SHADER_MACRO* defines,
+		const std::string& entrypoint,
+		const std::string& target);
+
 	static ComPtr<ID3DBlob> LoadBinary(const std::wstring& filename);
 
 	static ComPtr<ID3D12Resource> CreateDefaultBuffer(

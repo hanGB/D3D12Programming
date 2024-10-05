@@ -662,9 +662,9 @@ void LandAndWavesApp::BuildRootSignature()
 
 void LandAndWavesApp::BuildShadersAndInputLayout()
 {
-	m_shaders["standard_vs"] = D3DUtil::LoadBinary(L"../x64/Debug/texture_vertex.cso");
-	m_shaders["standard_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/texture_pixel.cso");
-	m_shaders["alpha_tested_ps"] = D3DUtil::LoadBinary(L"../x64/Debug/alpha_tested_texture_pixel.cso");
+	m_shaders["standard_vs"] = D3DUtil::CompileShader(L"../build_shader/texture_vertex.hlsl", nullptr, "main", "vs_5_1");
+	m_shaders["standard_ps"] = D3DUtil::CompileShader(L"../build_shader/texture_pixel.hlsl", nullptr, "main", "ps_5_1");
+	m_shaders["alpha_tested_ps"] = D3DUtil::CompileShader(L"../build_shader/alpha_tested_texture_pixel.hlsl", nullptr, "main", "ps_5_1");
 
 	m_inputLayout = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
