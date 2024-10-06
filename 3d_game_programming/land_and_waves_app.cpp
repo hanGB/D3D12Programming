@@ -28,9 +28,9 @@ bool LandAndWavesApp::Initialize()
 
 	BuildLandGeometry();
 	BuildWavesGeometry();
-	BuildMaterials();
+	BuildTreeGeometry();
 	BuildTexture();
-	BuildDescriptorHeapAndTextureShaderResourceView();
+	BuildMaterialAndSrv();
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildRootSignature();
@@ -119,12 +119,16 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 	m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	// 각 레이어 별로 렌더 아이템 그리기
-	
-	for (int i = 0; i < (int)land_and_waves::RenderLayer::Count; ++i)
-	{
-		m_commandList->SetPipelineState(m_renderItemsEachRenderLayers[(land_and_waves::RenderLayer)i].first);
-		DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[(land_and_waves::RenderLayer)i].second);
-	}
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Opaque]);
+
+	m_commandList->SetPipelineState(m_psos["alpha_test"].Get());
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::AlphaTest]);
+
+	m_commandList->SetPipelineState(m_psos["tree_sprite"].Get());
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::TreeSprite]);
+
+	m_commandList->SetPipelineState(m_psos["transparent"].Get());
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Transparent]);
 
 	// 리소스 용도에 관련된 상태 전이 통지
 	m_commandList->ResourceBarrier(1,
@@ -237,8 +241,16 @@ void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, co
 	{
 		RenderItem* renderItem = renderItems[i];
 
-		D3D12_VERTEX_BUFFER_VIEW vbvs[] = { renderItem->geometry->VertexBufferView(0), renderItem->geometry->VertexBufferView(1) };
-		commandList->IASetVertexBuffers(0, _countof(vbvs), vbvs);
+		if (renderItem->geometry->vertexBufferCount == 1)
+		{
+			D3D12_VERTEX_BUFFER_VIEW vbvs[] = { renderItem->geometry->VertexBufferView(0) };
+			commandList->IASetVertexBuffers(0, renderItem->geometry->vertexBufferCount, vbvs);
+		}
+		else
+		{
+			D3D12_VERTEX_BUFFER_VIEW vbvs[] = { renderItem->geometry->VertexBufferView(0), renderItem->geometry->VertexBufferView(1) };
+			commandList->IASetVertexBuffers(0, renderItem->geometry->vertexBufferCount, vbvs);
+		}		
 		commandList->IASetIndexBuffer(&renderItem->geometry->IndexBufferView());
 		commandList->IASetPrimitiveTopology(renderItem->primitiveTopology);
 
@@ -400,8 +412,8 @@ void LandAndWavesApp::UpdateMainPassCB(const GameTimer& gt)
 	m_mainPassCB.ambientLight = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
 
 	m_mainPassCB.gFogColor = XMFLOAT4(Colors::LightSteelBlue);
-	m_mainPassCB.gFogStart = 30.0f;
-	m_mainPassCB.gFogRange = 100.0f;
+	m_mainPassCB.gFogStart = 50.0f;
+	m_mainPassCB.gFogRange = 500.0f;
 
 	XMVECTOR lightDirection = -MathHelper::SphericalToCartesian(1.0f, m_sunTheta, m_sunPhi);
 	XMStoreFloat3(&m_mainPassCB.lights[0].direction, lightDirection);
@@ -561,32 +573,57 @@ void LandAndWavesApp::BuildWavesGeometry()
 	m_geometries[geo->name] = std::move(geo);
 }
 
-void LandAndWavesApp::BuildMaterials()
+void LandAndWavesApp::BuildTreeGeometry()
 {
-	auto grass = std::make_unique<Material>();
-	grass->name = "grass";
-	grass->cbIndex = 0;
-	grass->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	grass->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-	grass->roughness = 0.125f;
+	// 필요한 정점 성분들을 추출해서 각 정점에 높이 함수 적용
+	size_t numTree = 20;
 
-	auto water = std::make_unique<Material>();
-	water->name = "water";
-	water->cbIndex = 1;
-	water->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
-	water->fresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	water->roughness = 0.0f;
+	std::vector<TreeSpriteVertex> vertices(numTree);	
+	for (size_t i = 0; i < numTree; ++i)
+	{
+		float x = MathHelper::RandF(-45.0f, 45.0f);
+		float z = MathHelper::RandF(-45.0f, 45.0f);
+		float y = GetHillsHeight(x, z);
 
-	auto wire = std::make_unique<Material>();
-	wire->name = "wire";
-	wire->cbIndex = 2;
-	wire->diffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	wire->fresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-	wire->roughness = 0.01f;
+		y += 8.0f;
 
-	m_materials[grass->name] = std::move(grass);
-	m_materials[water->name] = std::move(water);
-	m_materials[wire->name] = std::move(wire);
+		vertices[i].pos = XMFLOAT3(x, y, z);
+		vertices[i].size = XMFLOAT2(20.0f, 20.0f);
+	}
+	std::vector<std::uint16_t> indices(numTree);
+	for (int i = 0; i < numTree; ++i)
+	{
+		indices[i] = i;
+	}
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(TreeSpriteVertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->name = "tree_geometry";
+	geo->vertexBufferCount = 1;
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->vertexBuffers[0].cpu));
+	CopyMemory(geo->vertexBuffers[0].cpu->GetBufferPointer(), vertices.data(), vbByteSize);
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->indexBuffer.cpu));
+	CopyMemory(geo->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->vertexBuffers[0].gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), vertices.data(), vbByteSize, geo->vertexBuffers[0].uploader);
+	geo->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, geo->indexBuffer.uploader);
+
+	geo->vertexBuffers[0].byteStride = sizeof(VertexBaseData);
+	geo->vertexBuffers[0].byteSize = vbByteSize;
+	geo->indexBuffer.format = DXGI_FORMAT_R16_UINT;
+	geo->indexBuffer.byteSize = ibByteSize;
+
+	SubmeshGeometry treeSubmesh;
+	treeSubmesh.indexCount = (UINT)indices.size();
+	treeSubmesh.startIndexLocation = 0;
+	treeSubmesh.baseVertexLocation = 0;
+
+	geo->drawArgs["points"] = treeSubmesh;
+
+	m_geometries[geo->name] = std::move(geo);
 }
 
 void LandAndWavesApp::BuildRenderItems()
@@ -596,22 +633,28 @@ void LandAndWavesApp::BuildRenderItems()
 
 	XMMATRIX wavesWorld = XMMatrixIdentity();
 	XMMATRIX wavesTexTransform = XMMatrixIdentity();
-	std::unique_ptr<RenderItem> wavesRederItem
-		= CreateRenderItem(wavesWorld, wavesTexTransform, objCBIndex++, "water_geometry", "grid", "water", primitiveTopogoly, land_and_waves::RenderLayer::Transparent);
-	m_wavesRenderItem = wavesRederItem.get();
-	m_allRenderItems.push_back(std::move(wavesRederItem));
+	std::unique_ptr<RenderItem> wavesRenderItem
+		= CreateRenderItem(wavesWorld, wavesTexTransform, objCBIndex++, "water_geometry", "grid", "water", primitiveTopogoly, RenderLayer::Transparent);
+	m_wavesRenderItem = wavesRenderItem.get();
+	m_allRenderItems.push_back(std::move(wavesRenderItem));
 
 	XMMATRIX gridWorld = XMMatrixIdentity();
 	XMMATRIX gridTexTransform = XMMatrixScaling(5.0f, 5.0f, 1.0f);
-	std::unique_ptr<RenderItem> gridRederItem
-		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, "land_geometry", "grid", "grass", primitiveTopogoly, land_and_waves::RenderLayer::Opaque);
-	m_allRenderItems.push_back(std::move(gridRederItem));
+	std::unique_ptr<RenderItem> gridRenderItem
+		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, "land_geometry", "grid", "grass", primitiveTopogoly, RenderLayer::Opaque);
+	m_allRenderItems.push_back(std::move(gridRenderItem));
 
-	XMMATRIX boxWorld = XMMatrixIdentity();
+	/*XMMATRIX boxWorld = XMMatrixIdentity();
 	XMMATRIX boxTexTransform = XMMatrixIdentity();
-	std::unique_ptr<RenderItem> boxRederItem
-		= CreateRenderItem(boxWorld, boxTexTransform, objCBIndex++, "land_geometry", "box", "wire", primitiveTopogoly, land_and_waves::RenderLayer::AlphaTest);
-	m_allRenderItems.push_back(std::move(boxRederItem));
+	std::unique_ptr<RenderItem> boxRenderItem
+		= CreateRenderItem(boxWorld, boxTexTransform, objCBIndex++, "land_geometry", "box", "wire", primitiveTopogoly, RenderLayer::AlphaTest);
+	m_allRenderItems.push_back(std::move(boxRenderItem));*/
+
+	XMMATRIX treeWorld = XMMatrixIdentity();
+	XMMATRIX treeTexTransform = XMMatrixIdentity();
+	std::unique_ptr<RenderItem> treeRenderItem
+		= CreateRenderItem(treeWorld, treeTexTransform, objCBIndex++, "tree_geometry", "points", "tree", D3D_PRIMITIVE_TOPOLOGY_POINTLIST, RenderLayer::TreeSprite);
+	m_allRenderItems.push_back(std::move(treeRenderItem));
 }
 
 void LandAndWavesApp::BuildFrameResources()
@@ -662,14 +705,22 @@ void LandAndWavesApp::BuildRootSignature()
 
 void LandAndWavesApp::BuildShadersAndInputLayout()
 {
-	m_shaders["standard_vs"] = D3DUtil::CompileShader(L"../build_shader/texture_vertex.hlsl", nullptr, "main", "vs_5_1");
-	m_shaders["standard_ps"] = D3DUtil::CompileShader(L"../build_shader/texture_pixel.hlsl", nullptr, "main", "ps_5_1");
-	m_shaders["alpha_tested_ps"] = D3DUtil::CompileShader(L"../build_shader/alpha_tested_texture_pixel.hlsl", nullptr, "main", "ps_5_1");
+	m_shaders["standard_vs"] = D3DUtil::CompileShader(L"../build_shader/standard_texture.hlsl", nullptr, "VS", "vs_5_1");
+	m_shaders["standard_ps"] = D3DUtil::CompileShader(L"../build_shader/standard_texture.hlsl", nullptr, "FS", "ps_5_1");
+	m_shaders["alpha_test_ps"] = D3DUtil::CompileShader(L"../build_shader/standard_texture.hlsl", nullptr, "AlphaTestedFS", "ps_5_1");
 
-	m_inputLayout = {
+	m_shaders["tree_sprite_vs"] = D3DUtil::CompileShader(L"../build_shader/tree_sprite.hlsl", nullptr, "VS", "vs_5_1");
+	m_shaders["tree_sprite_gs"] = D3DUtil::CompileShader(L"../build_shader/tree_sprite.hlsl", nullptr, "GS", "gs_5_1");
+	m_shaders["tree_sprite_ps"] = D3DUtil::CompileShader(L"../build_shader/tree_sprite.hlsl", nullptr, "PS", "ps_5_1");
+
+	m_inputLayouts["standard"] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+	m_inputLayouts["tree_sprite"] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
 
@@ -677,7 +728,7 @@ void LandAndWavesApp::BuildPSO()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	psoDesc.InputLayout = { m_inputLayout.data(), (UINT)m_inputLayout.size() };
+	psoDesc.InputLayout = { m_inputLayouts["standard"].data(), (UINT)m_inputLayouts["standard"].size() };
 	psoDesc.pRootSignature = m_rootSignature.Get();
 	psoDesc.VS =
 	{
@@ -700,7 +751,6 @@ void LandAndWavesApp::BuildPSO()
 	psoDesc.SampleDesc.Quality = m_4xMsaaQuality ? (m_4xMsaaQuality - 1) : 0;
 	psoDesc.DSVFormat = m_depthStencilFormat;
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos["opaque"])));
-	m_renderItemsEachRenderLayers[land_and_waves::RenderLayer::Opaque].first = m_psos["opaque"].Get();
 
 	// 혼합용
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPsoDesc = psoDesc;
@@ -718,28 +768,59 @@ void LandAndWavesApp::BuildPSO()
 	blendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 	transparentPsoDesc.BlendState.RenderTarget[0] = blendDesc;
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&m_psos["transparent"])));
-	m_renderItemsEachRenderLayers[land_and_waves::RenderLayer::Transparent].first = m_psos["transparent"].Get();
 
 	// 알파 테스트용
 	transparentPsoDesc.PS =
 	{
-		reinterpret_cast<BYTE*>(m_shaders["alpha_tested_ps"]->GetBufferPointer()),
-		m_shaders["alpha_tested_ps"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(m_shaders["alpha_test_ps"]->GetBufferPointer()),
+		m_shaders["alpha_test_ps"]->GetBufferSize()
 	};
 	transparentPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&m_psos["alpha_tested"])));
-	m_renderItemsEachRenderLayers[land_and_waves::RenderLayer::AlphaTest].first = m_psos["alpha_tested"].Get();
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&m_psos["alpha_test"])));
+
+	// 나무 스프라이트
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC treeSpritePsoDesc = psoDesc;
+
+	treeSpritePsoDesc.InputLayout = { m_inputLayouts["tree_sprite"].data(), (UINT)m_inputLayouts["tree_sprite"].size() };
+	treeSpritePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	treeSpritePsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["tree_sprite_vs"]->GetBufferPointer()),
+		m_shaders["tree_sprite_vs"]->GetBufferSize()
+	};
+	treeSpritePsoDesc.GS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["tree_sprite_gs"]->GetBufferPointer()),
+		m_shaders["tree_sprite_gs"]->GetBufferSize()
+	};
+	treeSpritePsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["tree_sprite_ps"]->GetBufferPointer()),
+		m_shaders["tree_sprite_ps"]->GetBufferSize()
+	};
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&m_psos["tree_sprite"])));
 }
 
 void LandAndWavesApp::BuildTexture()
 {
 	m_textures["grass"] = D3DUtil::CreateTextureFromDDSFile("grass", L"./resource/grass.dds", m_d3dDevice.Get(), m_commandList.Get());
 	m_textures["water"] = D3DUtil::CreateTextureFromDDSFile("water", L"./resource/water1.dds", m_d3dDevice.Get(), m_commandList.Get());
-	m_textures["wireFence"] = D3DUtil::CreateTextureFromDDSFile("wireFence", L"./resource/WireFence.dds", m_d3dDevice.Get(), m_commandList.Get());
+	m_textures["wire_fence"] = D3DUtil::CreateTextureFromDDSFile("wire_fence", L"./resource/WireFence.dds", m_d3dDevice.Get(), m_commandList.Get());
+	m_textures["tree_sprite"] = D3DUtil::CreateTextureFromDDSFile("tree_sprite", L"./resource/treeArray2.dds", m_d3dDevice.Get(), m_commandList.Get());
 }
 
-void LandAndWavesApp::BuildDescriptorHeapAndTextureShaderResourceView()
+void LandAndWavesApp::BuildMaterialAndSrv()
 {
+	// 머터리얼 생성
+	m_materials["grass"] = std::make_unique<Material>("grass", 0,
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.01f, 0.01f, 0.01f), 0.125f);
+	m_materials["water"] = std::make_unique<Material>("water", 1,
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.0f);
+	m_materials["wire"] = std::make_unique<Material>("wire", 2,
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.01f, 0.01f, 0.01f), 0.01f);
+	m_materials["tree"] = std::make_unique<Material>("tree", 3,
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.01f);
+
 	// 서술자 힙 생성
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
 	srvHeapDesc.NumDescriptors = (UINT)m_textures.size();
@@ -748,36 +829,10 @@ void LandAndWavesApp::BuildDescriptorHeapAndTextureShaderResourceView()
 	ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
 
 	// srv 생성
-	auto grass = m_textures["grass"]->resource.Get();
-	auto water = m_textures["water"]->resource.Get();
-	auto wireFence = m_textures["wireFence"]->resource.Get();
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = grass->GetDesc().Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = grass->GetDesc().MipLevels;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	m_d3dDevice->CreateShaderResourceView(grass, &srvDesc, hDescriptor);
-	m_materials["grass"].get()->diffuseSrvHeapIndex = 0;
-
-	// 힙의 다음 서술자로 이동
-	hDescriptor.Offset(1, m_cbvSrvDescriptorSize);
-
-	srvDesc.Format = water->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = water->GetDesc().MipLevels;
-	m_d3dDevice->CreateShaderResourceView(water, &srvDesc, hDescriptor);
-	m_materials["water"].get()->diffuseSrvHeapIndex = 1;
-
-	hDescriptor.Offset(1, m_cbvSrvDescriptorSize);
-
-	srvDesc.Format = wireFence->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = wireFence->GetDesc().MipLevels;
-	m_d3dDevice->CreateShaderResourceView(wireFence, &srvDesc, hDescriptor);
-	m_materials["wire"].get()->diffuseSrvHeapIndex = 2;
+	CreateSRVForTexture(0, m_textures["grass"]->resource.Get(), "grass");
+	CreateSRVForTexture(1, m_textures["water"]->resource.Get(), "water");
+	CreateSRVForTexture(2, m_textures["wire_fence"]->resource.Get(), "wire");
+	CreateSRVForTexture(3, m_textures["tree_sprite"]->resource.Get(), "tree");
 }
 
 float LandAndWavesApp::GetHillsHeight(float x, float z) const
@@ -800,7 +855,7 @@ XMFLOAT3 LandAndWavesApp::GetHillsNormal(float x, float z) const
 }
 
 std::unique_ptr<RenderItem> LandAndWavesApp::CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
-	const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology, land_and_waves::RenderLayer layer)
+	const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology, RenderLayer layer)
 {
 	std::unique_ptr<RenderItem> rederItem = std::make_unique<RenderItem>();
 
@@ -814,7 +869,25 @@ std::unique_ptr<RenderItem> LandAndWavesApp::CreateRenderItem(const XMMATRIX& wo
 	rederItem->startIndexLocation = rederItem->geometry->drawArgs[submesh].startIndexLocation;
 	rederItem->baseVertexLocation = rederItem->geometry->drawArgs[submesh].baseVertexLocation;
 
-	m_renderItemsEachRenderLayers[layer].second.push_back(rederItem.get());
+	m_renderItemsEachRenderLayers[layer].push_back(rederItem.get());
 
 	return rederItem;
+}
+
+void LandAndWavesApp::CreateSRVForTexture(UINT index, ID3D12Resource* textureResource, const char* materialName)
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+	hDescriptor.Offset(index, m_cbvSrvDescriptorSize);
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = textureResource->GetDesc().Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = textureResource->GetDesc().MipLevels;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+	m_d3dDevice->CreateShaderResourceView(textureResource, &srvDesc, hDescriptor);
+
+	m_materials[materialName].get()->diffuseSrvHeapIndex = index;
 }

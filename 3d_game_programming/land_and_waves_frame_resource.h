@@ -19,6 +19,12 @@ namespace land_and_waves
 		XMFLOAT3 normal;
 	};
 
+	struct TreeSpriteVertex
+	{
+		XMFLOAT3 pos;
+		XMFLOAT2 size;
+	};
+
 	struct PassConstants
 	{
 		XMFLOAT4X4 view = MathHelper::Identity4x4();

@@ -60,22 +60,19 @@
     <FxCompile Include="toon_light_pixel.hlsl">
       <Filter>Light</Filter>
     </FxCompile>
-    <FxCompile Include="texture_pixel.hlsl">
-      <Filter>Texture</Filter>
-    </FxCompile>
-    <FxCompile Include="texture_vertex.hlsl">
-      <Filter>Texture</Filter>
-    </FxCompile>
-    <FxCompile Include="alpha_tested_texture_pixel.hlsl">
-      <Filter>Texture</Filter>
-    </FxCompile>
-    <FxCompile Include="tree_sprite_shader.hlsl">
+    <FxCompile Include="tree_sprite.hlsl">
       <Filter>Geometry Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="standard_texture.hlsl">
+      <Filter>Texture</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="general_setting.hlsli">
+      <Filter>Header Files</Filter>
+    </None>
     <None Include="lighting_utils.hlsli">
-      <Filter>Light</Filter>
+      <Filter>Header Files</Filter>
     </None>
   </ItemGroup>
 </Project>

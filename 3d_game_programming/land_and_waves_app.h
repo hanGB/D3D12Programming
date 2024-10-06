@@ -38,6 +38,7 @@ namespace land_and_waves
 	{
 		Opaque = 0,
 		AlphaTest,
+		TreeSprite,
 		Transparent,
 		Count
 	};
@@ -80,22 +81,21 @@ private:
 	// 초기화시의 빌드
 	void BuildLandGeometry();
 	void BuildWavesGeometry();
-	void BuildMaterials();
+	void BuildTreeGeometry();
+	void BuildTexture();
+	void BuildMaterialAndSrv();
 	void BuildRenderItems();
 	void BuildFrameResources();
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
 	void BuildPSO();
 
-	// 텍스처
-	void BuildTexture();
-	void BuildDescriptorHeapAndTextureShaderResourceView();
-
 	float GetHillsHeight(float x, float z) const;
 	XMFLOAT3 GetHillsNormal(float x, float z) const;
 
 	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
-		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology, land_and_waves::RenderLayer layer);
+		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology, RenderLayer layer);
+	void CreateSRVForTexture(UINT index, ID3D12Resource* textureResource, const char* materialName);
 
 	ComPtr<ID3D12DescriptorHeap> m_srvHeap = nullptr;
 
@@ -110,7 +110,7 @@ private:
 	ComPtr<ID3D12RootSignature> m_rootSignature = nullptr;
 
 	// 파이프라인 관련
-	std::vector<D3D12_INPUT_ELEMENT_DESC> m_inputLayout;
+	std::unordered_map<std::string, std::vector<D3D12_INPUT_ELEMENT_DESC>> m_inputLayouts;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> m_shaders;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> m_psos;
 
@@ -118,7 +118,7 @@ private:
 	// 모든 렌더 아이템의 목록
 	std::vector<std::unique_ptr<RenderItem>> m_allRenderItems;
 	// PSO별 렌더 아이템
-	std::unordered_map<land_and_waves::RenderLayer, std::pair<ID3D12PipelineState*, std::vector<RenderItem*>>> m_renderItemsEachRenderLayers;
+	std::unordered_map<RenderLayer, std::vector<RenderItem*>> m_renderItemsEachRenderLayers;
 
 	// 뷰, 투영 변환
 	XMFLOAT4X4 m_viewTransform = MathHelper::Identity4x4();
@@ -142,7 +142,7 @@ private:
 	// 카메라
 	float m_theta = 1.5f * XM_PI;
 	float m_phi = 0.2f * XM_PI;
-	float m_radius = 50.0f;
+	float m_radius = 150.0f;
 
 	// 태양
 	float m_sunTheta = 1.25f * XM_PI;

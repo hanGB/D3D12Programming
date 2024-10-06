@@ -98,6 +98,8 @@ struct MeshGeometry
 {
 	std::string name;
 
+	UINT vertexBufferCount = 2;
+
 	std::array<VertexBuffer, 2> vertexBuffers = { 
 		VertexBuffer({ nullptr, nullptr, nullptr, 0, 0 }), 
 		VertexBuffer({ nullptr, nullptr, nullptr, 0, 0 }) 
@@ -140,6 +142,13 @@ struct MeshGeometry
 
 struct Material
 {
+	Material() = default;
+	Material(const char* name, UINT cbIndex, const XMFLOAT4& diffuseAlbedo, const XMFLOAT3& fresnelR0, float roughness)
+		: name(name), cbIndex(cbIndex), diffuseAlbedo(diffuseAlbedo), fresnelR0(fresnelR0), roughness(roughness)
+	{
+
+	}
+
 	// 재질 이름
 	std::string name;
 

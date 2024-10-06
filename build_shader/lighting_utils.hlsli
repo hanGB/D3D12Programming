@@ -1,3 +1,4 @@
+
 struct Light
 {
     float3  strength;
@@ -294,4 +295,34 @@ float3 ComputeToonSpotLight(Light light, Material material, float3 pos, float3 n
     caculatedLight = caculatedLight / (caculatedLight + 1.0f);
      
     return material.diffuseAlbedo.rgb * caculatedLight;
+}
+
+float4 ComputeLighting(Light lights[MAX_LIGHTS], Material material, float3 pos, float3 normal, float3 toEye, float3 shadowFactor)
+{
+    float3 result = 0.0f;
+    
+    int i = 0;
+    
+#if (NUM_DIR_LIGHTS > 0)
+    for (i = 0; i < NUM_DIR_LIGHTS; ++i)
+    {
+        result += shadowFactor[i] * ComputeDirectionalLight(lights[i], material, normal, toEye);
+    }
+#endif
+    
+#if (NUM_POINT_LIGHTS > 0)
+    for (i; i < NUM_POINT_LIGHTS; ++i)
+    {
+        result += ComputePointLight(lights[i], material, pos, normal, toEye);
+    }
+#endif
+    
+#if (NUM_SPOT_LIGHTS > 0)
+    for (i; i < NUM_SPOT_LIGHTS; ++i)
+    {
+        result += ComputeSpotLight(lights[i], material, pos, normal, toEye);
+    }
+#endif
+    
+    return float4(result, 0.0f);
 }
