@@ -24,6 +24,8 @@ namespace land_and_waves
 		MeshGeometry* geometry = nullptr;
 		// 재질
 		Material* material = nullptr;
+		// 파티클
+		Particle* particle = nullptr;
 
 		// 기본 도형 위상 구조
 		D3D12_PRIMITIVE_TOPOLOGY primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -40,6 +42,8 @@ namespace land_and_waves
 		AlphaTest,
 		TreeSprite,
 		Transparent,
+		Particle,
+		ParticleInfinity,
 		Count
 	};
 }
@@ -67,6 +71,7 @@ private:
 
 	// 렌더 아이템 그리기
 	void DrawRenderItems(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems);
+	void DrawRenderItemsForParticle(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems);
 
 	// 동적 버퍼 업데이트
 	void UpdateWaves(const GameTimer& gt);
@@ -74,6 +79,7 @@ private:
 	void UpdateCamera(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMaterialCBs(const GameTimer& gt);
+	void UpdateParticleCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 	// 텍스처 애니메이션
 	void AnimateMaterials(const GameTimer& gt);
@@ -82,6 +88,7 @@ private:
 	void BuildLandGeometry();
 	void BuildWavesGeometry();
 	void BuildTreeGeometry();
+	void BuildParticle();
 	void BuildTexture();
 	void BuildMaterialAndSrv();
 	void BuildRenderItems();
@@ -95,6 +102,10 @@ private:
 
 	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
 		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology, RenderLayer layer);
+
+	std::unique_ptr<RenderItem> CreateRenderItemForParticle(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
+		const char* particle, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology, RenderLayer layer);
+
 	void CreateSRVForTexture(UINT index, ID3D12Resource* textureResource, const char* materialName);
 
 	ComPtr<ID3D12DescriptorHeap> m_srvHeap = nullptr;
@@ -135,6 +146,9 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
 	// 텍스처
 	std::unordered_map<std::string, std::unique_ptr<Texture>> m_textures;
+
+	// 파티클
+	std::unordered_map<std::string, std::unique_ptr<Particle>> m_particles;
 
 	// 마우스 입력
 	POINT m_lastMousePosition;

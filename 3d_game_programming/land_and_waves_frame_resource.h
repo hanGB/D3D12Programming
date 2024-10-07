@@ -25,6 +25,15 @@ namespace land_and_waves
 		XMFLOAT2 size;
 	};
 
+	struct ParticleVertex
+	{
+		XMFLOAT3 startPos;
+		XMFLOAT2 size;
+		XMFLOAT3 selfLightColor;
+		XMFLOAT3 startVelocity;
+		float timeDelay;
+	};
+
 	struct PassConstants
 	{
 		XMFLOAT4X4 view = MathHelper::Identity4x4();
@@ -66,9 +75,18 @@ namespace land_and_waves
 		XMFLOAT4X4 matTransform = MathHelper::Identity4x4();
 	};
 
+	// 파티클 상수
+	struct ParticleConstants
+	{
+		float startTime;
+		float lifeTime;
+		float dragCoefficient;
+	};
+
+
 	struct LandAndWavesFrameResource
 	{
-		LandAndWavesFrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT wavesVertexCount);
+		LandAndWavesFrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT particleCount, UINT wavesVertexCount);
 		LandAndWavesFrameResource(const LandAndWavesFrameResource& rhs) = delete;
 		LandAndWavesFrameResource& operator=(const LandAndWavesFrameResource& rhs) = delete;
 		~LandAndWavesFrameResource();
@@ -82,6 +100,7 @@ namespace land_and_waves
 		std::unique_ptr<UploadBuffer<PassConstants>> passCB = nullptr;
 		std::unique_ptr<UploadBuffer<ObjectConstants>> objectCB = nullptr;
 		std::unique_ptr<UploadBuffer<MaterialConstants>> materialCB = nullptr;
+		std::unique_ptr<UploadBuffer<ParticleConstants>> particleCB = nullptr;
 
 		// 파도를 위한 버텍스 버퍼
 		std::unique_ptr<UploadBuffer<VertexBaseData>> wavesBaseVB = nullptr;

@@ -178,6 +178,53 @@ struct Light
 	float spotPower;	
 };
 
+struct Particle
+{
+	// 이름
+	std::string name;
+	// 상수 버퍼의 인덱스
+	int cbIndex = -1;
+
+	float startTime;
+	float lifeTime;
+	float dragCoefficient;
+
+	// 파티클이 변해서 하당 상수 버퍼를 갱신해야 하는지 여부
+	int numFramesDirty = NUM_FRAME_RESOURCES;
+
+	UINT indexCount = 0;
+
+	VertexBuffer vertexBuffer = { nullptr, nullptr, nullptr, 0, 0 };
+	IndexBuffer indexBuffer = { nullptr, nullptr, nullptr, DXGI_FORMAT_R16_UINT, 0 };
+
+	D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const
+	{
+		D3D12_VERTEX_BUFFER_VIEW vbv;
+		vbv.BufferLocation = vertexBuffer.gpu->GetGPUVirtualAddress();
+		vbv.StrideInBytes = vertexBuffer.byteStride;
+		vbv.SizeInBytes = vertexBuffer.byteSize;
+
+		return vbv;
+	}
+	D3D12_INDEX_BUFFER_VIEW IndexBufferView() const
+	{
+		D3D12_INDEX_BUFFER_VIEW ibv;
+		ibv.BufferLocation = indexBuffer.gpu->GetGPUVirtualAddress();
+		ibv.Format = indexBuffer.format;
+		ibv.SizeInBytes = indexBuffer.byteSize;
+
+		return ibv;
+	}
+
+	// 리소스를 GPU에 모두 올린 후 업로드 버퍼 메모리 해제 가능
+	void DisposeUploaders()
+	{
+		vertexBuffer.uploader = nullptr;
+		indexBuffer.uploader = nullptr;
+	}
+};
+
+
 #ifndef ThrowIfFailed
 #define ThrowIfFailed(x) \
 { \

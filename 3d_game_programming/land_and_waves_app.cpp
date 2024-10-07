@@ -29,6 +29,7 @@ bool LandAndWavesApp::Initialize()
 	BuildLandGeometry();
 	BuildWavesGeometry();
 	BuildTreeGeometry();
+	BuildParticle();
 	BuildTexture();
 	BuildMaterialAndSrv();
 	BuildRenderItems();
@@ -81,6 +82,7 @@ void LandAndWavesApp::Update(const GameTimer& gt)
 	// 현재 프레임 리소스 갱신
 	UpdateObjectCBs(gt);
 	UpdateMaterialCBs(gt);
+	UpdateParticleCBs(gt);
 	UpdateMainPassCB(gt);
 }
 
@@ -129,6 +131,12 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 
 	m_commandList->SetPipelineState(m_psos["transparent"].Get());
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Transparent]);
+
+	m_commandList->SetPipelineState(m_psos["gravity_particle"].Get());
+	DrawRenderItemsForParticle(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Particle]);
+
+	m_commandList->SetPipelineState(m_psos["gravity_particle_infinity"].Get());
+	DrawRenderItemsForParticle(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::ParticleInfinity]);
 
 	// 리소스 용도에 관련된 상태 전이 통지
 	m_commandList->ResourceBarrier(1,
@@ -276,6 +284,51 @@ void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* commandList, co
 	}
 }
 
+void LandAndWavesApp::DrawRenderItemsForParticle(ID3D12GraphicsCommandList* commandList, const std::vector<RenderItem*>& renderItems)
+{
+	UINT objectCBbyteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT matrialCBbyteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(MaterialConstants));
+	UINT particleCBbyteSize = D3DUtil::CalculateConstantBufferByteSize(sizeof(ParticleConstants));
+
+	ID3D12Resource* objectCB = m_currentFrameResource->objectCB->Resource();
+	ID3D12Resource* materialCB = m_currentFrameResource->materialCB->Resource();
+	ID3D12Resource* particleCB = m_currentFrameResource->particleCB->Resource();
+
+	// 각 렌더 아이템 그리기
+	for (size_t i = 0; i < renderItems.size(); ++i)
+	{
+		RenderItem* renderItem = renderItems[i];
+
+		D3D12_VERTEX_BUFFER_VIEW vbvs[] = { renderItem->particle->VertexBufferView() };
+		commandList->IASetVertexBuffers(0, _countof(vbvs), vbvs);
+		commandList->IASetIndexBuffer(&renderItem->particle->IndexBufferView());
+		commandList->IASetPrimitiveTopology(renderItem->primitiveTopology);
+
+		// 텍스처 서술자 핸들
+		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+		tex.Offset(renderItem->material->diffuseSrvHeapIndex, m_cbvSrvDescriptorSize);
+
+		// 현재 프레임 리소스에 대한 이 오브젝트를 위한 상수 버퍼 가상 주소 계산
+		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
+		objCBAddress += renderItem->objectCBIndex * objectCBbyteSize;
+		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress();
+		matCBAddress += renderItem->material->cbIndex * matrialCBbyteSize;
+		D3D12_GPU_VIRTUAL_ADDRESS particleCBAddress = particleCB->GetGPUVirtualAddress();
+		particleCBAddress += renderItem->particle->cbIndex * particleCBbyteSize;
+
+		commandList->SetGraphicsRootDescriptorTable(0, tex);
+		commandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
+		commandList->SetGraphicsRootConstantBufferView(3, matCBAddress);
+		commandList->SetGraphicsRootConstantBufferView(4, particleCBAddress);
+
+		commandList->DrawIndexedInstanced(
+			renderItem->indexCount, 1,
+			renderItem->startIndexLocation,
+			renderItem->baseVertexLocation,
+			0);
+	}
+}
+
 void LandAndWavesApp::UpdateWaves(const GameTimer& gt)
 {
 	// 4분의 1초마다 무작위로 파도 생성
@@ -382,6 +435,29 @@ void LandAndWavesApp::UpdateMaterialCBs(const GameTimer& gt)
 
 			// 다음 프레임 자원으로 넘어감
 			mat->numFramesDirty--;
+		}
+	}
+}
+
+void LandAndWavesApp::UpdateParticleCBs(const GameTimer& gt)
+{
+	auto currentParticleCB = m_currentFrameResource->particleCB.get();
+
+	for (auto& e : m_particles)
+	{
+		// 상수들이 바꾸었을 때에만 cbuffer 자료 갱신
+		Particle* particle = e.second.get();
+		if (particle->numFramesDirty > 0)
+		{
+			ParticleConstants particleConstants;
+			particleConstants.dragCoefficient = particle->dragCoefficient;
+			particleConstants.startTime = particle->startTime;
+			particleConstants.lifeTime = particle->lifeTime;
+
+			currentParticleCB->CopyData(particle->cbIndex, particleConstants);
+
+			// 다음 프레임 자원으로 넘어감
+			particle->numFramesDirty--;
 		}
 	}
 }
@@ -611,7 +687,7 @@ void LandAndWavesApp::BuildTreeGeometry()
 	geo->vertexBuffers[0].gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), vertices.data(), vbByteSize, geo->vertexBuffers[0].uploader);
 	geo->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, geo->indexBuffer.uploader);
 
-	geo->vertexBuffers[0].byteStride = sizeof(VertexBaseData);
+	geo->vertexBuffers[0].byteStride = sizeof(TreeSpriteVertex);
 	geo->vertexBuffers[0].byteSize = vbByteSize;
 	geo->indexBuffer.format = DXGI_FORMAT_R16_UINT;
 	geo->indexBuffer.byteSize = ibByteSize;
@@ -624,6 +700,75 @@ void LandAndWavesApp::BuildTreeGeometry()
 	geo->drawArgs["points"] = treeSubmesh;
 
 	m_geometries[geo->name] = std::move(geo);
+}
+
+void LandAndWavesApp::BuildParticle()
+{
+	// 필요한 정점 성분들을 추출해서 각 정점에 높이 함수 적용
+	int numParticle = 1000;
+	int numStem = 20;
+
+	std::vector<ParticleVertex> vertices(numParticle);
+
+	int k = 0;
+	for (int i = 0; i < numParticle / numStem; ++i)
+	{
+		for (float angle = 0.f; angle < 360.0f; angle += (360.0f / (float)numStem), ++k)
+		{
+			vertices[k].startPos = XMFLOAT3(5.0f * cosf(XMConvertToRadians(angle)), 50.0f, 5.0f * sinf(XMConvertToRadians(angle)));
+			vertices[k].size = XMFLOAT2(5.0f, 5.0f);
+			vertices[k].selfLightColor = XMFLOAT3(0.0f, 0.0f, 0.0f);
+			vertices[k].startVelocity = XMFLOAT3(30.0f * cosf(XMConvertToRadians(angle)), 30.0f, 30.0f * sinf(XMConvertToRadians(angle)));
+			vertices[k].timeDelay = i * 0.1f;
+		}
+	}
+	for (size_t i = 0; i < numParticle; ++i)
+	{
+		float x = MathHelper::RandF(-45.0f, 45.0f);
+		float z = MathHelper::RandF(-45.0f, 45.0f);
+		float y = GetHillsHeight(x, z);
+
+		y += 8.0f;
+
+		vertices[i].startPos;
+		vertices[i].size = XMFLOAT2(2.0f, 2.0f);
+		vertices[i].selfLightColor = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		vertices[i].startVelocity;
+		vertices[i].timeDelay;
+	}
+	std::vector<std::uint16_t> indices(numParticle);
+	for (int i = 0; i < numParticle; ++i)
+	{
+		indices[i] = i;
+	}
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(ParticleVertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto particle = std::make_unique<Particle>();
+	particle->name = "fountain";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &particle->vertexBuffer.cpu));
+	CopyMemory(particle->vertexBuffer.cpu->GetBufferPointer(), vertices.data(), vbByteSize);
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &particle->indexBuffer.cpu));
+	CopyMemory(particle->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
+
+	particle->vertexBuffer.gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), vertices.data(), vbByteSize, particle->vertexBuffer.uploader);
+	particle->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, particle->indexBuffer.uploader);
+
+	particle->vertexBuffer.byteStride = sizeof(ParticleVertex);
+	particle->vertexBuffer.byteSize = vbByteSize;
+	particle->indexBuffer.format = DXGI_FORMAT_R16_UINT;
+	particle->indexBuffer.byteSize = ibByteSize;
+
+	particle->indexCount = (UINT)indices.size();
+	particle->cbIndex = 0;
+
+	particle->dragCoefficient = 0.0f;
+	particle->lifeTime = 4.0f;
+	particle->startTime = m_timer.TotalTime();
+
+	m_particles[particle->name] = std::move(particle);
 }
 
 void LandAndWavesApp::BuildRenderItems()
@@ -655,13 +800,21 @@ void LandAndWavesApp::BuildRenderItems()
 	std::unique_ptr<RenderItem> treeRenderItem
 		= CreateRenderItem(treeWorld, treeTexTransform, objCBIndex++, "tree_geometry", "points", "tree", D3D_PRIMITIVE_TOPOLOGY_POINTLIST, RenderLayer::TreeSprite);
 	m_allRenderItems.push_back(std::move(treeRenderItem));
+
+	// 파티클
+	XMMATRIX fountainWorld = XMMatrixIdentity();
+	XMMATRIX fountainTexTransform = XMMatrixIdentity();
+	std::unique_ptr<RenderItem> fountainRenderItem
+		= CreateRenderItemForParticle(fountainWorld, fountainTexTransform, objCBIndex++, "fountain", "water", D3D_PRIMITIVE_TOPOLOGY_POINTLIST, RenderLayer::ParticleInfinity);
+	m_allRenderItems.push_back(std::move(fountainRenderItem));
 }
 
 void LandAndWavesApp::BuildFrameResources()
 {
 	for (int i = 0; i < NUM_FRAME_RESOURCES; ++i)
 	{
-		m_frameResources.push_back(std::make_unique<LandAndWavesFrameResource>(m_d3dDevice.Get(), 1, (UINT)m_allRenderItems.size(), (UINT)m_materials.size(), m_waves->VertexCount()));
+		m_frameResources.push_back(std::make_unique<LandAndWavesFrameResource>(m_d3dDevice.Get(), 1, 
+			(UINT)m_allRenderItems.size(), (UINT)m_materials.size(), (UINT)m_particles.size(), m_waves->VertexCount()));
 	}
 }
 
@@ -670,18 +823,19 @@ void LandAndWavesApp::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE descRange;
 	descRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
-	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[5];
 	// 루트 CBV 생성
 	slotRootParameter[0].InitAsDescriptorTable(1, &descRange, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[1].InitAsConstantBufferView(0);
 	slotRootParameter[2].InitAsConstantBufferView(1);
 	slotRootParameter[3].InitAsConstantBufferView(2);
+	slotRootParameter[4].InitAsConstantBufferView(3);
 
 	auto staticSamplers = D3DUtil::GetStaticsSamplers();
 
 	// 루트 시그니쳐는 루트 매개변수들의 배열
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(
-		4, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		5, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	ComPtr<ID3DBlob> serializedRootSignature = nullptr;
 	ComPtr<ID3DBlob> errorBlob = nullptr;
@@ -713,6 +867,11 @@ void LandAndWavesApp::BuildShadersAndInputLayout()
 	m_shaders["tree_sprite_gs"] = D3DUtil::CompileShader(L"../build_shader/tree_sprite.hlsl", nullptr, "GS", "gs_5_1");
 	m_shaders["tree_sprite_ps"] = D3DUtil::CompileShader(L"../build_shader/tree_sprite.hlsl", nullptr, "PS", "ps_5_1");
 
+	m_shaders["gravity_particle_vs"] = D3DUtil::CompileShader(L"../build_shader/gravity_particle.hlsl", nullptr, "VS", "vs_5_1");
+	m_shaders["gravity_particle_infinity_vs"] = D3DUtil::CompileShader(L"../build_shader/gravity_particle.hlsl", nullptr, "VSInfinity", "vs_5_1");
+	m_shaders["gravity_particle_gs"] = D3DUtil::CompileShader(L"../build_shader/gravity_particle.hlsl", nullptr, "GS", "gs_5_1");
+	m_shaders["gravity_particle_ps"] = D3DUtil::CompileShader(L"../build_shader/gravity_particle.hlsl", nullptr, "PS", "ps_5_1");
+
 	m_inputLayouts["standard"] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -721,6 +880,13 @@ void LandAndWavesApp::BuildShadersAndInputLayout()
 	m_inputLayouts["tree_sprite"] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+	m_inputLayouts["gravity_particle"] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "VELOCITY", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "DELAY", 0, DXGI_FORMAT_R32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 }
 
@@ -799,6 +965,34 @@ void LandAndWavesApp::BuildPSO()
 		m_shaders["tree_sprite_ps"]->GetBufferSize()
 	};
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&m_psos["tree_sprite"])));
+
+	// 중력을 받는 파티클
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC gravityParticlePsoDesc = transparentPsoDesc;
+
+	gravityParticlePsoDesc.InputLayout = { m_inputLayouts["gravity_particle"].data(), (UINT)m_inputLayouts["gravity_particle"].size() };
+	gravityParticlePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	gravityParticlePsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["gravity_particle_vs"]->GetBufferPointer()),
+		m_shaders["gravity_particle_vs"]->GetBufferSize()
+	};
+	gravityParticlePsoDesc.GS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["gravity_particle_gs"]->GetBufferPointer()),
+		m_shaders["gravity_particle_gs"]->GetBufferSize()
+	};
+	gravityParticlePsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["gravity_particle_ps"]->GetBufferPointer()),
+		m_shaders["gravity_particle_ps"]->GetBufferSize()
+	};
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&gravityParticlePsoDesc, IID_PPV_ARGS(&m_psos["gravity_particle"])));
+	gravityParticlePsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["gravity_particle_infinity_vs"]->GetBufferPointer()),
+		m_shaders["gravity_particle_infinity_vs"]->GetBufferSize()
+	};
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&gravityParticlePsoDesc, IID_PPV_ARGS(&m_psos["gravity_particle_infinity"])));
 }
 
 void LandAndWavesApp::BuildTexture()
@@ -857,21 +1051,41 @@ XMFLOAT3 LandAndWavesApp::GetHillsNormal(float x, float z) const
 std::unique_ptr<RenderItem> LandAndWavesApp::CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
 	const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology, RenderLayer layer)
 {
-	std::unique_ptr<RenderItem> rederItem = std::make_unique<RenderItem>();
+	std::unique_ptr<RenderItem> renderItem = std::make_unique<RenderItem>();
 
-	XMStoreFloat4x4(&rederItem->world, world);
-	XMStoreFloat4x4(&rederItem->texTransform, texTransform);
-	rederItem->objectCBIndex = objectCBIndex;
-	rederItem->geometry = m_geometries[geometry].get();
-	rederItem->material = m_materials[material].get();
-	rederItem->primitiveTopology = primitiveTopology;
-	rederItem->indexCount = rederItem->geometry->drawArgs[submesh].indexCount;
-	rederItem->startIndexLocation = rederItem->geometry->drawArgs[submesh].startIndexLocation;
-	rederItem->baseVertexLocation = rederItem->geometry->drawArgs[submesh].baseVertexLocation;
+	XMStoreFloat4x4(&renderItem->world, world);
+	XMStoreFloat4x4(&renderItem->texTransform, texTransform);
+	renderItem->objectCBIndex = objectCBIndex;
+	renderItem->geometry = m_geometries[geometry].get();
+	renderItem->material = m_materials[material].get();
+	renderItem->primitiveTopology = primitiveTopology;
+	renderItem->indexCount = renderItem->geometry->drawArgs[submesh].indexCount;
+	renderItem->startIndexLocation = renderItem->geometry->drawArgs[submesh].startIndexLocation;
+	renderItem->baseVertexLocation = renderItem->geometry->drawArgs[submesh].baseVertexLocation;
 
-	m_renderItemsEachRenderLayers[layer].push_back(rederItem.get());
+	m_renderItemsEachRenderLayers[layer].push_back(renderItem.get());
 
-	return rederItem;
+	return renderItem;
+}
+
+std::unique_ptr<RenderItem> LandAndWavesApp::CreateRenderItemForParticle(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex, 
+	const char* particle, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology, RenderLayer layer)
+{
+	std::unique_ptr<RenderItem> renderItem = std::make_unique<RenderItem>();
+
+	XMStoreFloat4x4(&renderItem->world, world);
+	XMStoreFloat4x4(&renderItem->texTransform, texTransform);
+	renderItem->objectCBIndex = objectCBIndex;
+	renderItem->material = m_materials[material].get();
+	renderItem->particle = m_particles[particle].get();
+	renderItem->primitiveTopology = primitiveTopology;
+	renderItem->indexCount = m_particles[particle]->indexCount;
+	renderItem->startIndexLocation = 0;
+	renderItem->baseVertexLocation = 0;
+
+	m_renderItemsEachRenderLayers[layer].push_back(renderItem.get());
+
+	return renderItem;
 }
 
 void LandAndWavesApp::CreateSRVForTexture(UINT index, ID3D12Resource* textureResource, const char* materialName)

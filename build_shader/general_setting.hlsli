@@ -3,6 +3,7 @@
 #define MAX_LIGHTS 16
 #define ALPHA_TEST
 #define FOG
+#define GRAVITY 9.8f
 
 #ifndef NUM_DIR_LIGHTS
 #define NUM_DIR_LIGHTS 1
