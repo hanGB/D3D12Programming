@@ -704,71 +704,26 @@ void LandAndWavesApp::BuildTreeGeometry()
 
 void LandAndWavesApp::BuildParticle()
 {
-	// 필요한 정점 성분들을 추출해서 각 정점에 높이 함수 적용
+	// 분수대
 	int numParticle = 1000;
 	int numStem = 20;
 
 	std::vector<ParticleVertex> vertices(numParticle);
 
 	int k = 0;
+
 	for (int i = 0; i < numParticle / numStem; ++i)
 	{
 		for (float angle = 0.f; angle < 360.0f; angle += (360.0f / (float)numStem), ++k)
 		{
 			vertices[k].startPos = XMFLOAT3(5.0f * cosf(XMConvertToRadians(angle)), 50.0f, 5.0f * sinf(XMConvertToRadians(angle)));
-			vertices[k].size = XMFLOAT2(5.0f, 5.0f);
+			vertices[k].size = XMFLOAT2(2.5f, 2.5f);
 			vertices[k].selfLightColor = XMFLOAT3(0.0f, 0.0f, 0.0f);
-			vertices[k].startVelocity = XMFLOAT3(30.0f * cosf(XMConvertToRadians(angle)), 30.0f, 30.0f * sinf(XMConvertToRadians(angle)));
-			vertices[k].timeDelay = i * 0.1f;
+			vertices[k].startVelocity = XMFLOAT3(10.0f * cosf(XMConvertToRadians(angle)), 10.0f, 10.0f * sinf(XMConvertToRadians(angle)));
+			vertices[k].timeDelay = i * 0.2f;
 		}
 	}
-	for (size_t i = 0; i < numParticle; ++i)
-	{
-		float x = MathHelper::RandF(-45.0f, 45.0f);
-		float z = MathHelper::RandF(-45.0f, 45.0f);
-		float y = GetHillsHeight(x, z);
-
-		y += 8.0f;
-
-		vertices[i].startPos;
-		vertices[i].size = XMFLOAT2(2.0f, 2.0f);
-		vertices[i].selfLightColor = XMFLOAT3(0.0f, 0.0f, 0.0f);
-		vertices[i].startVelocity;
-		vertices[i].timeDelay;
-	}
-	std::vector<std::uint16_t> indices(numParticle);
-	for (int i = 0; i < numParticle; ++i)
-	{
-		indices[i] = i;
-	}
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(ParticleVertex);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-	auto particle = std::make_unique<Particle>();
-	particle->name = "fountain";
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &particle->vertexBuffer.cpu));
-	CopyMemory(particle->vertexBuffer.cpu->GetBufferPointer(), vertices.data(), vbByteSize);
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &particle->indexBuffer.cpu));
-	CopyMemory(particle->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
-
-	particle->vertexBuffer.gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), vertices.data(), vbByteSize, particle->vertexBuffer.uploader);
-	particle->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, particle->indexBuffer.uploader);
-
-	particle->vertexBuffer.byteStride = sizeof(ParticleVertex);
-	particle->vertexBuffer.byteSize = vbByteSize;
-	particle->indexBuffer.format = DXGI_FORMAT_R16_UINT;
-	particle->indexBuffer.byteSize = ibByteSize;
-
-	particle->indexCount = (UINT)indices.size();
-	particle->cbIndex = 0;
-
-	particle->dragCoefficient = 0.0f;
-	particle->lifeTime = 4.0f;
-	particle->startTime = m_timer.TotalTime();
-
-	m_particles[particle->name] = std::move(particle);
+	CreateParticle(vertices, "fountain", 0, 0.0f, m_timer.TotalTime(), 5.0f);
 }
 
 void LandAndWavesApp::BuildRenderItems()
@@ -1046,6 +1001,47 @@ XMFLOAT3 LandAndWavesApp::GetHillsNormal(float x, float z) const
 	XMStoreFloat3(&n, uintNormal);
 
 	return n;
+}
+
+void LandAndWavesApp::CreateParticle(std::vector<ParticleVertex>& vertices, const char* name, UINT index, float dragCoefficient, float startTime, float lifeTime)
+{
+	std::vector<std::uint16_t> indices(vertices.size());
+	for (int i = 0; i < vertices.size(); ++i)
+	{
+		indices[i] = i;
+	}
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(ParticleVertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto particle = std::make_unique<Particle>();
+	particle->name = name;
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &particle->vertexBuffer.cpu));
+	CopyMemory(particle->vertexBuffer.cpu->GetBufferPointer(), vertices.data(), vbByteSize);
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &particle->indexBuffer.cpu));
+	CopyMemory(particle->indexBuffer.cpu->GetBufferPointer(), indices.data(), ibByteSize);
+
+	particle->vertexBuffer.gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), vertices.data(), vbByteSize, particle->vertexBuffer.uploader);
+	particle->indexBuffer.gpu = D3DUtil::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, particle->indexBuffer.uploader);
+
+	particle->vertexBuffer.byteStride = sizeof(ParticleVertex);
+	particle->vertexBuffer.byteSize = vbByteSize;
+	particle->indexBuffer.format = DXGI_FORMAT_R16_UINT;
+	particle->indexBuffer.byteSize = ibByteSize;
+
+	particle->indexCount = (UINT)indices.size();
+	particle->cbIndex = index;
+
+	if (dragCoefficient < 0.01f)
+	{
+		dragCoefficient = 0.01f;
+	}
+	particle->dragCoefficient = dragCoefficient;
+	particle->startTime = startTime;
+	particle->lifeTime = lifeTime;
+
+	m_particles[particle->name] = std::move(particle);
 }
 
 std::unique_ptr<RenderItem> LandAndWavesApp::CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,

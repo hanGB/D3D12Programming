@@ -100,6 +100,8 @@ private:
 	float GetHillsHeight(float x, float z) const;
 	XMFLOAT3 GetHillsNormal(float x, float z) const;
 
+	void CreateParticle(std::vector<ParticleVertex>& vertices, const char* name, UINT index, float dragCoefficient, float startTime, float lifeTime);
+
 	std::unique_ptr<RenderItem> CreateRenderItem(const XMMATRIX& world, const XMMATRIX& texTransform, UINT objectCBIndex,
 		const char* geometry, const char* submesh, const char* material, D3D_PRIMITIVE_TOPOLOGY primitiveTopology, RenderLayer layer);
 

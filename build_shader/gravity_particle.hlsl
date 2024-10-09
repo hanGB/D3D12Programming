@@ -114,16 +114,16 @@ VertexOut VS(VertexIn vin)
         return vout;
     }
     
-    // 월드 공간으로 변환
-    float3 startPosW = mul(float4(vin.startPosL, 1.0f), gWorld);
+    float3 currentVel;
+    // 월드 공간으로 변환된 값으로 설정
+    float3 currentPos = mul(float4(vin.startPosL, 1.0f), gWorld);
     
-    // 현재 속도를 계산하고 그 값을 통해 현재 위치 계산
-    float3 accel = float3(0.0f, 0.0f, 0.0f);
-    accel.y = GRAVITY - gDragCoefficient;
-    
-    float3 currentVel = vin.startVelocity - accel * time;
-    
-    float3 currentPos = startPosW.xyz + currentVel * time - 0.5 * accel * time * time;
+    // 중력과 공기저항을 고려해 위치 계산
+    float ePowDCT = pow(2.718, -gDragCoefficient * time);
+    float gDivideDC = GRAVITY / gDragCoefficient;
+        
+    currentPos.xz += (vin.startVelocity.xz / gDragCoefficient) * (1.0f - ePowDCT);
+    currentPos.y += (vin.startVelocity.y + gDivideDC) * (1.0f / gDragCoefficient) * (1.0f - ePowDCT) - (gDivideDC * time);
     
     VertexOut vout;
     
@@ -156,16 +156,16 @@ VertexOut VSInfinity(VertexIn vin)
     // 반복 설정
     time = fmod(time, gLifeTime);
     
-    // 월드 공간으로 변환
-    float3 startPosW = mul(float4(vin.startPosL, 1.0f), gWorld);
+    float3 currentVel;
+    // 월드 공간으로 변환된 값으로 설정
+    float3 currentPos = mul(float4(vin.startPosL, 1.0f), gWorld);
     
-    // 현재 속도를 계산하고 그 값을 통해 현재 위치 계산
-    float3 accel = float3(0.0f, 0.0f, 0.0f);
-    accel.y = GRAVITY - gDragCoefficient;
-    
-    float3 currentVel = vin.startVelocity - accel * time;
-    
-    float3 currentPos = startPosW.xyz + currentVel * time - 0.5 * accel * time * time;
+    // 중력과 공기저항을 고려해 위치 계산
+    float ePowDCT = pow(2.718, -gDragCoefficient * time);
+    float gDivideDC = GRAVITY / gDragCoefficient;
+        
+    currentPos.xz += (vin.startVelocity.xz / gDragCoefficient) * (1.0f - ePowDCT);
+    currentPos.y += (vin.startVelocity.y + gDivideDC) * (1.0f / gDragCoefficient) * (1.0f - ePowDCT) - (gDivideDC * time);
     
     VertexOut vout;
     
