@@ -89,7 +89,7 @@ VertexOut VS(VertexIn vin)
 }
 
 // 픽셀 쉐이더
-float4 FS(VertexOut pin) : SV_TARGET
+float4 PS(VertexOut pin) : SV_TARGET
 {
     // 노멀 다시 정규화
     pin.normalW = normalize(pin.normalW);
@@ -123,7 +123,7 @@ float4 FS(VertexOut pin) : SV_TARGET
 }
 
 // 픽셀 쉐이더(알파 테스트)
-float4 AlphaTestedFS(VertexOut pin) : SV_Target
+float4 AlphaTestedPS(VertexOut pin) : SV_Target
 {   
     float4 diffuseAlbedo = gDiffuseMap.Sample(gSamAnisotropicWrap, pin.uv) * gDiffuseAlbedo;
     

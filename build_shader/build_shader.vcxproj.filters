@@ -69,6 +69,9 @@
     <FxCompile Include="gravity_particle.hlsl">
       <Filter>Geometry Shader</Filter>
     </FxCompile>
+    <FxCompile Include="lod_sphere.hlsl">
+      <Filter>Geometry Shader</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="general_setting.hlsli">

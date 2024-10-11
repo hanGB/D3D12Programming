@@ -123,6 +123,9 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 	// 각 레이어 별로 렌더 아이템 그리기
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Opaque]);
 
+	m_commandList->SetPipelineState(m_psos["lod_sphere"].Get());
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::LODSphere]);
+
 	m_commandList->SetPipelineState(m_psos["alpha_test"].Get());
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::AlphaTest]);
 
@@ -195,15 +198,15 @@ void LandAndWavesApp::OnMouseMove(WPARAM btnState, int x, int y)
 	}
 	else if ((btnState & MK_RBUTTON) != 0)
 	{
-		// 마우스 한 픽셀 이동을 장면의 0.005단위에 대응
-		float dx = XMConvertToRadians(0.05f * static_cast<float>(x - m_lastMousePosition.x));
-		float dy = XMConvertToRadians(0.05f * static_cast<float>(y - m_lastMousePosition.y));
+		// 마우스 한 픽셀 이동을 장면의 5단위에 대응
+		float dx = XMConvertToRadians(5.f * static_cast<float>(x - m_lastMousePosition.x));
+		float dy = XMConvertToRadians(5.f * static_cast<float>(y - m_lastMousePosition.y));
 
 		// 마우스 입력에 기초해서 카메라 반지름 갱신
 		m_radius += dx - dy;
 
 		// 반지름 제한
-		m_radius = MathHelper::Clamp(m_radius, 3.0f, 15.0f);
+		m_radius = MathHelper::Clamp(m_radius, 3.0f, 150.0f);
 	}
 
 
@@ -525,10 +528,12 @@ void LandAndWavesApp::BuildLandGeometry()
 	GeometryGenerator geoGenerator;
 	GeometryGenerator::MeshData grid = geoGenerator.CreateGrid(160.0f, 160.0f, 50, 50);
 	GeometryGenerator::MeshData box = geoGenerator.CreateBox(10.0f, 10.0f, 10.0f, 0);
+	GeometryGenerator::MeshData sphere = geoGenerator.CreateGeosphere(5.0f, 0);
 
 	// 필요한 정점 성분들을 추출해서 각 정점에 높이 함수 적용
-	std::vector<VertexBaseData> baseDatas(grid.vertices.size() + box.vertices.size());
-	std::vector<VertexLightingData> lightingDatas(grid.vertices.size() + box.vertices.size());
+	size_t verticesSize = grid.vertices.size() + box.vertices.size() + sphere.vertices.size();
+	std::vector<VertexBaseData> baseDatas(verticesSize);
+	std::vector<VertexLightingData> lightingDatas(verticesSize);
 	int k = 0;
 	for (size_t i = 0; i < grid.vertices.size(); ++i, ++k)
 	{
@@ -544,12 +549,19 @@ void LandAndWavesApp::BuildLandGeometry()
 		baseDatas[k].uv = box.vertices[i].texCoord;
 		lightingDatas[k].normal = box.vertices[i].normal;
 	}
+	for (size_t i = 0; i < sphere.vertices.size(); ++i, ++k)
+	{
+		baseDatas[k].pos = sphere.vertices[i].position;
+		baseDatas[k].uv = sphere.vertices[i].texCoord;
+		lightingDatas[k].normal = sphere.vertices[i].normal;
+	}
 
 	const UINT vbByteSizes[] = { (UINT)baseDatas.size() * sizeof(VertexBaseData), (UINT)lightingDatas.size() * sizeof(VertexLightingData) };
 
 	std::vector<std::uint16_t> indices;
 	indices.insert(indices.end(), grid.GetIndices16().begin(), grid.GetIndices16().end());
 	indices.insert(indices.end(), box.GetIndices16().begin(), box.GetIndices16().end());
+	indices.insert(indices.end(), sphere.GetIndices16().begin(), sphere.GetIndices16().end());
 
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
@@ -574,17 +586,31 @@ void LandAndWavesApp::BuildLandGeometry()
 	geo->indexBuffer.format = DXGI_FORMAT_R16_UINT;
 	geo->indexBuffer.byteSize = ibByteSize;
 
+
 	SubmeshGeometry girdSubmesh;
 	girdSubmesh.indexCount = (UINT)grid.indices32.size();
-	girdSubmesh.startIndexLocation = 0;
-	girdSubmesh.baseVertexLocation = 0;
+	UINT startIndexLocation = 0;
+	UINT baseVertexLocation = 0;
+	girdSubmesh.startIndexLocation = startIndexLocation;
+	girdSubmesh.baseVertexLocation = baseVertexLocation;
+
 	SubmeshGeometry boxSubmesh;
 	boxSubmesh.indexCount = (UINT)box.indices32.size();
-	boxSubmesh.startIndexLocation = (UINT)grid.indices32.size();
-	boxSubmesh.baseVertexLocation = (UINT)grid.vertices.size();
+	startIndexLocation += (UINT)grid.indices32.size();
+	baseVertexLocation += (UINT)grid.vertices.size();
+	boxSubmesh.startIndexLocation = startIndexLocation;
+	boxSubmesh.baseVertexLocation = baseVertexLocation;
+
+	SubmeshGeometry sphereSubmesh;
+	sphereSubmesh.indexCount = (UINT)sphere.indices32.size();
+	startIndexLocation += (UINT)box.indices32.size();
+	baseVertexLocation += (UINT)box.vertices.size();
+	sphereSubmesh.startIndexLocation = startIndexLocation;
+	sphereSubmesh.baseVertexLocation = baseVertexLocation;
 
 	geo->drawArgs["grid"] = girdSubmesh;
 	geo->drawArgs["box"] = boxSubmesh;
+	geo->drawArgs["sphere"] = sphereSubmesh;
 
 	m_geometries[geo->name] = std::move(geo);
 }
@@ -744,11 +770,11 @@ void LandAndWavesApp::BuildRenderItems()
 		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, "land_geometry", "grid", "grass", primitiveTopogoly, RenderLayer::Opaque);
 	m_allRenderItems.push_back(std::move(gridRenderItem));
 
-	/*XMMATRIX boxWorld = XMMatrixIdentity();
-	XMMATRIX boxTexTransform = XMMatrixIdentity();
-	std::unique_ptr<RenderItem> boxRenderItem
-		= CreateRenderItem(boxWorld, boxTexTransform, objCBIndex++, "land_geometry", "box", "wire", primitiveTopogoly, RenderLayer::AlphaTest);
-	m_allRenderItems.push_back(std::move(boxRenderItem));*/
+	XMMATRIX sphereWorld = XMMatrixTranslation(0.0f, 5.0f, 0.0f);
+	XMMATRIX  sphereTexTransform = XMMatrixIdentity();
+	std::unique_ptr<RenderItem> sphereRenderItem
+		= CreateRenderItem(sphereWorld, sphereTexTransform, objCBIndex++, "land_geometry", "sphere", "white", primitiveTopogoly, RenderLayer::LODSphere);
+	m_allRenderItems.push_back(std::move(sphereRenderItem));
 
 	XMMATRIX treeWorld = XMMatrixIdentity();
 	XMMATRIX treeTexTransform = XMMatrixIdentity();
@@ -815,8 +841,8 @@ void LandAndWavesApp::BuildRootSignature()
 void LandAndWavesApp::BuildShadersAndInputLayout()
 {
 	m_shaders["standard_vs"] = D3DUtil::CompileShader(L"../build_shader/standard_texture.hlsl", nullptr, "VS", "vs_5_1");
-	m_shaders["standard_ps"] = D3DUtil::CompileShader(L"../build_shader/standard_texture.hlsl", nullptr, "FS", "ps_5_1");
-	m_shaders["alpha_test_ps"] = D3DUtil::CompileShader(L"../build_shader/standard_texture.hlsl", nullptr, "AlphaTestedFS", "ps_5_1");
+	m_shaders["standard_ps"] = D3DUtil::CompileShader(L"../build_shader/standard_texture.hlsl", nullptr, "PS", "ps_5_1");
+	m_shaders["alpha_test_ps"] = D3DUtil::CompileShader(L"../build_shader/standard_texture.hlsl", nullptr, "AlphaTestedPS", "ps_5_1");
 
 	m_shaders["tree_sprite_vs"] = D3DUtil::CompileShader(L"../build_shader/tree_sprite.hlsl", nullptr, "VS", "vs_5_1");
 	m_shaders["tree_sprite_gs"] = D3DUtil::CompileShader(L"../build_shader/tree_sprite.hlsl", nullptr, "GS", "gs_5_1");
@@ -826,6 +852,10 @@ void LandAndWavesApp::BuildShadersAndInputLayout()
 	m_shaders["gravity_particle_infinity_vs"] = D3DUtil::CompileShader(L"../build_shader/gravity_particle.hlsl", nullptr, "VSInfinity", "vs_5_1");
 	m_shaders["gravity_particle_gs"] = D3DUtil::CompileShader(L"../build_shader/gravity_particle.hlsl", nullptr, "GS", "gs_5_1");
 	m_shaders["gravity_particle_ps"] = D3DUtil::CompileShader(L"../build_shader/gravity_particle.hlsl", nullptr, "PS", "ps_5_1");
+
+	m_shaders["lod_sphere_vs"] = D3DUtil::CompileShader(L"../build_shader/lod_sphere.hlsl", nullptr, "VS", "vs_5_1");
+	m_shaders["lod_sphere_gs"] = D3DUtil::CompileShader(L"../build_shader/lod_sphere.hlsl", nullptr, "GS", "gs_5_1");
+	m_shaders["lod_sphere_ps"] = D3DUtil::CompileShader(L"../build_shader/lod_sphere.hlsl", nullptr, "PS", "ps_5_1");
 
 	m_inputLayouts["standard"] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -948,6 +978,25 @@ void LandAndWavesApp::BuildPSO()
 		m_shaders["gravity_particle_infinity_vs"]->GetBufferSize()
 	};
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&gravityParticlePsoDesc, IID_PPV_ARGS(&m_psos["gravity_particle_infinity"])));
+
+	// LOD 구
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC lodSpherePsoDesc = psoDesc;
+	lodSpherePsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["lod_sphere_vs"]->GetBufferPointer()),
+		m_shaders["lod_sphere_vs"]->GetBufferSize()
+	};
+	lodSpherePsoDesc.GS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["lod_sphere_gs"]->GetBufferPointer()),
+		m_shaders["lod_sphere_gs"]->GetBufferSize()
+	};
+	lodSpherePsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["lod_sphere_ps"]->GetBufferPointer()),
+		m_shaders["lod_sphere_ps"]->GetBufferSize()
+	};
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&lodSpherePsoDesc, IID_PPV_ARGS(&m_psos["lod_sphere"])));
 }
 
 void LandAndWavesApp::BuildTexture()
@@ -956,6 +1005,7 @@ void LandAndWavesApp::BuildTexture()
 	m_textures["water"] = D3DUtil::CreateTextureFromDDSFile("water", L"./resource/water1.dds", m_d3dDevice.Get(), m_commandList.Get());
 	m_textures["wire_fence"] = D3DUtil::CreateTextureFromDDSFile("wire_fence", L"./resource/WireFence.dds", m_d3dDevice.Get(), m_commandList.Get());
 	m_textures["tree_sprite"] = D3DUtil::CreateTextureFromDDSFile("tree_sprite", L"./resource/treeArray2.dds", m_d3dDevice.Get(), m_commandList.Get());
+	m_textures["white"] = D3DUtil::CreateTextureFromDDSFile("tree_sprite", L"./resource/white1x1.dds", m_d3dDevice.Get(), m_commandList.Get());
 }
 
 void LandAndWavesApp::BuildMaterialAndSrv()
@@ -968,6 +1018,8 @@ void LandAndWavesApp::BuildMaterialAndSrv()
 	m_materials["wire"] = std::make_unique<Material>("wire", 2,
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.01f, 0.01f, 0.01f), 0.01f);
 	m_materials["tree"] = std::make_unique<Material>("tree", 3,
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.01f);
+	m_materials["white"] = std::make_unique<Material>("white", 3,
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f), 0.01f);
 
 	// 서술자 힙 생성
@@ -982,6 +1034,7 @@ void LandAndWavesApp::BuildMaterialAndSrv()
 	CreateSRVForTexture(1, m_textures["water"]->resource.Get(), "water");
 	CreateSRVForTexture(2, m_textures["wire_fence"]->resource.Get(), "wire");
 	CreateSRVForTexture(3, m_textures["tree_sprite"]->resource.Get(), "tree");
+	CreateSRVForTexture(4, m_textures["white"]->resource.Get(), "white");
 }
 
 float LandAndWavesApp::GetHillsHeight(float x, float z) const
