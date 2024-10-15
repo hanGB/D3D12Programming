@@ -528,7 +528,7 @@ void LandAndWavesApp::BuildLandGeometry()
 	GeometryGenerator geoGenerator;
 	GeometryGenerator::MeshData grid = geoGenerator.CreateGrid(160.0f, 160.0f, 50, 50);
 	GeometryGenerator::MeshData box = geoGenerator.CreateBox(10.0f, 10.0f, 10.0f, 0);
-	GeometryGenerator::MeshData sphere = geoGenerator.CreateGeosphere(5.0f, 0);
+	GeometryGenerator::MeshData sphere = geoGenerator.CreateGeosphere(2.5f, 0);
 
 	// 필요한 정점 성분들을 추출해서 각 정점에 높이 함수 적용
 	size_t verticesSize = grid.vertices.size() + box.vertices.size() + sphere.vertices.size();
@@ -770,12 +770,19 @@ void LandAndWavesApp::BuildRenderItems()
 		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, "land_geometry", "grid", "grass", primitiveTopogoly, RenderLayer::Opaque);
 	m_allRenderItems.push_back(std::move(gridRenderItem));
 
-	XMMATRIX sphereWorld = XMMatrixTranslation(0.0f, 5.0f, 0.0f);
-	XMMATRIX  sphereTexTransform = XMMatrixIdentity();
-	std::unique_ptr<RenderItem> sphereRenderItem
-		= CreateRenderItem(sphereWorld, sphereTexTransform, objCBIndex++, "land_geometry", "sphere", "white", primitiveTopogoly, RenderLayer::LODSphere);
-	m_allRenderItems.push_back(std::move(sphereRenderItem));
+		for (float x = -50.0f; x < 51.0f; x += 5.0f)
+		{
+			for (float z = -50.0f; z < 51.0f; z += 5.0f)
+			{
+				XMMATRIX sphereWorld = XMMatrixTranslation(x, 20.0f, z);
+				XMMATRIX  sphereTexTransform = XMMatrixIdentity();
+				std::unique_ptr<RenderItem> sphereRenderItem
+					= CreateRenderItem(sphereWorld, sphereTexTransform, objCBIndex++, "land_geometry", "sphere", "white", primitiveTopogoly, RenderLayer::LODSphere);
+				m_allRenderItems.push_back(std::move(sphereRenderItem));
+			}
+		}
 
+	/*
 	XMMATRIX treeWorld = XMMatrixIdentity();
 	XMMATRIX treeTexTransform = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> treeRenderItem
@@ -788,6 +795,7 @@ void LandAndWavesApp::BuildRenderItems()
 	std::unique_ptr<RenderItem> fountainRenderItem
 		= CreateRenderItemForParticle(fountainWorld, fountainTexTransform, objCBIndex++, "fountain", "water", D3D_PRIMITIVE_TOPOLOGY_POINTLIST, RenderLayer::ParticleInfinity);
 	m_allRenderItems.push_back(std::move(fountainRenderItem));
+	*/
 }
 
 void LandAndWavesApp::BuildFrameResources()

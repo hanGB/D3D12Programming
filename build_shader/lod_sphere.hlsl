@@ -219,7 +219,7 @@ void GS(triangle VertexOut gin[3],
 {
     // 카메라의 eye와 중심 사이의 거리로 LOD 수준 설정 
     float3 worldLocation = mul(float4(0.0f, 0.0f, 0.0f, 1.0f), gWorld).xyz;
-    float distance = length(gWorld._11_11_11 - gEyePosW);
+    float distance = length(worldLocation - gEyePosW);
     
     int lodLevel = 0;
     if (distance < 50.0f)
@@ -253,7 +253,10 @@ void GS(triangle VertexOut gin[3],
     {
         Subdivide(outVertices, numVertices, outIndices, numIndices);
     }
-    ProjectionToSphere(length(gin[0].posL), numVertices, outVertices);
+    if (lodLevel != 0)
+    {
+        ProjectionToSphere(length(gin[0].posL), numVertices, outVertices);        
+    }
     OutputSubdivision(outVertices, numVertices, outIndices, numIndices, triangleStream);
 }
 
