@@ -45,6 +45,7 @@ namespace land_and_waves
 		Particle,
 		ParticleInfinity,
 		LODSphere,
+		TriangleExplosion,
 		Count
 	};
 }

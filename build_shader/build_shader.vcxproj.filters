@@ -72,6 +72,9 @@
     <FxCompile Include="lod_sphere.hlsl">
       <Filter>Geometry Shader</Filter>
     </FxCompile>
+    <FxCompile Include="triangle_explosion.hlsl">
+      <Filter>Geometry Shader</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="general_setting.hlsli">

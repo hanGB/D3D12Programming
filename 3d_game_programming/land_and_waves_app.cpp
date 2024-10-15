@@ -126,6 +126,9 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 	m_commandList->SetPipelineState(m_psos["lod_sphere"].Get());
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::LODSphere]);
 
+	m_commandList->SetPipelineState(m_psos["triangle_explosion"].Get());
+	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::TriangleExplosion]);
+
 	m_commandList->SetPipelineState(m_psos["alpha_test"].Get());
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::AlphaTest]);
 
@@ -770,17 +773,17 @@ void LandAndWavesApp::BuildRenderItems()
 		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, "land_geometry", "grid", "grass", primitiveTopogoly, RenderLayer::Opaque);
 	m_allRenderItems.push_back(std::move(gridRenderItem));
 
-		for (float x = -50.0f; x < 51.0f; x += 5.0f)
-		{
-			for (float z = -50.0f; z < 51.0f; z += 5.0f)
-			{
-				XMMATRIX sphereWorld = XMMatrixTranslation(x, 20.0f, z);
-				XMMATRIX  sphereTexTransform = XMMatrixIdentity();
-				std::unique_ptr<RenderItem> sphereRenderItem
-					= CreateRenderItem(sphereWorld, sphereTexTransform, objCBIndex++, "land_geometry", "sphere", "white", primitiveTopogoly, RenderLayer::LODSphere);
-				m_allRenderItems.push_back(std::move(sphereRenderItem));
-			}
-		}
+	//for (float x = -50.0f; x < 51.0f; x += 5.0f)
+	//{
+		//for (float z = -50.0f; z < 51.0f; z += 5.0f)
+		//{
+			XMMATRIX sphereWorld = XMMatrixTranslation(0.0f, 5.0f, 0.0f);
+			XMMATRIX  sphereTexTransform = XMMatrixIdentity();
+			std::unique_ptr<RenderItem> sphereRenderItem
+				= CreateRenderItem(sphereWorld, sphereTexTransform, objCBIndex++, "land_geometry", "sphere", "white", primitiveTopogoly, RenderLayer::TriangleExplosion);
+			m_allRenderItems.push_back(std::move(sphereRenderItem));
+		//}
+	//}
 
 	/*
 	XMMATRIX treeWorld = XMMatrixIdentity();
@@ -864,6 +867,10 @@ void LandAndWavesApp::BuildShadersAndInputLayout()
 	m_shaders["lod_sphere_vs"] = D3DUtil::CompileShader(L"../build_shader/lod_sphere.hlsl", nullptr, "VS", "vs_5_1");
 	m_shaders["lod_sphere_gs"] = D3DUtil::CompileShader(L"../build_shader/lod_sphere.hlsl", nullptr, "GS", "gs_5_1");
 	m_shaders["lod_sphere_ps"] = D3DUtil::CompileShader(L"../build_shader/lod_sphere.hlsl", nullptr, "PS", "ps_5_1");
+
+	m_shaders["triangle_explosion_vs"] = D3DUtil::CompileShader(L"../build_shader/triangle_explosion.hlsl", nullptr, "VS", "vs_5_1");
+	m_shaders["triangle_explosion_gs"] = D3DUtil::CompileShader(L"../build_shader/triangle_explosion.hlsl", nullptr, "GS", "gs_5_1");
+	m_shaders["triangle_explosion_ps"] = D3DUtil::CompileShader(L"../build_shader/triangle_explosion.hlsl", nullptr, "PS", "ps_5_1");
 
 	m_inputLayouts["standard"] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -1005,6 +1012,25 @@ void LandAndWavesApp::BuildPSO()
 		m_shaders["lod_sphere_ps"]->GetBufferSize()
 	};
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&lodSpherePsoDesc, IID_PPV_ARGS(&m_psos["lod_sphere"])));
+
+	// 삼각형 폭발
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC triangleExplosionPsoDesc = psoDesc;
+	triangleExplosionPsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["triangle_explosion_vs"]->GetBufferPointer()),
+		m_shaders["triangle_explosion_vs"]->GetBufferSize()
+	};
+	triangleExplosionPsoDesc.GS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["triangle_explosion_gs"]->GetBufferPointer()),
+		m_shaders["triangle_explosion_gs"]->GetBufferSize()
+	};
+	triangleExplosionPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["triangle_explosion_ps"]->GetBufferPointer()),
+		m_shaders["triangle_explosion_ps"]->GetBufferSize()
+	};
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&triangleExplosionPsoDesc, IID_PPV_ARGS(&m_psos["triangle_explosion"])));
 }
 
 void LandAndWavesApp::BuildTexture()
