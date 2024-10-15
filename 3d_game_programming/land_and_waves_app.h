@@ -46,6 +46,8 @@ namespace land_and_waves
 		ParticleInfinity,
 		LODSphere,
 		TriangleExplosion,
+		DebugNormal,
+		DebugSurfaceNormal,
 		Count
 	};
 }
@@ -156,6 +158,9 @@ private:
 
 	// 마우스 입력
 	POINT m_lastMousePosition;
+
+	// 디버그 모드
+	bool m_isDebugSurfaceNormal = false;
 
 	// 카메라
 	float m_theta = 1.5f * XM_PI;

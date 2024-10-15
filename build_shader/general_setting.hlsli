@@ -5,6 +5,7 @@
 #define FOG
 #define GRAVITY 9.8f
 #define PI_VALUE 3.141592f
+#define DEBUG_COLOR float4(0.0f, 1.0f, 0.0f, 1.0f)
 
 #ifndef NUM_DIR_LIGHTS
 #define NUM_DIR_LIGHTS 1

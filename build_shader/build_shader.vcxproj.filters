@@ -75,6 +75,9 @@
     <FxCompile Include="triangle_explosion.hlsl">
       <Filter>Geometry Shader</Filter>
     </FxCompile>
+    <FxCompile Include="debug_normal.hlsl">
+      <Filter>Geometry Shader</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="general_setting.hlsli">

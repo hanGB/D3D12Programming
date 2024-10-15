@@ -123,6 +123,17 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 	// 각 레이어 별로 렌더 아이템 그리기
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::Opaque]);
 
+	if (m_isDebugSurfaceNormal)
+	{
+		m_commandList->SetPipelineState(m_psos["debug_surface_normal"].Get());
+		DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::DebugSurfaceNormal]);
+	}
+	else
+	{
+		m_commandList->SetPipelineState(m_psos["debug_normal"].Get());
+		DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::DebugNormal]);
+	}
+
 	m_commandList->SetPipelineState(m_psos["lod_sphere"].Get());
 	DrawRenderItems(m_commandList.Get(), m_renderItemsEachRenderLayers[RenderLayer::LODSphere]);
 
@@ -238,6 +249,11 @@ void LandAndWavesApp::OnKeyboradInput(WPARAM btnState, bool isPressed)
 		if (btnState == VK_DOWN)
 		{
 			m_sunPhi += 10.0f * dt;
+		}
+
+		if (btnState == 'n' || btnState == 'N')
+		{
+			m_isDebugSurfaceNormal = !m_isDebugSurfaceNormal;
 		}
 	}
 }
@@ -758,20 +774,29 @@ void LandAndWavesApp::BuildParticle()
 void LandAndWavesApp::BuildRenderItems()
 {
 	UINT objCBIndex = 0;
-	D3D_PRIMITIVE_TOPOLOGY primitiveTopogoly = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	XMMATRIX wavesWorld = XMMatrixIdentity();
 	XMMATRIX wavesTexTransform = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> wavesRenderItem
-		= CreateRenderItem(wavesWorld, wavesTexTransform, objCBIndex++, "water_geometry", "grid", "water", primitiveTopogoly, RenderLayer::Transparent);
+		= CreateRenderItem(wavesWorld, wavesTexTransform, objCBIndex++, 
+			"water_geometry", "grid", "water", D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, RenderLayer::Transparent);
 	m_wavesRenderItem = wavesRenderItem.get();
 	m_allRenderItems.push_back(std::move(wavesRenderItem));
-
+	
 	XMMATRIX gridWorld = XMMatrixIdentity();
 	XMMATRIX gridTexTransform = XMMatrixScaling(5.0f, 5.0f, 1.0f);
 	std::unique_ptr<RenderItem> gridRenderItem
-		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, "land_geometry", "grid", "grass", primitiveTopogoly, RenderLayer::Opaque);
+		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, 
+			"land_geometry", "grid", "grass", D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, RenderLayer::Opaque);
 	m_allRenderItems.push_back(std::move(gridRenderItem));
+	std::unique_ptr<RenderItem> gridRenderItemForDebugNormal
+		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, 
+			"land_geometry", "grid", "grass", D3D_PRIMITIVE_TOPOLOGY_POINTLIST, RenderLayer::DebugNormal);
+	m_allRenderItems.push_back(std::move(gridRenderItemForDebugNormal));
+	std::unique_ptr<RenderItem> gridRenderItemForDebugSurfaceNormal
+		= CreateRenderItem(gridWorld, gridTexTransform, objCBIndex++, 
+			"land_geometry", "grid", "grass", D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, RenderLayer::DebugSurfaceNormal);
+	m_allRenderItems.push_back(std::move(gridRenderItemForDebugSurfaceNormal));
 
 	//for (float x = -50.0f; x < 51.0f; x += 5.0f)
 	//{
@@ -780,7 +805,8 @@ void LandAndWavesApp::BuildRenderItems()
 			XMMATRIX sphereWorld = XMMatrixTranslation(0.0f, 5.0f, 0.0f);
 			XMMATRIX  sphereTexTransform = XMMatrixIdentity();
 			std::unique_ptr<RenderItem> sphereRenderItem
-				= CreateRenderItem(sphereWorld, sphereTexTransform, objCBIndex++, "land_geometry", "sphere", "white", primitiveTopogoly, RenderLayer::TriangleExplosion);
+				= CreateRenderItem(sphereWorld, sphereTexTransform, objCBIndex++, 
+					"land_geometry", "sphere", "white", D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, RenderLayer::TriangleExplosion);
 			m_allRenderItems.push_back(std::move(sphereRenderItem));
 		//}
 	//}
@@ -789,14 +815,16 @@ void LandAndWavesApp::BuildRenderItems()
 	XMMATRIX treeWorld = XMMatrixIdentity();
 	XMMATRIX treeTexTransform = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> treeRenderItem
-		= CreateRenderItem(treeWorld, treeTexTransform, objCBIndex++, "tree_geometry", "points", "tree", D3D_PRIMITIVE_TOPOLOGY_POINTLIST, RenderLayer::TreeSprite);
+		= CreateRenderItem(treeWorld, treeTexTransform, objCBIndex++, 
+		"tree_geometry", "points", "tree", D3D_PRIMITIVE_TOPOLOGY_POINTLIST, RenderLayer::TreeSprite);
 	m_allRenderItems.push_back(std::move(treeRenderItem));
 
 	// 파티클
 	XMMATRIX fountainWorld = XMMatrixIdentity();
 	XMMATRIX fountainTexTransform = XMMatrixIdentity();
 	std::unique_ptr<RenderItem> fountainRenderItem
-		= CreateRenderItemForParticle(fountainWorld, fountainTexTransform, objCBIndex++, "fountain", "water", D3D_PRIMITIVE_TOPOLOGY_POINTLIST, RenderLayer::ParticleInfinity);
+		= CreateRenderItemForParticle(fountainWorld, fountainTexTransform, objCBIndex++, 
+		"fountain", "water", D3D_PRIMITIVE_TOPOLOGY_POINTLIST, RenderLayer::ParticleInfinity);
 	m_allRenderItems.push_back(std::move(fountainRenderItem));
 	*/
 }
@@ -871,6 +899,11 @@ void LandAndWavesApp::BuildShadersAndInputLayout()
 	m_shaders["triangle_explosion_vs"] = D3DUtil::CompileShader(L"../build_shader/triangle_explosion.hlsl", nullptr, "VS", "vs_5_1");
 	m_shaders["triangle_explosion_gs"] = D3DUtil::CompileShader(L"../build_shader/triangle_explosion.hlsl", nullptr, "GS", "gs_5_1");
 	m_shaders["triangle_explosion_ps"] = D3DUtil::CompileShader(L"../build_shader/triangle_explosion.hlsl", nullptr, "PS", "ps_5_1");
+
+	m_shaders["debug_normal_vs"] = D3DUtil::CompileShader(L"../build_shader/debug_normal.hlsl", nullptr, "VS", "vs_5_1");
+	m_shaders["debug_normal_gs"] = D3DUtil::CompileShader(L"../build_shader/debug_normal.hlsl", nullptr, "GS", "gs_5_1");
+	m_shaders["debug_surface_normal_gs"] = D3DUtil::CompileShader(L"../build_shader/debug_normal.hlsl", nullptr, "GSSurface", "gs_5_1");
+	m_shaders["debug_normal_ps"] = D3DUtil::CompileShader(L"../build_shader/debug_normal.hlsl", nullptr, "PS", "ps_5_1");
 
 	m_inputLayouts["standard"] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -1031,6 +1064,35 @@ void LandAndWavesApp::BuildPSO()
 		m_shaders["triangle_explosion_ps"]->GetBufferSize()
 	};
 	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&triangleExplosionPsoDesc, IID_PPV_ARGS(&m_psos["triangle_explosion"])));
+
+	// 법선 디버깅
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC debugNoramlPsoDesc = psoDesc;
+
+	debugNoramlPsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	debugNoramlPsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["debug_normal_vs"]->GetBufferPointer()),
+		m_shaders["debug_normal_vs"]->GetBufferSize()
+	};
+	debugNoramlPsoDesc.GS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["debug_normal_gs"]->GetBufferPointer()),
+		m_shaders["debug_normal_gs"]->GetBufferSize()
+	}; 
+	debugNoramlPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["debug_normal_ps"]->GetBufferPointer()),
+		m_shaders["debug_normal_ps"]->GetBufferSize()
+	};
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&debugNoramlPsoDesc, IID_PPV_ARGS(&m_psos["debug_normal"])));
+
+	debugNoramlPsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	debugNoramlPsoDesc.GS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["debug_surface_normal_gs"]->GetBufferPointer()),
+		m_shaders["debug_surface_normal_gs"]->GetBufferSize()
+	};
+	ThrowIfFailed(m_d3dDevice->CreateGraphicsPipelineState(&debugNoramlPsoDesc, IID_PPV_ARGS(&m_psos["debug_surface_normal"])));
 }
 
 void LandAndWavesApp::BuildTexture()
